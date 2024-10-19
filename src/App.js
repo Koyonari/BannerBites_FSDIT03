@@ -1,13 +1,9 @@
 import "./css/index.css";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <p>Hello</p>
-      </header>
-    </div>
-  );
-}
+import Hero from "./components/Hero.tsx";
+
+const App = () => {
+  return <Hero />;
+};
 
 export default App;
