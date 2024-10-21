@@ -178,21 +178,24 @@ const Sidebar = () => {
 };
 
 // The main Canvas component
+// The main Canvas component
 const AdCanvas = ({ rows = 2, columns = 3 }) => {
   const totalCells = rows * columns; // Calculate total cells based on rows and columns
   const [gridItems, setGridItems] = useState(Array(totalCells).fill(null)); // Initialize grid items
   const [isEditing, setIsEditing] = useState(false);
   const [currentAd, setCurrentAd] = useState(null);
+  const [selectedCells, setSelectedCells] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   // Handle merging of cells
   const handleMerge = (index, direction, selectedCells = []) => {
     const updatedGrid = [...gridItems];
-    
+
     if (!updatedGrid[index] || updatedGrid[index]?.isMerged) {
       alert("Cannot merge empty or already merged cells!");
       return;
     }
-  
+
     if (selectedCells.length > 0) {
       const firstType = updatedGrid[selectedCells[0]]?.type;
       const validSelection = selectedCells.every(cellIndex => 
@@ -200,7 +203,7 @@ const AdCanvas = ({ rows = 2, columns = 3 }) => {
         updatedGrid[cellIndex].type === firstType &&
         !updatedGrid[cellIndex].isMerged
       );
-  
+
       if (validSelection) {
         const mergedItem = {
           ...updatedGrid[selectedCells[0]],
@@ -209,10 +212,10 @@ const AdCanvas = ({ rows = 2, columns = 3 }) => {
           mergeDirection: 'selection',
           selectedCells: selectedCells,
           content: {
-            title: updatedGrid[selectedCells[0]].content.title,
+            title: selectedCells.map(idx => updatedGrid[idx]?.content.title).join(' '),
           }
         };
-  
+
         updatedGrid[selectedCells[0]] = mergedItem;
         selectedCells.slice(1).forEach(cellIndex => {
           updatedGrid[cellIndex] = { isMerged: true, hidden: true };
@@ -222,11 +225,12 @@ const AdCanvas = ({ rows = 2, columns = 3 }) => {
         return;
       }
     }
+    // Horizontal and vertical merging logic remains unchanged
     else if (direction === "horizontal") {
       const numColumns = columns;
       const rowStart = Math.floor(index / numColumns) * numColumns;
       const rowEnd = rowStart + numColumns - 1;
-      
+
       if (
         index < rowEnd && 
         updatedGrid[index + 1] &&
@@ -241,7 +245,7 @@ const AdCanvas = ({ rows = 2, columns = 3 }) => {
             title: `${updatedGrid[index].content.title} ${updatedGrid[index + 1].content.title}`
           }
         };
-        
+
         updatedGrid[index] = mergedItem;
         updatedGrid[index + 1] = { isMerged: true, hidden: true };
       }
@@ -249,7 +253,7 @@ const AdCanvas = ({ rows = 2, columns = 3 }) => {
     else if (direction === "vertical") {
       const numColumns = columns;
       const bottomIndex = index + numColumns;
-      
+
       if (
         bottomIndex < totalCells && 
         updatedGrid[bottomIndex] &&
@@ -264,17 +268,14 @@ const AdCanvas = ({ rows = 2, columns = 3 }) => {
             title: `${updatedGrid[index].content.title} ${updatedGrid[bottomIndex].content.title}`
           }
         };
-        
+
         updatedGrid[index] = mergedItem;
         updatedGrid[bottomIndex] = { isMerged: true, hidden: true };
       }
     }
-  
+
     setGridItems(updatedGrid);
   };
-  // Add selection state and handlers to AdCanvas component
-  const [selectedCells, setSelectedCells] = useState([]);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   const handleCellSelection = (index) => {
     if (!isSelectionMode) return;
@@ -306,39 +307,41 @@ const AdCanvas = ({ rows = 2, columns = 3 }) => {
   };
 
   // Removes the ad from the specified index (grid cell)
-
   const handleRemove = (index) => {
     const updatedGrid = [...gridItems];
-    const totalCells = rows * columns; // Should always be 6 in your case
 
-      // If the item is merged, handle unmerging
-  if (updatedGrid[index]?.isMerged) {
-    const mergeDirection = updatedGrid[index].mergeDirection;
-    
-    if (mergeDirection === "selection") {
-      // For selection merges, clear all selected cells
-      updatedGrid[index].selectedCells.forEach(cellIndex => {
-        updatedGrid[cellIndex] = null;
-      });
-    } else if (mergeDirection === "horizontal") {
+    if (updatedGrid[index]?.isMerged) {
+      const mergeDirection = updatedGrid[index].mergeDirection;
+
+      if (mergeDirection === "selection") {
+        // For selection merges, clear all selected cells
+        updatedGrid[index].selectedCells.forEach(cellIndex => {
+          updatedGrid[cellIndex] = null;
+        });
+      } else if (mergeDirection === "horizontal") {
+        updatedGrid[index] = null;
+        updatedGrid[index + 1] = null;
+      } else if (mergeDirection === "vertical") {
+        updatedGrid[index] = null;
+        updatedGrid[index + columns] = null;
+      }
+    } else {
       updatedGrid[index] = null;
-      updatedGrid[index + 1] = null;
-    } else if (mergeDirection === "vertical") {
-      updatedGrid[index] = null;
-      updatedGrid[index + columns] = null;
     }
-  } else {
-    updatedGrid[index] = null;
-  }
 
-  // Ensure grid always has exactly totalCells elements
-  while (updatedGrid.length < totalCells) {
-    updatedGrid.push(null);
-  }
-  updatedGrid.length = totalCells; // Truncate if somehow longer
+    // Ensure grid always has exactly totalCells elements
+    const nullCells = updatedGrid.filter(item => item === null).length;
+    if (nullCells < totalCells) {
+      const additionalCellsNeeded = totalCells - nullCells;
+      for (let i = 0; i < additionalCellsNeeded; i++) {
+        updatedGrid.push(null);
+      }
+    } else {
+      updatedGrid.length = totalCells; // Truncate if somehow longer
+    }
 
-  setGridItems(updatedGrid);
-};
+    setGridItems(updatedGrid);
+  };
 
   const handleSaveLayout = () => {
     const layoutJSON = JSON.stringify(gridItems, null, 2); // Format gridItems as JSON
