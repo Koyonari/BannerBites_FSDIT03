@@ -184,13 +184,68 @@ const Sidebar = () => {
 
 // The main Canvas component
 // The main Canvas component
-const AdCanvas = ({ rows = 2, columns = 3 }) => {
+const AdCanvas = () => {
+  const [rows, setRows] = useState(2);
+  const [columns, setColumns] = useState(3);
   const totalCells = rows * columns; // Calculate total cells based on rows and columns
   const [gridItems, setGridItems] = useState(Array(totalCells).fill(null)); // Initialize grid items
   const [isEditing, setIsEditing] = useState(false);
   const [currentAd, setCurrentAd] = useState(null);
   const [selectedCells, setSelectedCells] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+ // Function to resize the grid based on new dimensions
+ const resizeGrid = (newRows, newColumns) => {
+  const newTotalCells = newRows * newColumns;
+  const updatedGrid = Array(newTotalCells).fill(null);
+
+  // Copy existing items to the new grid
+  for (let i = 0; i < Math.min(gridItems.length, newTotalCells); i++) {
+    updatedGrid[i] = gridItems[i];
+  }
+
+  setGridItems(updatedGrid);
+};
+
+const increaseRows = () => {
+  const newRows = rows + 1;
+  setRows(newRows);
+  resizeGrid(newRows, columns);
+};
+
+const decreaseRows = () => {
+  if (rows > 1) {
+    const newRows = rows - 1;
+    const updatedGrid = [...gridItems];
+
+    // Clear the last row cells
+    for (let col = 0; col < columns; col++) {
+      const indexToClear = newRows * columns + col; // Calculate index for the last row
+      if (indexToClear < updatedGrid.length) {
+        updatedGrid[indexToClear] = null; // Clear the cell
+      }
+    }
+
+    // Update grid items and rows
+    setGridItems(updatedGrid);
+    setRows(newRows);
+    resizeGrid(newRows, columns);
+  }
+};
+
+const increaseColumns = () => {
+  const newColumns = columns + 1;
+  setColumns(newColumns);
+  resizeGrid(rows, newColumns);
+};
+
+const decreaseColumns = () => {
+  if (columns > 1) {
+    const newColumns = columns - 1;
+    resizeGrid(rows, newColumns);
+    setColumns(newColumns);
+  }
+};
 
   // Handle merging of cells
   const handleMerge = (index, direction, selectedCells = []) => {
@@ -400,6 +455,12 @@ const AdCanvas = ({ rows = 2, columns = 3 }) => {
   return (
     <div className="ad-canvas">
       <Sidebar />
+      <div>
+        <button onClick={increaseRows}>Increase Rows</button>
+        <button onClick={decreaseRows}>Decrease Rows</button>
+        <button onClick={increaseColumns}>Increase Columns</button>
+        <button onClick={decreaseColumns}>Decrease Columns</button>
+      </div>
       <div
         className="grid"
         style={{

@@ -23,10 +23,7 @@
 /* Default style for single grid cells */
 .grid {
   display: grid;
-  grid-template-columns: repeat(
-    var(--columns, 2),
-    1fr
-  ); /* Default to 2 columns */
+  grid-template-columns: repeat(var(--columns, 2), 1fr); /* Default to 2 columns */
   grid-template-rows: repeat(var(--rows, 2), 1fr); /* Default to 2 rows */
   gap: 10px; /* Space between the cells */
   min-width: 300px; /* Minimum width for the grid */
