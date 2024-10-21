@@ -158,8 +158,8 @@ const AdCanvas = () => {
     const updatedGrid = [...gridItems];
 
     // Error handling for merging
-    if (updatedGrid[index]?.isMerged) {
-      alert("Cannot merge a merged cell!");
+    if (!updatedGrid[index] || updatedGrid[index]?.isMerged) {
+      alert("Cannot merge empty or already merged cells!");
       return;
     }
 
@@ -197,7 +197,8 @@ const AdCanvas = () => {
       if (
         direction === "horizontal" &&
         index % 2 === 0 &&
-        updatedGrid[index + 1]
+        updatedGrid[index + 1] &&
+        updatedGrid[index].type === updatedGrid[index + 1].type // Check types
       ) {
         const item1 = updatedGrid[index];
         const item2 = updatedGrid[index + 1];
@@ -220,7 +221,13 @@ const AdCanvas = () => {
       }
 
       // Vertical merging
-      if (direction === "vertical" && index < 2 && updatedGrid[index + 2]) {
+      if (
+        direction === "vertical" &&
+        index < 2 &&
+        updatedGrid[index + 2] &&
+        updatedGrid[index].type === updatedGrid[index + 2].type
+      ) {
+        // Check types
         const item1 = updatedGrid[index];
         const item2 = updatedGrid[index + 2];
 
