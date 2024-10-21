@@ -1,3 +1,4 @@
+/* Overall layout for the canvas and sidebar */
 .canvas-wrapper {
   display: flex;
   gap: 20px; /* Add space between sidebar and canvas */
@@ -42,10 +43,12 @@
 
 .grid-cell.merged-horizontal {
   grid-column: span 2; /* Span across two columns if merged horizontally */
+  min-height: 150px; /* Ensure it matches the other cell heights */
 }
 
 .grid-cell.merged-vertical {
   grid-row: span 2; /* Span across two rows if merged vertically */
+  min-height: 150px; /* Ensure it matches the other cell heights */
 }
 
 .grid-cell.hidden {
@@ -59,7 +62,7 @@
 
 /* Hover effect when an ad is about to be dropped */
 .grid-cell.hover {
-  background-color: #e6f7ff; /* Light blue background on hover */
+  background-color: #e6f7ff; 
   border-color: #007bff;
 }
 
@@ -75,6 +78,7 @@
   grid-column: span 2; /* Span across two columns if merged horizontally */
   background-color: #f0f8ff;
   border-color: #008cba;
+  min-height: 150px; /* Keep merged cells consistent */
 }
  
 .cell-content.merged-vertical {

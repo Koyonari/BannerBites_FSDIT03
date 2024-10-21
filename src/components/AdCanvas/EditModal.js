@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import Modal from '../Modal/Modal.js'; // Import the Modal component
 
 const EditModal = ({ ad, onSave, onClose }) => {
-  const [formData, setFormData] = useState(ad.content);
+  const [formData, setFormData] = useState({ title: '', description: '', src: '' });
+
+  useEffect(() => {
+    if (ad && ad.content) {
+      setFormData(ad.content);
+    }
+  }, [ad]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -19,7 +26,7 @@ const EditModal = ({ ad, onSave, onClose }) => {
   };
 
   return (
-    <div className="modal">
+    <Modal isOpen={!!ad} onClose={onClose}>
       <h3>Edit {ad.type} Ad</h3>
       {ad.type === 'text' && (
         <>
@@ -81,7 +88,7 @@ const EditModal = ({ ad, onSave, onClose }) => {
 
       <button onClick={handleSubmit}>Save</button>
       <button onClick={onClose}>Cancel</button>
-    </div>
+    </Modal>
   );
 };
 
