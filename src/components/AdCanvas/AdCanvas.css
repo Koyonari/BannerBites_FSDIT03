@@ -1,0 +1,154 @@
+/* Overall layout for the canvas and sidebar */
+.canvas-wrapper {
+  display: flex;
+  gap: 20px; /* Add space between sidebar and canvas */
+}
+
+.sidebar {
+  width: 220px; /* Slightly wider for more room */
+  padding: 20px;
+  background: #f9f9f9; /* Lighter background for contrast */
+  border-right: 2px solid #ddd;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.canvas {
+  flex-grow: 1;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #ddd;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Default style for single grid cells */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 columns */
+  grid-template-rows: repeat(2, 1fr);    /* 2 rows */
+  gap: 10px; /* Space between the cells */
+  min-width: 300px; /* Minimum width for the grid */
+  min-height: 300px; /* Minimum height for the grid */
+}
+
+.grid-cell {
+  border: 1px solid #ccc;
+  padding: 10px;
+  position: relative;
+  background-color: #fafafa;
+  min-height: 150px; /* Add a minimum height so the grid cells are visible */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.grid-cell.merged-horizontal {
+  grid-column: span 2; /* Span across two columns if merged horizontally */
+  min-height: 150px; /* Ensure it matches the other cell heights */
+}
+
+.grid-cell.merged-vertical {
+  grid-row: span 2; /* Span across two rows if merged vertically */
+  min-height: 150px; /* Ensure it matches the other cell heights */
+}
+
+.grid-cell.hidden {
+  display: none; /* Hide the hidden cells completely */
+}
+
+.grid-cell p {
+  color: #999; /* Grey text for 'Drop ad here' */
+  font-size: 14px;
+}
+
+/* Hover effect when an ad is about to be dropped */
+.grid-cell.hover {
+  background-color: #e6f7ff; 
+  border-color: #007bff;
+}
+
+.cell-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Styles for merged cells */
+.cell-content.merged {
+  grid-column: span 2; /* Span across two columns if merged horizontally */
+  background-color: #f0f8ff;
+  border-color: #008cba;
+  min-height: 150px; /* Keep merged cells consistent */
+}
+ 
+.cell-content.merged-vertical {
+  grid-row: span 2; /* Span across two rows if merged vertically */
+  background-color: #f0f8ff;
+  border-color: #008cba;
+}
+
+/* Make ads more visually distinct */
+.ad-item {
+  cursor: grab;
+  padding: 10px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.ad-item:hover {
+  transform: scale(1.05); /* Slight enlarge on hover */
+}
+
+/* Save button style */
+.save-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.save-button:hover {
+  background: #218838;
+}
+
+.actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.edit-button, .remove-button, .merge-button {
+  padding: 5px 10px;
+  border: none;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+}
+
+.edit-button:hover, .remove-button:hover, .merge-button:hover {
+  background-color: #0056b3;
+}
+
+.remove-button {
+  background-color: #dc3545;
+}
+
+.remove-button:hover {
+  background-color: #c82333;
+}
+
+.merge-button {
+  background-color: #ffc107;
+}
+
+.merge-button:hover {
+  background-color: #e0a800;
+}
