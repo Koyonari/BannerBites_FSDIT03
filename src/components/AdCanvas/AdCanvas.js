@@ -26,7 +26,7 @@ const AdComponent = ({ id, type, content }) => {
 };
 
 // Grid Cell component where Ads can be dropped
-const GridCell = ({ index, onDrop, item }) => {
+const GridCell = ({ index, onDrop, item, onRemove }) => {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'AD_ITEM',
     drop: (draggedItem) => onDrop(draggedItem, index),
@@ -38,7 +38,10 @@ const GridCell = ({ index, onDrop, item }) => {
   return (
     <div ref={drop} className={`grid-cell ${isOver ? 'hover' : ''}`}>
       {item ? (
-        <AdComponent id={item.id} type={item.type} content={item.content} />
+        <div className="cell-content">
+          <AdComponent id={item.id} type={item.type} content={item.content} />
+          <button className="remove-button" onClick={() => onRemove(index)}>Remove</button>
+        </div>
       ) : (
         <p>Drop ad here</p>
       )}
@@ -74,10 +77,18 @@ const Sidebar = () => {
 const AdCanvas = () => {
   const [gridItems, setGridItems] = useState(Array(4).fill(null)); // 2x2 grid = 4 cells
 
+  // Handles dropping an ad into a specific grid cell
   const handleDrop = (item, index) => {
     const updatedGrid = [...gridItems];
     const newItem = { ...item, id: uuidv4() }; // Generate a unique ID using uuid
-    updatedGrid[index] = newItem; // Allow replacing ads
+    updatedGrid[index] = newItem; // Allow overriding of ads
+    setGridItems(updatedGrid);
+  };
+
+  // Removes the ad from the specified index (grid cell)
+  const handleRemove = (index) => {
+    const updatedGrid = [...gridItems];
+    updatedGrid[index] = null; // Set the specific grid cell to null (empty)
     setGridItems(updatedGrid);
   };
 
@@ -113,6 +124,7 @@ const AdCanvas = () => {
               key={index}
               index={index}
               onDrop={handleDrop}
+              onRemove={handleRemove}
               item={item}
             />
           ))}
