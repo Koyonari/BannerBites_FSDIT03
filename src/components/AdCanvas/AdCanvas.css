@@ -1,87 +1,47 @@
-/* General styles for the canvas */
+.canvas-wrapper {
+  display: flex;
+}
+
+.sidebar {
+  width: 200px;
+  padding: 10px;
+  background: #f3f3f3;
+}
+
 .canvas {
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Banner styling */
-  .banner {
-    background-color: #007bff;
-    color: white;
-    padding: 10px;
-    text-align: center;
-    border-radius: 5px;
-    margin-bottom: 20px;
-  }
-  
-  /* Grid styling */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px; /* Space between grid cells */
-  }
-  
-  /* Grid cell styles */
-  .grid-cell {
-    background-color: #ffffff;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-    height: 100px; /* Fixed height for the grid cells */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.3s;
-  }
-  
-  /* Hover effect for grid cells */
-  .grid-cell.hover {
-    background-color: #e9ecef; /* Light grey background on hover */
-  }
-  
-  /* AdComponent styles */
-  .ad-component {
-    padding: 10px;
-    text-align: center;
-  }
-  
-  .ad-component img,
-  .ad-component video {
-    max-width: 100%;
-    max-height: 100%;
-    border-radius: 5px;
-  }
-  
-  /* Save button styling */
-  .save-button {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 20px;
-    transition: background-color 0.3s;
-  }
-  
-  .save-button:hover {
-    background-color: #218838; /* Darker green on hover */
-  }
-  
-  /* Responsive design */
-  @media (max-width: 600px) {
-    .grid {
-      grid-template-columns: 1fr; /* Stack grid cells on small screens */
-    }
-  
-    .grid-cell {
-      height: auto; /* Allow height to adjust on small screens */
-    }
-  }
-  
+  flex-grow: 1;
+  padding: 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.grid-cell {
+  border: 1px dashed #ccc;
+  padding: 20px;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.grid-cell.hover {
+  background: #f0f0f0;
+}
+
+.save-button {
+  margin-top: 20px;
+  padding: 10px;
+  background: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.ad-item {
+  cursor: grab;
+}

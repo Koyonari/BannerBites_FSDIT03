@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
-import './AdCanvas.css'; 
-// Have to implement dynamoDB to save the layout in the future, currently testing using JSON
+import { v4 as uuidv4 } from 'uuid';
+import './AdCanvas.css';
 
 // AdComponent for different ad types
-const AdComponent = ({ type, content }) => {
+const AdComponent = ({ id, type, content }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'AD_ITEM',
-    item: { type, content },
+    item: { id, type, content },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-  }));
+  }), [id, type, content]);
 
   return (
-    <div ref={drag} style={{ opacity: isDragging ? 0.5 : 1 }}>
+    <div ref={drag} style={{ opacity: isDragging ? 0.5 : 1 }} className="ad-item">
       {type === 'text' && <p>{content}</p>}
       {type === 'image' && <img src={content} alt="Ad" />}
-      {type === 'video' && <video src={content} controls />}
+      {type === 'video' && <video src={content} controls style={{ width: '100%' }} />}
       {type === 'clickable' && (
         <button onClick={() => alert('Ad clicked!')}>{content}</button>
       )}
@@ -26,18 +26,46 @@ const AdComponent = ({ type, content }) => {
 };
 
 // Grid Cell component where Ads can be dropped
-const GridCell = ({ accept, onDrop, children }) => {
+const GridCell = ({ index, onDrop, item }) => {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'AD_ITEM',
-    drop: (item) => onDrop(item),
+    drop: (draggedItem) => onDrop(draggedItem, index),
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
-  }));
+  }), [onDrop, index]);
 
   return (
     <div ref={drop} className={`grid-cell ${isOver ? 'hover' : ''}`}>
-      {children}
+      {item ? (
+        <AdComponent id={item.id} type={item.type} content={item.content} />
+      ) : (
+        <p>Drop ad here</p>
+      )}
+    </div>
+  );
+};
+
+// Sidebar for draggable ad components
+const Sidebar = () => {
+  const adOptions = [
+    { type: 'text', content: 'Text Ad' },
+    { type: 'image', content: 'https://via.placeholder.com/150' },
+    { type: 'video', content: 'https://sample-videos.com/video123/mp4/480/asdasdas.mp4' },
+    { type: 'clickable', content: 'Click Me' }
+  ];
+
+  return (
+    <div className="sidebar">
+      <h3>Ad Options</h3>
+      {adOptions.map((ad, index) => (
+        <AdComponent
+          key={index}
+          id={`sidebar-${ad.type}-${index}`}
+          type={ad.type}
+          content={ad.content}
+        />
+      ))}
     </div>
   );
 };
@@ -48,7 +76,8 @@ const AdCanvas = () => {
 
   const handleDrop = (item, index) => {
     const updatedGrid = [...gridItems];
-    updatedGrid[index] = item;
+    const newItem = { ...item, id: uuidv4() }; // Generate a unique ID using uuid
+    updatedGrid[index] = newItem; // Allow replacing ads
     setGridItems(updatedGrid);
   };
 
@@ -62,37 +91,38 @@ const AdCanvas = () => {
       })),
     };
 
-    // Log the JSON data to the console
     console.log('Saved Layout:', JSON.stringify(adLayout, null, 2));
-
-    // Show an alert with the JSON data for quick feedback
     alert(`Layout saved:\n${JSON.stringify(adLayout, null, 2)}`);
   };
 
   return (
-    <div className="canvas">
-      {/* Banner at the top */}
-      <div className="banner">
-        <h2>Advertisement Banner</h2>
-      </div>
+    <div className="canvas-wrapper">
+      {/* Sidebar on the left */}
+      <Sidebar />
 
-      {/* 2x2 Grid for ad components */}
-      <div className="grid">
-        {gridItems.map((item, index) => (
-          <GridCell
-            key={index}
-            accept="AD_ITEM"
-            onDrop={(item) => handleDrop(item, index)}
-          >
-            {item ? <AdComponent type={item.type} content={item.content} /> : <p>Drop ad here</p>}
-          </GridCell>
-        ))}
-      </div>
+      {/* Main canvas on the right */}
+      <div className="canvas">
+        <div className="banner">
+          <h2>Advertisement Banner</h2>
+        </div>
 
-      {/* Save button */}
-      <button className="save-button" onClick={saveGridAsJson}>
-        Save Layout
-      </button>
+        {/* 2x2 Grid for ad components */}
+        <div className="grid">
+          {gridItems.map((item, index) => (
+            <GridCell
+              key={index}
+              index={index}
+              onDrop={handleDrop}
+              item={item}
+            />
+          ))}
+        </div>
+
+        {/* Save button */}
+        <button className="save-button" onClick={saveGridAsJson} disabled={gridItems.includes(null)}>
+          Save Layout
+        </button>
+      </div>
     </div>
   );
 };
