@@ -23,8 +23,11 @@
 /* Default style for single grid cells */
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 2 columns */
-  grid-template-rows: repeat(2, 1fr);    /* 2 rows */
+  grid-template-columns: repeat(
+    var(--columns, 2),
+    1fr
+  ); /* Default to 2 columns */
+  grid-template-rows: repeat(var(--rows, 2), 1fr); /* Default to 2 rows */
   gap: 10px; /* Space between the cells */
   min-width: 300px; /* Minimum width for the grid */
   min-height: 300px; /* Minimum height for the grid */
@@ -40,7 +43,26 @@
   justify-content: center;
   align-items: center;
 }
+.grid-cell.selectable {
+  cursor: pointer;
+}
+.grid-cell.selectable:not(.merged-horizontal):not(.merged-vertical) {
+  cursor: pointer;
+  transition: outline 0.2s ease;
+}
 
+.grid-cell.selected {
+  outline: 3px solid #007bff;
+  outline-offset: -3px;
+}
+
+.grid-cell.selectable:hover:not(.selected) {
+  outline: 2px dashed #007bff;
+  outline-offset: -2px;
+}
+.grid-cell.selected {
+  outline: 3px solid #007bff;
+}
 .grid-cell.merged-horizontal {
   grid-column: span 2; /* Span across two columns if merged horizontally */
   min-height: 150px; /* Ensure it matches the other cell heights */
@@ -62,7 +84,7 @@
 
 /* Hover effect when an ad is about to be dropped */
 .grid-cell.hover {
-  background-color: #e6f7ff; 
+  background-color: #e6f7ff;
   border-color: #007bff;
 }
 
@@ -80,7 +102,7 @@
   border-color: #008cba;
   min-height: 150px; /* Keep merged cells consistent */
 }
- 
+
 .cell-content.merged-vertical {
   grid-row: span 2; /* Span across two rows if merged vertically */
   background-color: #f0f8ff;
@@ -123,7 +145,9 @@
   gap: 10px;
 }
 
-.edit-button, .remove-button, .merge-button {
+.edit-button,
+.remove-button,
+.merge-button {
   padding: 5px 10px;
   border: none;
   cursor: pointer;
@@ -133,7 +157,9 @@
   transition: background-color 0.3s ease;
 }
 
-.edit-button:hover, .remove-button:hover, .merge-button:hover {
+.edit-button:hover,
+.remove-button:hover,
+.merge-button:hover {
   background-color: #0056b3;
 }
 
