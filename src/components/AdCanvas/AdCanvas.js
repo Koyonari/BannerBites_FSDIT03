@@ -102,23 +102,20 @@ const GridCell = ({
     <div
       ref={drop}
       onClick={handleCellClick}
-      className={`grid-cell ${
-        isOver ? "hover" : ""
-      } ${mergedClass} ${selectionClass} ${selectedClass}`}
+      className={`grid-cell ${isOver ? "hover" : ""} ${mergedClass} ${selectionClass} ${selectedClass}`}
+      style={{
+        gridRow: item?.rowSpan ? `span ${item.rowSpan}` : "auto",
+        gridColumn: item?.colSpan ? `span ${item.colSpan}` : "auto",
+      }}
     >
       {item ? (
         <div className="cell-content">
           <AdComponent id={item.id} type={item.type} content={item.content} />
           <div className="actions">
-            <button className="edit-button" onClick={handleEdit}>
-              Edit
-            </button>
+            <button className="edit-button" onClick={handleEdit}>Edit</button>
             {!item.isMerged && !isSelectionMode && (
               <>
-                <button
-                  className="merge-button"
-                  onClick={handleMergeHorizontal}
-                >
+                <button className="merge-button" onClick={handleMergeHorizontal}>
                   Merge Horizontally
                 </button>
                 <button className="merge-button" onClick={handleMergeVertical}>
@@ -126,9 +123,7 @@ const GridCell = ({
                 </button>
               </>
             )}
-            <button className="remove-button" onClick={handleRemove}>
-              Remove
-            </button>
+            <button className="remove-button" onClick={handleRemove}>Remove</button>
           </div>
         </div>
       ) : (
@@ -258,6 +253,15 @@ const decreaseColumns = () => {
 
     if (selectedCells.length > 0) {
       const firstType = updatedGrid[selectedCells[0]]?.type;
+  
+      // Calculate row and column span
+      const rowIndices = selectedCells.map((cellIndex) =>
+        Math.floor(cellIndex / columns)
+      );
+      const colIndices = selectedCells.map((cellIndex) => cellIndex % columns);
+      const rowSpan = Math.max(...rowIndices) - Math.min(...rowIndices) + 1;
+      const colSpan = Math.max(...colIndices) - Math.min(...colIndices) + 1;
+  
       const validSelection = selectedCells.every(
         (cellIndex) =>
           updatedGrid[cellIndex] &&
@@ -269,7 +273,8 @@ const decreaseColumns = () => {
         const mergedItem = {
           ...updatedGrid[selectedCells[0]],
           isMerged: true,
-          span: selectedCells.length,
+          rowSpan: rowSpan, // Store row span
+          colSpan: colSpan, // Store column span
           mergeDirection: "selection",
           selectedCells: selectedCells,
           content: {
@@ -278,7 +283,7 @@ const decreaseColumns = () => {
               .join(" "),
           },
         };
-
+  
         updatedGrid[selectedCells[0]] = mergedItem;
         selectedCells.slice(1).forEach((cellIndex) => {
           updatedGrid[cellIndex] = { isMerged: true, hidden: true };

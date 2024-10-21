@@ -1,13 +1,13 @@
 /* Overall layout for the canvas and sidebar */
 .canvas-wrapper {
   display: flex;
-  gap: 20px; /* Add space between sidebar and canvas */
+  gap: 20px; /* Space between sidebar and canvas */
 }
 
 .sidebar {
-  width: 220px; /* Slightly wider for more room */
+  width: 250px; /* Slightly wider for more room */
   padding: 20px;
-  background: #f9f9f9; /* Lighter background for contrast */
+  background-color: #f9f9f9; /* Light background for contrast */
   border-right: 2px solid #ddd;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
 }
@@ -15,12 +15,12 @@
 .canvas {
   flex-grow: 1;
   padding: 20px;
-  background: #fff;
+  background-color: #fff;
   border: 1px solid #ddd;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
-/* Default style for single grid cells */
+/* Grid Layout */
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--columns, 2), 1fr); /* Default to 2 columns */
@@ -35,24 +35,23 @@
   padding: 10px;
   position: relative;
   background-color: #fafafa;
-  min-height: 150px; /* Add a minimum height so the grid cells are visible */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.grid-cell[style*="grid-column: span"] {
-  width: calc(100% * var(--span));
-  max-width: 100%;
+  min-height: 150px; /* Ensure visibility of grid cells */
+  display: flex; /* Flexbox for consistent alignment */
+  justify-content: flex-start; /* Start content from the top left */
+  align-items: flex-start;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
 }
 
+/* Handle cells that span multiple rows or columns */
+.grid-cell[style*="grid-column: span"],
 .grid-cell[style*="grid-row: span"] {
-  height: calc(100% * var(--span));
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
 }
+
 .grid-cell.selectable {
-  cursor: pointer;
-}
-.grid-cell.selectable:not(.merged-horizontal):not(.merged-vertical) {
   cursor: pointer;
   transition: outline 0.2s ease;
 }
@@ -62,25 +61,30 @@
   outline-offset: -3px;
 }
 
-.grid-cell.selectable:hover:not(.selected) {
+.grid-cell:hover:not(.selected) {
   outline: 2px dashed #007bff;
   outline-offset: -2px;
 }
-.grid-cell.selected {
-  outline: 3px solid #007bff;
-}
+
+/* Styling for cells that span horizontally and vertically */
 .grid-cell.merged-horizontal {
-  grid-column: span 2; /* Span across two columns if merged horizontally */
-  min-height: 150px; /* Ensure it matches the other cell heights */
+  grid-column: span 2; /* Span two columns */
 }
 
 .grid-cell.merged-vertical {
-  grid-row: span 2; /* Span across two rows if merged vertically */
-  min-height: 150px; /* Ensure it matches the other cell heights */
+  grid-row: span 2; /* Span two rows */
+}
+
+/* For merged cells, ensure they don't affect layout */
+.grid-cell.merged-horizontal,
+.grid-cell.merged-vertical {
+  display: flex; /* Flex layout to prevent centering */
+  justify-content: flex-start; /* Align content to the top-left */
+  align-items: flex-start;
 }
 
 .grid-cell.hidden {
-  display: none; /* Hide the hidden cells completely */
+  display: none; /* Hide hidden cells */
 }
 
 .grid-cell p {
@@ -94,28 +98,33 @@
   border-color: #007bff;
 }
 
+/* Styling for ad content inside grid cells */
 .cell-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: block; /* Block layout to respect grid structure */
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* Styles for merged cells */
 .cell-content.merged {
-  grid-column: span 2; /* Span across two columns if merged horizontally */
   background-color: #f0f8ff;
   border-color: #008cba;
-  min-height: 150px; /* Keep merged cells consistent */
+  width: 100%;
+  height: 100%;
+  min-height: 150px; /* Keep consistent height */
 }
 
 .cell-content.merged-vertical {
-  grid-row: span 2; /* Span across two rows if merged vertically */
   background-color: #f0f8ff;
   border-color: #008cba;
+  width: 100%;
+  height: 100%;
+  min-height: 150px; /* Keep consistent height */
 }
 
-/* Make ads more visually distinct */
+/* Style ad items */
 .ad-item {
   cursor: grab;
   padding: 10px;
@@ -133,7 +142,7 @@
 .save-button {
   margin-top: 20px;
   padding: 10px 20px;
-  background: #28a745;
+  background-color: #28a745;
   color: white;
   border: none;
   border-radius: 5px;
@@ -142,15 +151,17 @@
 }
 
 .save-button:hover {
-  background: #218838;
+  background-color: #218838;
 }
 
+/* Actions button container */
 .actions {
   margin-top: 10px;
   display: flex;
   gap: 10px;
 }
 
+/* Styles for edit, remove, and merge buttons */
 .edit-button,
 .remove-button,
 .merge-button {
