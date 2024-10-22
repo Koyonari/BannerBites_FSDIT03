@@ -23,11 +23,11 @@
 /* Grid Layout */
 .grid {
   display: grid;
-  grid-template-columns: repeat(var(--columns, 2), 1fr); /* Default to 2 columns */
-  grid-template-rows: repeat(var(--rows, 2), 1fr); /* Default to 2 rows */
+  grid-template-columns: repeat(var(--columns, 3), 1fr); /* Default to 3 columns */
+  grid-template-rows: repeat(var(--rows, 3), 1fr); /* Default to 3 rows */
   gap: 10px; /* Space between the cells */
-  min-width: 300px; /* Minimum width for the grid */
-  min-height: 300px; /* Minimum height for the grid */
+  width: 100%; /* Full width for better consistency */
+  height: 100%; /* Full height for consistency */
 }
 
 /* Grid Cell Styles */
@@ -41,43 +41,41 @@
   justify-content: flex-start; /* Start content from the top left */
   align-items: flex-start;
   box-sizing: border-box;
-  width: 100%;
-  height: 100%;
   transition: background-color 0.2s ease, transform 0.2s ease;
-    /* Apply explicit grid positioning */
-    grid-area: var(--gridArea, auto);
-}
 
-/* Handle cells that span multiple rows or columns */
-.grid-cell[style*="grid-column: span"],
-.grid-cell[style*="grid-row: span"] {
-  width: 100%;
-  height: 100%;
+  /* Apply grid position based on item properties */
+  grid-column-start: var(--gridColumnStart, auto);
+  grid-row-start: var(--gridRowStart, auto);
+  grid-column: span var(--colSpan, 1);
+  grid-row: span var(--rowSpan, 1);
 }
-
-/* Explicitly positioning merged cells */
-.grid-cell.merged-horizontal,
-.grid-cell.merged-vertical,
 .grid-cell.merged-selection {
+  grid-column-start: var(--gridColumnStart, auto);
+  grid-row-start: var(--gridRowStart, auto);
+  grid-column: span var(--colSpan, 1);
+  grid-row: span var(--rowSpan, 1);
+  background-color: #d4edda; /* For visual distinction */
+  border: 2px solid #155724;
+}
+
+.merged-horizontal,
+.merged-vertical,
+.merged-selection {
   background-color: #d4edda; /* Light green for merged cells */
   border: 2px solid #155724; /* Darker green border */
-  display: flex; /* Flex layout to prevent centering */
-  justify-content: flex-start; /* Align content to the top-left */
-  align-items: flex-start;
-  background-color: #d4edda;
-  border: 2px solid #155724;
-  /* Use the `grid-area` property to fix its placement in the grid */
-  grid-area: var(--gridArea, auto);
-  /* Explicit grid row and column start based on JS variables */
-  grid-row-start: var(--gridRowStart, auto);
-  grid-column-start: var(--gridColumnStart, auto);
-  grid-row: span var(--rowSpan, 1);
   grid-column: span var(--colSpan, 1);
+  grid-row: span var(--rowSpan, 1);
+}
+
+/* Merged Cell Styling */
+.grid-cell.merged {
+  background-color: #d4edda; /* Light green for merged cells */
+  border: 2px solid #155724; /* Darker green border */
 }
 
 /* Hide hidden merged cells */
 .grid-cell.hidden {
-  display: none; /* Hide hidden cells */
+  display: none; /* Hide merged cells effectively to avoid pushing others */
 }
 
 /* Placeholder for empty cells to maintain their positions */
@@ -102,20 +100,11 @@
 
 /* Styling for ad content inside grid cells */
 .cell-content {
-  display: block; /* Block layout to respect grid structure */
+  display: block;
   width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
-}
-
-/* Enhanced Styling for merged cells */
-.cell-content.merged {
-  background-color: #f0f8ff; /* Light blue for block merged cells */
-  border-color: #008cba;
-  width: 100%;
-  height: 100%;
-  min-height: 150px; /* Keep consistent height */
 }
 
 /* Style ad items */
@@ -138,7 +127,13 @@
   border-color: #007bff;
 }
 
-/* Save button style */
+/* Button Styles */
+.actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
 .save-button {
   margin-top: 20px;
   padding: 10px 20px;
@@ -154,14 +149,6 @@
   background-color: #218838;
 }
 
-/* Actions button container */
-.actions {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
-}
-
-/* Styles for edit, remove, and merge buttons */
 .edit-button,
 .remove-button,
 .merge-button {

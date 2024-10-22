@@ -57,7 +57,7 @@ const GridCell = ({
     }),
     [onDrop, index]
   );
-  
+
   const handleMergeHorizontal = (e) => {
     e.stopPropagation();
     onMerge(index, "horizontal");
@@ -106,6 +106,7 @@ const GridCell = ({
       style={{
         gridRow: item?.rowSpan ? `span ${item.rowSpan}` : "auto",
         gridColumn: item?.colSpan ? `span ${item.colSpan}` : "auto",
+        gridArea: item?.isMerged ? item.gridArea : undefined,
       }}
     >
       {item ? (
@@ -252,7 +253,7 @@ const AdCanvas = () => {
   
     if (selectedCells.length > 0) {
       const firstType = updatedGrid[selectedCells[0]]?.type;
-  
+    
       // Calculate row and column indices
       const rowIndices = selectedCells.map((cellIndex) =>
         Math.floor(cellIndex / columns)
@@ -260,20 +261,20 @@ const AdCanvas = () => {
       const colIndices = selectedCells.map((cellIndex) => cellIndex % columns);
       const rowSpan = Math.max(...rowIndices) - Math.min(...rowIndices) + 1;
       const colSpan = Math.max(...colIndices) - Math.min(...colIndices) + 1;
-  
+    
       const totalExpectedCells = rowSpan * colSpan;
       const isRectangular =
         totalExpectedCells === selectedCells.length &&
         new Set(rowIndices).size === rowSpan &&
         new Set(colIndices).size === colSpan;
-  
+    
       const validSelection = selectedCells.every(
         (cellIndex) =>
           updatedGrid[cellIndex] &&
           updatedGrid[cellIndex].type === firstType &&
           !updatedGrid[cellIndex].isMerged
       );
-  
+    
       if (validSelection && isRectangular) {
         const mergedItem = {
           ...updatedGrid[selectedCells[0]],
@@ -287,15 +288,13 @@ const AdCanvas = () => {
               .map((idx) => updatedGrid[idx]?.content.title)
               .join(" "),
           },
+          gridArea: `${Math.min(...rowIndices) + 1} / ${
+            Math.min(...colIndices) + 1
+          } / span ${rowSpan} / span ${colSpan}`,
         };
-  
-        // Set explicit row and column start for CSS Grid
-        mergedItem.gridArea = `${Math.min(...rowIndices) + 1} / ${
-          Math.min(...colIndices) + 1
-        } / span ${rowSpan} / span ${colSpan}`;
-  
+    
         updatedGrid[selectedCells[0]] = mergedItem;
-  
+    
         selectedCells.slice(1).forEach((cellIndex) => {
           updatedGrid[cellIndex] = { isMerged: true, hidden: true };
         });
@@ -399,36 +398,29 @@ const AdCanvas = () => {
       const mergeDirection = updatedGrid[index].mergeDirection;
 
       if (mergeDirection === "selection") {
-        // For selection merges, clear all selected cells
-        updatedGrid[index].selectedCells.forEach((cellIndex) => {
-          updatedGrid[cellIndex] = null;
-        });
+        // For selection merges, clear all selected cells if they exist
+        if (Array.isArray(updatedGrid[index]?.selectedCells)) {
+          updatedGrid[index].selectedCells.forEach((cellIndex) => {
+            if (cellIndex !== undefined && updatedGrid[cellIndex]) {
+              updatedGrid[cellIndex] = null;
+            }
+          });
+        } else {
+          console.error("Error: selectedCells is undefined or not an array");
+        }
       } else if (mergeDirection === "horizontal") {
-        // Handle horizontal merges
-        const nextIndex = index + 1;
-
-        // Reset both cells in the horizontal merge to normal
-        updatedGrid[index] = null; // Remove the current cell
-        if (updatedGrid[nextIndex]?.isMerged) {
-          updatedGrid[nextIndex] = null; // Remove the next cell in the merge
+        const colSpan = updatedGrid[index].colSpan || 1;
+        for (let i = 0; i < colSpan; i++) {
+          if (updatedGrid[index + i]?.isMerged) {
+            updatedGrid[index + i] = null; // Remove each cell in the merged group
+          }
         }
       } else if (mergeDirection === "vertical") {
-        // Handle vertical merges
-        const belowIndex = index + columns; // Index of the cell below
-        updatedGrid[index] = null; // Remove the current cell
-
-        if (updatedGrid[belowIndex]?.isMerged) {
-          const remainingMergedCells = updatedGrid[belowIndex].span - 1; // Reduce the span by 1
-
-          if (remainingMergedCells > 0) {
-            // If there are still merged cells remaining, update the span
-            updatedGrid[belowIndex].span = remainingMergedCells; // Update span of below cell
-            updatedGrid[
-              belowIndex
-            ].content.title = `${updatedGrid[belowIndex].content.title}`; // Maintain title
-          } else {
-            // If there are no remaining merged cells, reset it
-            updatedGrid[belowIndex] = null;
+        const rowSpan = updatedGrid[index].rowSpan || 1;
+        for (let i = 0; i < rowSpan; i++) {
+          const cellBelowIndex = index + i * columns;
+          if (updatedGrid[cellBelowIndex]?.isMerged) {
+            updatedGrid[cellBelowIndex] = null; // Remove each cell in the merged group
           }
         }
       }
@@ -445,6 +437,7 @@ const AdCanvas = () => {
 
     setGridItems(updatedGrid);
   };
+
   const handleSaveLayout = () => {
     const layoutJSON = JSON.stringify(gridItems, null, 2); // Format gridItems as JSON
     console.log("Current Layout JSON:", layoutJSON); // Log to console
