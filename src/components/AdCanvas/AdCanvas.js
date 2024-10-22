@@ -57,7 +57,7 @@ const GridCell = ({
     }),
     [onDrop, index]
   );
-
+  
   const handleMergeHorizontal = (e) => {
     e.stopPropagation();
     onMerge(index, "horizontal");
@@ -178,7 +178,6 @@ const Sidebar = () => {
 };
 
 // The main Canvas component
-// The main Canvas component
 const AdCanvas = () => {
   const [rows, setRows] = useState(2);
   const [columns, setColumns] = useState(3);
@@ -189,72 +188,72 @@ const AdCanvas = () => {
   const [selectedCells, setSelectedCells] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
- // Function to resize the grid based on new dimensions
- const resizeGrid = (newRows, newColumns) => {
-  const newTotalCells = newRows * newColumns;
-  const updatedGrid = Array(newTotalCells).fill(null);
+  // Function to resize the grid based on new dimensions
+  const resizeGrid = (newRows, newColumns) => {
+    const newTotalCells = newRows * newColumns;
+    const updatedGrid = Array(newTotalCells).fill(null);
 
-  // Copy existing items to the new grid
-  for (let i = 0; i < Math.min(gridItems.length, newTotalCells); i++) {
-    updatedGrid[i] = gridItems[i];
-  }
-
-  setGridItems(updatedGrid);
-};
-
-const increaseRows = () => {
-  const newRows = rows + 1;
-  setRows(newRows);
-  resizeGrid(newRows, columns);
-};
-
-const decreaseRows = () => {
-  if (rows > 1) {
-    const newRows = rows - 1;
-    const updatedGrid = [...gridItems];
-
-    // Clear the last row cells
-    for (let col = 0; col < columns; col++) {
-      const indexToClear = newRows * columns + col; // Calculate index for the last row
-      if (indexToClear < updatedGrid.length) {
-        updatedGrid[indexToClear] = null; // Clear the cell
-      }
+    // Copy existing items to the new grid
+    for (let i = 0; i < Math.min(gridItems.length, newTotalCells); i++) {
+      updatedGrid[i] = gridItems[i];
     }
 
-    // Update grid items and rows
     setGridItems(updatedGrid);
+  };
+
+  const increaseRows = () => {
+    const newRows = rows + 1;
     setRows(newRows);
     resizeGrid(newRows, columns);
-  }
-};
+  };
 
-const increaseColumns = () => {
-  const newColumns = columns + 1;
-  setColumns(newColumns);
-  resizeGrid(rows, newColumns);
-};
+  const decreaseRows = () => {
+    if (rows > 1) {
+      const newRows = rows - 1;
+      const updatedGrid = [...gridItems];
 
-const decreaseColumns = () => {
-  if (columns > 1) {
-    const newColumns = columns - 1;
-    resizeGrid(rows, newColumns);
+      // Clear the last row cells
+      for (let col = 0; col < columns; col++) {
+        const indexToClear = newRows * columns + col; // Calculate index for the last row
+        if (indexToClear < updatedGrid.length) {
+          updatedGrid[indexToClear] = null; // Clear the cell
+        }
+      }
+
+      // Update grid items and rows
+      setGridItems(updatedGrid);
+      setRows(newRows);
+      resizeGrid(newRows, columns);
+    }
+  };
+
+  const increaseColumns = () => {
+    const newColumns = columns + 1;
     setColumns(newColumns);
-  }
-};
+    resizeGrid(rows, newColumns);
+  };
+
+  const decreaseColumns = () => {
+    if (columns > 1) {
+      const newColumns = columns - 1;
+      resizeGrid(rows, newColumns);
+      setColumns(newColumns);
+    }
+  };
 
   // Handle merging of cells
   const handleMerge = (index, direction, selectedCells = []) => {
     const updatedGrid = [...gridItems];
-
+  
     if (!updatedGrid[index] || updatedGrid[index]?.isMerged) {
       alert("Cannot merge empty or already merged cells!");
       return;
     }
-
+  
     if (selectedCells.length > 0) {
       const firstType = updatedGrid[selectedCells[0]]?.type;
   
-      // Calculate row and column span
+      // Calculate row and column indices
       const rowIndices = selectedCells.map((cellIndex) =>
         Math.floor(cellIndex / columns)
       );
@@ -262,21 +261,27 @@ const decreaseColumns = () => {
       const rowSpan = Math.max(...rowIndices) - Math.min(...rowIndices) + 1;
       const colSpan = Math.max(...colIndices) - Math.min(...colIndices) + 1;
   
+      const totalExpectedCells = rowSpan * colSpan;
+      const isRectangular =
+        totalExpectedCells === selectedCells.length &&
+        new Set(rowIndices).size === rowSpan &&
+        new Set(colIndices).size === colSpan;
+  
       const validSelection = selectedCells.every(
         (cellIndex) =>
           updatedGrid[cellIndex] &&
           updatedGrid[cellIndex].type === firstType &&
           !updatedGrid[cellIndex].isMerged
       );
-
-      if (validSelection) {
+  
+      if (validSelection && isRectangular) {
         const mergedItem = {
           ...updatedGrid[selectedCells[0]],
           isMerged: true,
-          rowSpan: rowSpan, // Store row span
-          colSpan: colSpan, // Store column span
+          rowSpan,
+          colSpan,
           mergeDirection: "selection",
-          selectedCells: selectedCells,
+          selectedCells,
           content: {
             title: selectedCells
               .map((idx) => updatedGrid[idx]?.content.title)
@@ -284,13 +289,19 @@ const decreaseColumns = () => {
           },
         };
   
+        // Set explicit row and column start for CSS Grid
+        mergedItem.gridArea = `${Math.min(...rowIndices) + 1} / ${
+          Math.min(...colIndices) + 1
+        } / span ${rowSpan} / span ${colSpan}`;
+  
         updatedGrid[selectedCells[0]] = mergedItem;
+  
         selectedCells.slice(1).forEach((cellIndex) => {
           updatedGrid[cellIndex] = { isMerged: true, hidden: true };
         });
       } else {
         alert(
-          "Selected cells must be of the same type and not empty or merged!"
+          "Selected cells must form a proper rectangle, be of the same type, and not already merged!"
         );
         return;
       }
@@ -307,17 +318,19 @@ const decreaseColumns = () => {
         const mergedItem = {
           ...updatedGrid[index],
           isMerged: true,
-          span: 2,
+          colSpan: 2, // Merge spans 2 columns
           mergeDirection: "horizontal",
-          content: {
-            title: `${updatedGrid[index].content.title} ${
-              updatedGrid[index + 1].content.title
-            }`,
-          },
+          content: `${updatedGrid[index].content.title} ${
+            updatedGrid[index + 1].content.title
+          }`,
         };
 
         updatedGrid[index] = mergedItem;
         updatedGrid[index + 1] = { isMerged: true, hidden: true };
+      } else {
+        alert(
+          "Cannot merge horizontally. Cells must be adjacent and of the same type."
+        );
       }
     } else if (direction === "vertical") {
       const numColumns = columns;
@@ -332,18 +345,16 @@ const decreaseColumns = () => {
         const mergedItem = {
           ...updatedGrid[index],
           isMerged: true,
-          span: 2,
+          rowSpan: 2, // Merge spans 2 rows
           mergeDirection: "vertical",
-          content: {
-            title: `${updatedGrid[index].content.title} ${updatedGrid[bottomIndex].content.title}`,
-          },
+          content: `${updatedGrid[index].content.title} ${updatedGrid[bottomIndex].content.title}`,
         };
 
         updatedGrid[index] = mergedItem;
         updatedGrid[bottomIndex] = { isMerged: true, hidden: true };
       } else {
         alert(
-          "Cannot merge vertically, ensure cells are adjacent and of the same type."
+          "Cannot merge vertically. Cells must be adjacent and of the same type."
         );
       }
     }
