@@ -39,7 +39,8 @@
   min-height: 150px; /* Ensure visibility of grid cells */
   display: flex; /* Flexbox for consistent alignment */
   justify-content: flex-start; /* Start content from the top left */
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
   transition: background-color 0.2s ease, transform 0.2s ease;
 

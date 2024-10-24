@@ -5,32 +5,75 @@ import "./AdCanvas.css";
 import EditModal from "./EditModal.js";
 
 // AdComponent represents individual ads that can be dragged
-const AdComponent = ({ id, type, content }) => {
+const AdComponent = ({ id, type, content, styles }) => {
   // useDrag hook from react-dnd to enable drag functionality
   const [{ isDragging }, drag] = useDrag(
     () => ({
       type: "AD_ITEM", // Specifies the type of item for the drop target
-      item: { id, type, content }, // Data associated with the item being dragged
+      item: { id, type, content, styles }, // Data associated with the item being dragged
       collect: (monitor) => ({
         isDragging: monitor.isDragging(), // Boolean flag for dragging state
       }),
     }),
-    [id, type, content]
+    [id, type, content, styles]
   );
 
   return (
     <div
       ref={drag}
-      style={{ opacity: isDragging ? 0.5 : 1 }} // Make ad semi-transparent when dragging
+      style={{
+        opacity: isDragging ? 0.5 : 1, // Make ad semi-transparent when dragging
+        borderColor: styles?.borderColor || "black",
+        borderStyle: "solid",
+        borderWidth: "1px",
+      }}
       className="ad-item"
     >
-      {type === "text" && <p>{content.title}</p>}
-      {type === "image" && <img src={content.src} alt="Ad" />}
+      {type === "text" && (
+        <p
+          style={{
+            fontFamily: styles?.font || "Arial",
+            fontSize: styles?.fontSize || "14px",
+            color: styles?.textColor || "black",
+          }}
+        >
+          {content.title}
+        </p>
+      )}
+      {type === "image" && (
+        <img
+          src={content.src}
+          alt="Ad"
+          style={{
+            borderColor: styles?.borderColor || "black",
+            borderStyle: "solid",
+            borderWidth: "1px",
+          }}
+        />
+      )}
       {type === "video" && (
-        <video src={content.src} controls style={{ width: "100%" }} />
+        <video
+          src={content.src}
+          controls
+          style={{
+            width: "100%",
+            borderColor: styles?.borderColor || "black",
+            borderStyle: "solid",
+            borderWidth: "1px",
+          }}
+        />
       )}
       {type === "clickable" && (
-        <button onClick={() => alert("Ad clicked!")}>{content.title}</button>
+        <button
+          onClick={() => alert("Ad clicked!")}
+          style={{
+            fontFamily: styles?.font || "Arial",
+            fontSize: styles?.fontSize || "14px",
+            color: styles?.textColor || "black",
+          }}
+        >
+          {content.title}
+        </button>
       )}
     </div>
   );
@@ -122,7 +165,12 @@ const GridCell = ({
     >
       {item ? (
         <div className="cell-content">
-          <AdComponent id={item.id} type={item.type} content={item.content} />
+          <AdComponent
+            id={item.id}
+            type={item.type}
+            content={item.content}
+            styles={item.styles}
+          />
           <div className="actions">
             <button className="edit-button" onClick={handleEdit}>
               Edit
@@ -255,7 +303,7 @@ const AdCanvas = () => {
     const updatedGrid = [...gridItems];
 
     if (!updatedGrid[index] || updatedGrid[index]?.isMerged) {
-      alert("Cannot merge empty or already merged cells!");
+      alert(`Cannot merge ${direction}. Cells must be adjacent and of the same type.`);
       return;
     }
 
@@ -437,16 +485,20 @@ const AdCanvas = () => {
   };
 
   // Function to clean the layout JSON by removing hidden cells
+  // Function to clean the layout JSON by removing hidden cells and ensuring valid items
   const cleanLayoutJSON = (layout) => {
     const { rows, columns, gridItems } = layout;
 
-    // Filter out hidden items and remove unnecessary properties for clean JSON
-    const filteredItems = gridItems.filter((item) => !item.hidden);
+    // Filter out hidden items and any null or undefined items
+    const filteredItems = gridItems.filter((item) => item && !item.hidden);
 
     return {
       rows,
       columns,
-      gridItems: filteredItems,
+      gridItems: filteredItems.map((item) => ({
+        ...item,
+        styles: item.styles, // Ensure styles are included in the JSON
+      })),
     };
   };
 

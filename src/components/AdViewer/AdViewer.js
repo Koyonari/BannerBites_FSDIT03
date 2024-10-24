@@ -79,6 +79,7 @@ const placeholderLayout = {
     },
   ],
 };
+
 // Placeholder JSON data (default layout example)
 const placeholderLayout2 = {
   rows: 2,
