@@ -136,7 +136,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
         </>
       )}
 
-      {(ad.type === 'image' || ad.type === 'video' || ad.type === 'clickable') && (
+      {(ad.type === 'image' || ad.type === 'video' ) && (
         <>
           <input
             name="title"

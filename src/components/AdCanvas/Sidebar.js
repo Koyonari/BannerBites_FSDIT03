@@ -23,11 +23,7 @@ const Sidebar = () => {
         title: "Video Ad",
         description: "This is a video ad.",
       },
-    },
-    {
-      type: "clickable",
-      content: { title: "Click Me", description: "This is a clickable ad." },
-    },
+    }
   ];
 
   return (

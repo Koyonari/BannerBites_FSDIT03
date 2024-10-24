@@ -61,7 +61,7 @@ const GridCell = ({
     e.stopPropagation();
     onUnmerge(index);
   };
-  
+
   // Handle removing and editing cells
   const handleRemove = (e) => {
     e.stopPropagation();
@@ -134,33 +134,33 @@ const GridCell = ({
             styles={adToDisplay.ad.styles}
           />
           <div className="actions">
-            <button className="edit-button" onClick={handleEdit}>
+            <button className="button" onClick={handleEdit}>
               Edit
             </button>
-            <button className="view-list-button" onClick={togglePopup}>
+            <button className="button button-secondary" onClick={togglePopup}>
               View List
             </button>
             {!item.isMerged && !isSelectionMode && (
               <>
-                <button
-                  className="merge-button"
-                  onClick={handleMergeHorizontal}
-                >
+                <button className="button" onClick={handleMergeHorizontal}>
                   Merge Horizontally
                 </button>
-                <button className="merge-button" onClick={handleMergeVertical}>
+                <button className="button" onClick={handleMergeVertical}>
                   Merge Vertically
                 </button>
               </>
             )}
-            <button className="remove-button" onClick={handleRemove}>
+            <button className="button button-danger" onClick={handleRemove}>
               Remove
             </button>
             {item.isMerged && (
-  <button className="unmerge-button" onClick={handleUnmerge}>
-    Unmerge
-  </button>
-)}
+              <button
+                className="button button-secondary"
+                onClick={handleUnmerge}
+              >
+                Unmerge
+              </button>
+            )}
           </div>
         </div>
       ) : (

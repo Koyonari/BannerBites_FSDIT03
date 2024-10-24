@@ -59,18 +59,6 @@ const AdComponent = ({ id, type, content, styles }) => {
           }}
         />
       )}
-      {type === "clickable" && (
-        <button
-          onClick={() => alert("Ad clicked!")}
-          style={{
-            fontFamily: styles?.font || "Arial",
-            fontSize: styles?.fontSize || "14px",
-            color: styles?.textColor || "black",
-          }}
-        >
-          {content.title}
-        </button>
-      )}
     </div>
   );
 };
