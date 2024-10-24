@@ -1,3 +1,16 @@
+/* Global Styles */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 /* Overall layout for the canvas and sidebar */
 .canvas-wrapper {
   display: flex;
@@ -5,41 +18,40 @@
 }
 
 .sidebar {
-  width: 250px; /* Slightly wider for more room */
+  width: 20%; /* Responsive width */
+  min-width: 200px;
+  max-width: 300px;
   padding: 20px;
-  background-color: #f9f9f9; /* Light background for contrast */
-  border-right: 2px solid #ddd;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  background-color: #f0f2f5; /* Slightly darker for contrast */
+  border-right: 1px solid #ccc;
 }
 
 .canvas {
   flex-grow: 1;
   padding: 20px;
   background-color: #fff;
-  border: 1px solid #ddd;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
 /* Grid Layout */
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--columns, 3), 1fr); /* Default to 3 columns */
-  grid-template-rows: repeat(var(--rows, 3), 1fr); /* Default to 3 rows */
+  grid-auto-rows: minmax(150px, auto); /* Ensures minimum cell height */
   gap: 10px; /* Space between the cells */
   width: 100%; /* Full width for better consistency */
-  height: 100%; /* Full height for consistency */
+  /* Remove height: 100%; unless necessary */
 }
 
 /* Grid Cell Styles */
 .grid-cell {
-  border: 1px solid #ccc;
+  border: 1px solid #bbb; /* Darker border for better contrast */
   padding: 10px;
   position: relative;
-  background-color: #fafafa;
+  background-color: #fff; /* White background for clarity */
   min-height: 150px; /* Ensure visibility of grid cells */
   display: flex; /* Flexbox for consistent alignment */
-  justify-content: flex-start; /* Start content from the top left */
-  align-items: flex-start;
+  justify-content: center; /* Center content horizontally */
+  align-items: center; /* Center content vertically */
   box-sizing: border-box;
   transition: background-color 0.2s ease, transform 0.2s ease;
 
@@ -49,14 +61,22 @@
   grid-column: span var(--colSpan, 1);
   grid-row: span var(--rowSpan, 1);
 }
-.grid-cell.merged-selection {
-  grid-column-start: var(--gridColumnStart, auto);
-  grid-row-start: var(--gridRowStart, auto);
-  grid-column: span var(--colSpan, 1);
-  grid-row: span var(--rowSpan, 1);
-  background-color: #d4edda; /* For visual distinction */
-  border: 2px solid #155724;
+
+/* Hover effect */
+.grid-cell:hover:not(.selected) {
+  outline: 2px solid #007bff;
+  outline-offset: -2px;
+  background-color: #f0f8ff; /* Light blue background on hover */
 }
+
+/* Selected cell */
+.grid-cell.selected {
+  outline: 3px solid #007bff;
+  outline-offset: -3px;
+  background-color: #e6f2ff; /* Slightly darker background */
+}
+
+/* Merged Cell Styling */
 .merged-horizontal,
 .merged-vertical,
 .merged-selection {
@@ -64,12 +84,6 @@
   border: 2px solid #155724; /* Darker green border */
   grid-column: span var(--colSpan, 1);
   grid-row: span var(--rowSpan, 1);
-}
-
-/* Merged Cell Styling */
-.grid-cell.merged {
-  background-color: #d4edda; /* Light green for merged cells */
-  border: 2px solid #155724; /* Darker green border */
 }
 
 /* Hide hidden merged cells */
@@ -85,16 +99,6 @@
 .grid-cell.selectable {
   cursor: pointer;
   transition: outline 0.2s ease;
-}
-
-.grid-cell.selected {
-  outline: 3px solid #007bff;
-  outline-offset: -3px;
-}
-
-.grid-cell:hover:not(.selected) {
-  outline: 2px dashed #007bff;
-  outline-offset: -2px;
 }
 
 /* Styling for ad content inside grid cells */
@@ -131,53 +135,121 @@
   margin-top: 10px;
   display: flex;
   gap: 10px;
+  flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
 }
 
-.save-button {
-  margin-top: 20px;
-  padding: 10px 20px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.save-button:hover {
-  background-color: #218838;
-}
-
-.edit-button,
-.remove-button,
-.merge-button {
-  padding: 5px 10px;
+.button {
+  padding: 8px 16px; /* Increased padding */
   border: none;
   cursor: pointer;
   background-color: #007bff;
-  color: white;
-  border-radius: 3px;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 14px; /* Increased font size */
   transition: background-color 0.3s ease;
 }
 
-.edit-button:hover,
-.remove-button:hover,
-.merge-button:hover {
+.button:hover {
   background-color: #0056b3;
 }
 
-.remove-button {
+.button:focus {
+  outline: 2px dashed #0056b3;
+  outline-offset: 2px;
+}
+
+.button-danger {
   background-color: #dc3545;
 }
 
-.remove-button:hover {
+.button-danger:hover {
   background-color: #c82333;
 }
 
-.merge-button {
-  background-color: #ffc107;
+.button-secondary {
+  background-color: #6c757d;
 }
 
-.merge-button:hover {
-  background-color: #e0a800;
+.button-secondary:hover {
+  background-color: #5a6268;
 }
+
+/* Pop-up and Modal Styles */
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex; /* Use Flexbox */
+  align-items: center; /* Center vertically */
+  justify-content: center; /* Center horizontally */
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000; /* Ensure modal appears above other content */
+}
+
+.popup-content {
+  background-color: #fff;
+  padding: 20px;
+  width: 90%; /* Use percentage for responsiveness */
+  max-width: 500px; /* Maximum width */
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.popup-content h3 {
+  margin-top: 0; /* Remove default margin */
+}
+
+.popup-content ul {
+  list-style: none;
+  padding: 0;
+}
+
+.popup-content li {
+  margin-bottom: 15px;
+}
+
+.popup-content button {
+  margin-right: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .canvas-wrapper {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions .button {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+}
+
+/* Focus Styles for Accessibility */
+.button:focus {
+  outline: 2px dashed #0056b3;
+  outline-offset: 2px;
+}
+
+.grid-cell:focus {
+  outline: 2px dashed #0056b3;
+  outline-offset: -2px;
+}
+
+/* Additional UI Elements */
+.save-button {
+  margin-top: 20px;
+}
+

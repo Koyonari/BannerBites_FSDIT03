@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import AdCanvas from './components/AdCanvas/AdCanvas';
 import AdViewer from './components/AdViewer/AdViewer';
 import './css/index.css';
+import layout from './layout'; 
 
 const App = () => {
   return (
@@ -24,7 +25,7 @@ const App = () => {
           </nav>
           <Routes>
             <Route path="/ad-canvas" element={<AdCanvas />} />
-            <Route path="/ad-viewer" element={<AdViewer />} />
+            <Route path="/ad-viewer" element={  <AdViewer layout={layout} />} />
             <Route path="/" element={<h2>Welcome to the Ad System</h2>} />
           </Routes>
         </div>

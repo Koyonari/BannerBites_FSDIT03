@@ -1,0 +1,25 @@
+/* AdViewer.module.css */
+.adViewerGrid {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .gridCell {
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #fafafa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .adItem {
+    text-align: center;
+  }
+  
+  .adItem img,
+  .adItem video {
+    max-width: 100%;
+    height: auto;
+  }
+  
