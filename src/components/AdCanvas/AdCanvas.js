@@ -303,7 +303,9 @@ const AdCanvas = () => {
     const updatedGrid = [...gridItems];
 
     if (!updatedGrid[index] || updatedGrid[index]?.isMerged) {
-      alert(`Cannot merge ${direction}. Cells must be adjacent and of the same type.`);
+      alert(
+        `Cannot merge ${direction}. Cells must be adjacent and of the same type.`
+      );
       return;
     }
 
@@ -319,6 +321,7 @@ const AdCanvas = () => {
       const rowSpan = Math.max(...rowIndices) - Math.min(...rowIndices) + 1;
       const colSpan = Math.max(...colIndices) - Math.min(...colIndices) + 1;
       const totalExpectedCells = rowSpan * colSpan;
+      
       const isRectangular =
         totalExpectedCells === selectedCells.length &&
         new Set(rowIndices).size === rowSpan &&
@@ -332,34 +335,29 @@ const AdCanvas = () => {
       );
 
       if (validSelection && isRectangular) {
+        // Create merged item with consolidated properties
         const mergedItem = {
-          ...updatedGrid[selectedCells[0]],
+          id: updatedGrid[selectedCells[0]].id,
+          type: updatedGrid[selectedCells[0]].type,
+          content: updatedGrid[selectedCells[0]].content, // Only keep relevant content information
+          styles: updatedGrid[selectedCells[0]].styles, // Move styles here if they are not already
           isMerged: true,
           rowSpan,
           colSpan,
           mergeDirection: "selection",
           selectedCells,
-          content: {
-            title: selectedCells
-              .map((idx) => updatedGrid[idx]?.content.title)
-              .join(" "),
-          },
-          gridArea: `${Math.min(...rowIndices) + 1} / ${
-            Math.min(...colIndices) + 1
-          } / span ${rowSpan} / span ${colSpan}`,
+          gridArea: `${Math.min(...rowIndices) + 1} / ${Math.min(...colIndices) + 1} / span ${rowSpan} / span ${colSpan}`,
         };
-
+  
         updatedGrid[selectedCells[0]] = mergedItem;
         selectedCells.slice(1).forEach((cellIndex) => {
           updatedGrid[cellIndex] = { isMerged: true, hidden: true };
         });
       } else {
-        alert(
-          "Selected cells must form a proper rectangle, be of the same type, and not already merged!"
-        );
+        alert("Selected cells must form a proper rectangle, be of the same type, and not already merged!");
         return;
       }
-    } else if (direction === "horizontal" || direction === "vertical") {
+    }else if (direction === "horizontal" || direction === "vertical") {
       // Logic for directional merge (horizontal or vertical)
       const numColumns = columns;
       let indicesToMerge = [];

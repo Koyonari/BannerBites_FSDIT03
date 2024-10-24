@@ -17,52 +17,61 @@ const EditModal = ({ ad, onSave, onClose }) => {
 
   useEffect(() => {
     if (ad && ad.content) {
-      // Correctly set formData without splitting the title
-      setFormData({
-        ...ad.content,
-        styles: ad.styles || formData.styles,
-        title: ad.content?.title || '', // Preserve the title as a whole string
-      });
+      setFormData((prevData) => ({
+        ...prevData,
+        title: ad.content?.title || prevData.title,
+        description: ad.content?.description || prevData.description,
+        src: ad.content?.src || prevData.src,
+        styles: ad.styles || prevData.styles,
+      }));
     }
-  }, [ad, formData.styles]);
+  }, [ad]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    // Update formData without breaking content
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
 
   const handleStyleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+
+    // Update styles without overwriting other properties
+    setFormData((prevData) => ({
+      ...prevData,
       styles: {
-        ...formData.styles,
+        ...prevData.styles,
         [name]: value,
       },
-    });
+    }));
   };
 
   const handleColorChange = (color, field) => {
-    setFormData({
-      ...formData,
+    // Update color fields in styles
+    setFormData((prevData) => ({
+      ...prevData,
       styles: {
-        ...formData.styles,
+        ...prevData.styles,
         [field]: color.hex,
       },
-    });
+    }));
   };
 
   const handleFileUpload = (e) => {
     const file = URL.createObjectURL(e.target.files[0]);
-    setFormData({ ...formData, src: file });
+    setFormData((prevData) => ({
+      ...prevData,
+      src: file,
+    }));
   };
 
   const handleSubmit = () => {
-    // Save the form data correctly without breaking content into characters
-    onSave({
-      ...formData,
-      title: formData.title, // Ensure title remains a string
-    });
+    // Save formData without breaking the content structure
+    onSave(formData);
     onClose();
   };
 
