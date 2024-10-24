@@ -1,12 +1,15 @@
+// EditModal.js
 import React, { useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
-import Modal from '../Modal/Modal.js'; // Import the Modal component
+import Modal from '../Modal/Modal.js'; // Ensure you have a Modal component or replace this with your modal implementation
 
-const EditModal = ({ ad, onSave, onClose }) => {
+const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    src: '',
+    content: {
+      title: '',
+      description: '',
+      src: '',
+    },
     styles: {
       font: 'Arial',
       fontSize: '14px',
@@ -14,33 +17,43 @@ const EditModal = ({ ad, onSave, onClose }) => {
       borderColor: '#000000',
     },
   });
+  const [scheduledTime, setScheduledTime] = useState(
+    scheduledDateTime || new Date().toISOString().slice(0, 16)
+  );
 
   useEffect(() => {
     if (ad && ad.content) {
-      setFormData((prevData) => ({
-        ...prevData,
-        title: ad.content?.title || prevData.title,
-        description: ad.content?.description || prevData.description,
-        src: ad.content?.src || prevData.src,
-        styles: ad.styles || prevData.styles,
-      }));
+      setFormData({
+        content: {
+          title: ad.content.title || '',
+          description: ad.content.description || '',
+          src: ad.content.src || '',
+        },
+        styles: ad.styles || {
+          font: 'Arial',
+          fontSize: '14px',
+          textColor: '#000000',
+          borderColor: '#000000',
+        },
+      });
     }
   }, [ad]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // Update formData without breaking content
     setFormData((prevData) => ({
       ...prevData,
-      [name]: value,
+      content: {
+        ...prevData.content,
+        [name]: value,
+      },
     }));
   };
 
   const handleStyleChange = (e) => {
     const { name, value } = e.target;
 
-    // Update styles without overwriting other properties
     setFormData((prevData) => ({
       ...prevData,
       styles: {
@@ -51,7 +64,6 @@ const EditModal = ({ ad, onSave, onClose }) => {
   };
 
   const handleColorChange = (color, field) => {
-    // Update color fields in styles
     setFormData((prevData) => ({
       ...prevData,
       styles: {
@@ -65,13 +77,16 @@ const EditModal = ({ ad, onSave, onClose }) => {
     const file = URL.createObjectURL(e.target.files[0]);
     setFormData((prevData) => ({
       ...prevData,
-      src: file,
+      content: {
+        ...prevData.content,
+        src: file,
+      },
     }));
   };
 
-  const handleSubmit = () => {
-    // Save formData without breaking the content structure
-    onSave(formData);
+  const handleSave = () => {
+    // Pass the updated ad data and scheduled time back to the parent component
+    onSave(formData, scheduledTime);
     onClose();
   };
 
@@ -84,13 +99,13 @@ const EditModal = ({ ad, onSave, onClose }) => {
           <input
             name="title"
             type="text"
-            value={formData.title}
+            value={formData.content.title}
             onChange={handleInputChange}
             placeholder="Title"
           />
           <textarea
             name="description"
-            value={formData.description}
+            value={formData.content.description}
             onChange={handleInputChange}
             placeholder="Description"
           />
@@ -126,14 +141,14 @@ const EditModal = ({ ad, onSave, onClose }) => {
           <input
             name="title"
             type="text"
-            value={formData.title}
+            value={formData.content.title}
             onChange={handleInputChange}
             placeholder="Title"
           />
           <input
             name="description"
             type="text"
-            value={formData.description}
+            value={formData.content.description}
             onChange={handleInputChange}
             placeholder="Description"
           />
@@ -146,7 +161,17 @@ const EditModal = ({ ad, onSave, onClose }) => {
         </>
       )}
 
-      <button onClick={handleSubmit}>Save</button>
+      {/* Add scheduled time input */}
+      <label>
+        Scheduled Date and Time:
+        <input
+          type="datetime-local"
+          value={scheduledTime}
+          onChange={(e) => setScheduledTime(e.target.value)}
+        />
+      </label>
+
+      <button onClick={handleSave}>Save</button>
       <button onClick={onClose}>Cancel</button>
     </Modal>
   );

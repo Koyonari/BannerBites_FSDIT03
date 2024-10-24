@@ -182,3 +182,24 @@
 .merge-button:hover {
   background-color: #e0a800;
 }
+
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.popup-content {
+  background-color: #fff;
+  margin: 5% auto;
+  padding: 20px;
+  width: 400px;
+  border-radius: 8px;
+}
+
+.actions button + button {
+  margin-left: 10px;
+}
