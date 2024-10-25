@@ -8,7 +8,8 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
     content: {
       title: '',
       description: '',
-      src: '',
+      s3Bucket: '', // Add this
+      s3Key: '',    // Add this
     },
     styles: {
       font: 'Arial',
@@ -27,7 +28,8 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
         content: {
           title: ad.content.title || '',
           description: ad.content.description || '',
-          src: ad.content.src || '',
+          s3Bucket: ad.content.s3Bucket || '',
+          s3Key: ad.content.s3Key || '',
         },
         styles: ad.styles || {
           font: 'Arial',
@@ -73,42 +75,70 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
     }));
   };
 
-  const handleFileUpload = (e) => {
-    const file = URL.createObjectURL(e.target.files[0]);
-    setFormData((prevData) => ({
-      ...prevData,
-      content: {
-        ...prevData.content,
-        src: file,
-      },
-    }));
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+  
+    try {
+      const s3Key = `media/${Date.now()}-${file.name}`;
+      await Storage.put(s3Key, file, {
+        contentType: file.type,
+      });
+  
+      setFormData((prevData) => ({
+        ...prevData,
+        content: {
+          ...prevData.content,
+          s3Bucket: awsConfig.Storage.AWSS3.bucket,
+          s3Key: s3Key,
+        },
+      }));
+  
+      alert('File uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Error uploading file');
+    }
   };
 
   const handleSave = () => {
+    // Construct the ad object
+    const updatedAd = {
+      ...ad,
+      content: {
+        ...formData.content,
+      },
+      styles: {
+        ...formData.styles,
+      },
+    };
+  
     // Pass the updated ad data and scheduled time back to the parent component
-    onSave(formData, scheduledTime);
+    onSave(updatedAd, scheduledTime);
     onClose();
   };
 
   return (
     <Modal isOpen={!!ad} onClose={onClose}>
       <h3>Edit {ad.type} Ad</h3>
-
+  
+      <input
+        name="title"
+        type="text"
+        value={formData.content.title}
+        onChange={handleInputChange}
+        placeholder="Title"
+      />
+      <textarea
+        name="description"
+        value={formData.content.description}
+        onChange={handleInputChange}
+        placeholder="Description"
+      />
+  
       {ad.type === 'text' && (
         <>
-          <input
-            name="title"
-            type="text"
-            value={formData.content.title}
-            onChange={handleInputChange}
-            placeholder="Title"
-          />
-          <textarea
-            name="description"
-            value={formData.content.description}
-            onChange={handleInputChange}
-            placeholder="Description"
-          />
+          {/* Text ad-specific fields */}
           <input
             name="font"
             type="text"
@@ -128,40 +158,40 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
             color={formData.styles.textColor}
             onChange={(color) => handleColorChange(color, 'textColor')}
           />
-          <label>Border Color:</label>
-          <SketchPicker
-            color={formData.styles.borderColor}
-            onChange={(color) => handleColorChange(color, 'borderColor')}
-          />
         </>
       )}
-
-      {(ad.type === 'image' || ad.type === 'video' ) && (
+  
+      {(ad.type === 'image' || ad.type === 'video') && (
         <>
-          <input
-            name="title"
-            type="text"
-            value={formData.content.title}
-            onChange={handleInputChange}
-            placeholder="Title"
-          />
-          <input
-            name="description"
-            type="text"
-            value={formData.content.description}
-            onChange={handleInputChange}
-            placeholder="Description"
-          />
-          <input type="file" onChange={handleFileUpload} />
-          <label>Border Color:</label>
-          <SketchPicker
-            color={formData.styles.borderColor}
-            onChange={(color) => handleColorChange(color, 'borderColor')}
-          />
+          {/* Media ad-specific fields */}
+          <input type="file" accept={ad.type + '/*'} onChange={handleFileUpload} />
+          {file && (
+            <div>
+              {ad.type === 'image' ? (
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt="Preview"
+                  style={{ maxWidth: '100%', marginTop: '10px' }}
+                />
+              ) : (
+                <video controls style={{ width: '100%', marginTop: '10px' }}>
+                  <source src={URL.createObjectURL(file)} type={file.type} />
+                  Your browser does not support the video tag.
+                </video>
+              )}
+            </div>
+          )}
         </>
       )}
-
-      {/* Add scheduled time input */}
+  
+      {/* Common fields */}
+      <label>Border Color:</label>
+      <SketchPicker
+        color={formData.styles.borderColor}
+        onChange={(color) => handleColorChange(color, 'borderColor')}
+      />
+  
+      {/* Scheduled time input */}
       <label>
         Scheduled Date and Time:
         <input
@@ -170,7 +200,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
           onChange={(e) => setScheduledTime(e.target.value)}
         />
       </label>
-
+  
       <button onClick={handleSave}>Save</button>
       <button onClick={onClose}>Cancel</button>
     </Modal>

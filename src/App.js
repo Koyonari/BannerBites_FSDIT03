@@ -6,6 +6,10 @@ import AdCanvas from './components/AdCanvas/AdCanvas';
 import AdViewer from './components/AdViewer/AdViewer';
 import './css/index.css';
 import layout from './layout'; 
+import Amplify from 'aws-amplify';
+import awsConfig from './services/aws-exports';
+
+Amplify.configure(awsConfig);
 
 const App = () => {
   return (
