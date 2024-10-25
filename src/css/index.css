@@ -8,34 +8,3 @@ body {
   font-family: "Helvetica Neue", sans-serif;
   scroll-behavior: smooth;
 }
-
-/* General styles for the app */
-.App {
-  max-width: 900px; /* Maximum width of the app */
-  margin: 0 auto; /* Center the app */
-  padding: 20px; /* Padding around the app */
-  font-family: Arial, sans-serif; /* Font family for the entire app */
-  background-color: #f2f2f2; /* Light background for the app */
-  color: #333; /* Dark text color */
-}
-
-/* AdViewer styles (add specific styles here) */
-.AdViewer {
-  margin-top: 20px; /* Space above AdViewer */
-  background-color: #ffffff; /* White background for contrast */
-  border: 1px solid #dee2e6; /* Light border */
-  border-radius: 5px; /* Rounded corners */
-  padding: 15px; /* Padding inside the viewer */
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Light shadow */
-}
-
-/* Ensure a responsive layout */
-@media (max-width: 600px) {
-  .App {
-    padding: 10px; /* Reduce padding on smaller screens */
-  }
-
-  h1 {
-    font-size: 24px; /* Smaller header font size */
-  }
-}
