@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import Modal from '../Modal/Modal.js';
-import { Storage } from 'aws-amplify';
+import { uploadData, getUrl } from '@aws-amplify/storage'; // Import specific functions
 import awsConfig from '../../services/aws-exports';
 
 const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
@@ -23,7 +23,8 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
   const [scheduledTime, setScheduledTime] = useState(
     scheduledDateTime || new Date().toISOString().slice(0, 16)
   );
-  const [file, setFile] = useState(null); // Add file to state
+  const [file, setFile] = useState(null); // For new uploads
+  const [mediaUrl, setMediaUrl] = useState(''); // For existing media
 
   useEffect(() => {
     if (ad && ad.content) {
@@ -44,7 +45,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
 
       // If editing an existing media ad, fetch the media URL for preview
       if ((ad.type === 'image' || ad.type === 'video') && ad.content.s3Key) {
-        Storage.get(ad.content.s3Key)
+        getUrl(ad.content.s3Key)
           .then((url) => setMediaUrl(url))
           .catch((error) => console.error('Error fetching media URL:', error));
       }
@@ -92,7 +93,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
 
     try {
       const s3Key = `media/${Date.now()}-${selectedFile.name}`;
-      await Storage.put(s3Key, selectedFile, {
+      await uploadData(s3Key, selectedFile, {
         contentType: selectedFile.type,
       });
 
@@ -107,6 +108,10 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
           s3Key: s3Key,
         },
       }));
+
+      // Fetch the URL of the newly uploaded file for preview
+      const uploadedUrl = await getUrl(s3Key);
+      setMediaUrl(uploadedUrl);
 
       alert('File uploaded successfully');
     } catch (error) {
@@ -178,17 +183,41 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
       {(ad.type === 'image' || ad.type === 'video') && (
         <>
           {/* Media ad-specific fields */}
-          <input type="file" accept={ad.type + '/*'} onChange={handleFileUpload} />
+          <input
+            type="file"
+            accept={ad.type + '/*'}
+            onChange={handleFileUpload}
+          />
+
+          {/* Existing Media Preview */}
+          {mediaUrl && (
+            <div style={{ marginTop: '10px' }}>
+              {ad.type === 'image' ? (
+                <img
+                  src={mediaUrl}
+                  alt="Existing Media"
+                  style={{ maxWidth: '100%' }}
+                />
+              ) : (
+                <video controls style={{ width: '100%' }}>
+                  <source src={mediaUrl} type={file ? file.type : 'video/mp4'} />
+                  Your browser does not support the video tag.
+                </video>
+              )}
+            </div>
+          )}
+
+          {/* New File Preview */}
           {file && (
-            <div>
+            <div style={{ marginTop: '10px' }}>
               {ad.type === 'image' ? (
                 <img
                   src={URL.createObjectURL(file)}
                   alt="Preview"
-                  style={{ maxWidth: '100%', marginTop: '10px' }}
+                  style={{ maxWidth: '100%' }}
                 />
               ) : (
-                <video controls style={{ width: '100%', marginTop: '10px' }}>
+                <video controls style={{ width: '100%' }}>
                   <source src={URL.createObjectURL(file)} type={file.type} />
                   Your browser does not support the video tag.
                 </video>
@@ -206,17 +235,22 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
       />
 
       {/* Scheduled time input */}
-      <label>
+      <label style={{ display: 'block', marginTop: '10px' }}>
         Scheduled Date and Time:
         <input
           type="datetime-local"
           value={scheduledTime}
           onChange={(e) => setScheduledTime(e.target.value)}
+          style={{ display: 'block', marginTop: '5px' }}
         />
       </label>
 
-      <button onClick={handleSave}>Save</button>
-      <button onClick={onClose}>Cancel</button>
+      <div style={{ marginTop: '20px' }}>
+        <button onClick={handleSave} style={{ marginRight: '10px' }}>
+          Save
+        </button>
+        <button onClick={onClose}>Cancel</button>
+      </div>
     </Modal>
   );
 };
