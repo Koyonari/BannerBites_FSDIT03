@@ -1,4 +1,3 @@
-import "../../css/index.css";
 import layout from "../../layout";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";

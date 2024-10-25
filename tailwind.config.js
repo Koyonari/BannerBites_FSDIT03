@@ -19,6 +19,11 @@ module.exports = {
       const newUtilities = {
         ".outline-3": {
           "-webkit-text-stroke": "3px",
+          "-webkit-text-stroke-color": "#000000",
+        },
+        ".outline-1": {
+          "-webkit-text-stroke": "0.4px",
+          "-webkit-text-stroke-color": "#000000",
         },
       };
 

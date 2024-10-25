@@ -12,9 +12,17 @@ const icons = {
 };
 
 const Hero = () => {
-  const [isDarkMode, setDarkMode] = React.useState(false);
+  // Initialize state from localStorage or default to false
+  const [isDarkMode, setDarkMode] = React.useState(() => {
+    const savedMode = localStorage.getItem("darkMode");
+    return savedMode ? JSON.parse(savedMode) : false;
+  });
 
   useEffect(() => {
+    // Update localStorage when dark mode changes
+    localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
+
+    // Update document classes
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
     } else {
@@ -26,6 +34,9 @@ const Hero = () => {
     setDarkMode(checked);
   };
 
+  const HomeIconComponent = icons.navbar[0].icon;
+  const ProfileIconComponent = icons.navbar[1].icon;
+
   return (
     <div className="flex flex-col align-center justify-center items-center h-screen bg-white dark:bg-black transition-colors duration-200">
       <h1 className="font-bold text-7xl mb-3 text-black dark:text-white">
@@ -33,20 +44,25 @@ const Hero = () => {
         <span className="outline-3 text-orange-500">Bites</span>
       </h1>
       <div className="relative w-96 p-6 text-center border-2 rounded-lg flex justify-center space-x-16 border-orange-500 bg-white dark:bg-black">
-        {icons.navbar.map((item) => (
-          <Link
-            key={item.label}
-            to={item.href}
-            className="flex flex-col items-center"
-          >
-            <item.icon className="w-6 h-6 text-black dark:text-white" />
-          </Link>
-        ))}
+        <Link
+          key="home"
+          to={icons.navbar[0].href}
+          className="flex flex-col items-center"
+        >
+          <HomeIconComponent className="w-6 h-6 text-black dark:text-white" />
+        </Link>
         <DarkModeSwitch
           checked={isDarkMode}
           onChange={toggleDarkMode}
           size={24}
         />
+        <Link
+          key="profile"
+          to={icons.navbar[1].href}
+          className="flex flex-col items-center"
+        >
+          <ProfileIconComponent className="w-6 h-6 text-black dark:text-white" />
+        </Link>
       </div>
     </div>
   );

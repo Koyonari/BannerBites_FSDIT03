@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./components/Home";
 import Ad from "./components/Ad/Ad";
+import UserHome from "./components/UserHome/UserHome";
 
 const App = () => {
   return (
@@ -9,6 +10,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/ad/*" element={<Ad />} />
+        <Route path="/userhome/*" element={<UserHome />} />
       </Routes>
     </Router>
   );
