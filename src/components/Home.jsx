@@ -6,7 +6,7 @@ import { useEffect } from "react";
 
 const icons = {
   navbar: [
-    { href: "/ad", icon: HomeIcon, label: "Home" },
+    { href: "/userhome", icon: HomeIcon, label: "Home" },
     { href: "#", icon: CircleUserRound, label: "Profile" },
   ],
 };

@@ -74,7 +74,7 @@ function Navbar() {
 
       {/* Opened Hamburger Menu */}
       <div
-        className={`mobile-menu sticky top-0 left-0 w-screen bg-black dark:bg-white z-[9999] flex flex-col font-general-sans opacity-85 transform transition-transform duration-500 ease-in-out ${
+        className={`mobile-menu sticky top-0 left-0 w-screen bg-black border-b border-white z-[9999] flex flex-col font-general-sans opacity-85 transform transition-transform duration-500 ease-in-out ${
           isOpen ? "translate-y-0" : "-translate-y-full"
         }`}
       >

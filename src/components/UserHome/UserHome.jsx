@@ -1,8 +1,9 @@
-import Navbar from "../Navbar";
-import TextField from "@mui/material/TextField";
 import React from "react";
+import { Link } from "react-router-dom";
+import Navbar from "../Navbar";
 import MenuItem from "@mui/material/MenuItem";
 import EditIcon from "@mui/icons-material/Edit";
+import TextField from "@mui/material/TextField";
 
 const currencies = [
   {
@@ -32,9 +33,9 @@ const UserHome = () => {
     <section className="bg-white dark:bg-black h-screen">
       <Navbar />
       <div className="flex gap-4 justify-center pt-4 md:px-4">
-        <div className="flex py-2 px-4 items-center rounded-md w-1/6 border-black border h-12 sm:h-14">
+        <div className="flex py-2 px-4 items-center rounded-md w-1/6 border-black dark:border-white border h-12 sm:h-14">
           <TextField
-            className="w-full"
+            className="w-full dark:text-white"
             select
             defaultValue="date"
             variant="standard"
@@ -47,8 +48,9 @@ const UserHome = () => {
           </TextField>
         </div>
 
-        <div className="w-1/2 rounded-xl">
+        <div className="w-1/2 rounded-xl z-[-10]">
           <TextField
+            className="dark:border-white"
             id="outlined-basic"
             variant="outlined"
             fullWidth
@@ -56,9 +58,11 @@ const UserHome = () => {
           />
         </div>
 
-        <button className="bg-orange-500 text-xs md:text-sm lg:text-lg text-white font-bold py-2 px-4 w-1/6 rounded-md h-12 sm:h-14">
-          Create New
-        </button>
+        <Link key="home" to={"/ad"} className="bg-orange-500 rounded-md">
+          <button className="text-xs md:text-base text-white font-bold py-2 px-4 w-1/6 h-12">
+            Create New
+          </button>
+        </Link>
       </div>
 
       {/* Cards */}

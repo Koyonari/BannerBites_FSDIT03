@@ -4,10 +4,12 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { Routes, Route, Link } from "react-router-dom";
 import AdCanvas from "../AdCanvas/AdCanvas";
 import AdViewer from "../AdViewer/AdViewer";
+import Navbar from "../Navbar";
 
 const Ad = () => {
   return (
     <div>
+      <Navbar />
       <DndProvider backend={HTML5Backend}>
         <div className="App">
           <h1>Real-Time Ad Viewer</h1>
