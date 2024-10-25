@@ -1,15 +1,17 @@
 // EditModal.js
 import React, { useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
-import Modal from '../Modal/Modal.js'; // Ensure you have a Modal component or replace this with your modal implementation
+import Modal from '../Modal/Modal.js';
+import { Storage } from 'aws-amplify';
+import awsConfig from '../aws-exports'; // Adjust the path as necessary
 
 const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({
     content: {
       title: '',
       description: '',
-      s3Bucket: '', // Add this
-      s3Key: '',    // Add this
+      s3Bucket: '',
+      s3Key: '',
     },
     styles: {
       font: 'Arial',
@@ -21,6 +23,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
   const [scheduledTime, setScheduledTime] = useState(
     scheduledDateTime || new Date().toISOString().slice(0, 16)
   );
+  const [file, setFile] = useState(null); // Add file to state
 
   useEffect(() => {
     if (ad && ad.content) {
@@ -38,6 +41,13 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
           borderColor: '#000000',
         },
       });
+
+      // If editing an existing media ad, fetch the media URL for preview
+      if ((ad.type === 'image' || ad.type === 'video') && ad.content.s3Key) {
+        Storage.get(ad.content.s3Key)
+          .then((url) => setMediaUrl(url))
+          .catch((error) => console.error('Error fetching media URL:', error));
+      }
     }
   }, [ad]);
 
@@ -76,24 +86,28 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
   };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-  
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+    setFile(selectedFile); // Store the file for preview
+
     try {
-      const s3Key = `media/${Date.now()}-${file.name}`;
-      await Storage.put(s3Key, file, {
-        contentType: file.type,
+      const s3Key = `media/${Date.now()}-${selectedFile.name}`;
+      await Storage.put(s3Key, selectedFile, {
+        contentType: selectedFile.type,
       });
-  
+
+      // Access bucket name from awsConfig or define it directly
+      const s3Bucket = awsConfig.aws_user_files_s3_bucket; // Adjust as per your aws-exports.js
+
       setFormData((prevData) => ({
         ...prevData,
         content: {
           ...prevData.content,
-          s3Bucket: awsConfig.Storage.AWSS3.bucket,
+          s3Bucket: s3Bucket,
           s3Key: s3Key,
         },
       }));
-  
+
       alert('File uploaded successfully');
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -112,7 +126,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
         ...formData.styles,
       },
     };
-  
+
     // Pass the updated ad data and scheduled time back to the parent component
     onSave(updatedAd, scheduledTime);
     onClose();
@@ -121,7 +135,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
   return (
     <Modal isOpen={!!ad} onClose={onClose}>
       <h3>Edit {ad.type} Ad</h3>
-  
+
       <input
         name="title"
         type="text"
@@ -135,7 +149,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
         onChange={handleInputChange}
         placeholder="Description"
       />
-  
+
       {ad.type === 'text' && (
         <>
           {/* Text ad-specific fields */}
@@ -160,7 +174,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
           />
         </>
       )}
-  
+
       {(ad.type === 'image' || ad.type === 'video') && (
         <>
           {/* Media ad-specific fields */}
@@ -183,14 +197,14 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
           )}
         </>
       )}
-  
+
       {/* Common fields */}
       <label>Border Color:</label>
       <SketchPicker
         color={formData.styles.borderColor}
         onChange={(color) => handleColorChange(color, 'borderColor')}
       />
-  
+
       {/* Scheduled time input */}
       <label>
         Scheduled Date and Time:
@@ -200,7 +214,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
           onChange={(e) => setScheduledTime(e.target.value)}
         />
       </label>
-  
+
       <button onClick={handleSave}>Save</button>
       <button onClick={onClose}>Cancel</button>
     </Modal>

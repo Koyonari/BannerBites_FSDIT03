@@ -297,22 +297,32 @@ const AdCanvas = () => {
     const filteredItems = gridItems
       .map((item, index) => {
         if (!item || item.hidden) return null;
+  
         const row = Math.floor(index / columns);
         const column = index % columns;
+  
         return {
           index,
           row,
           column,
-          scheduledAds: item.scheduledAds.map((scheduledAd) => ({
-            id: scheduledAd.id,
-            scheduledDateTime: scheduledAd.scheduledDateTime,
-            ad: {
-              ...scheduledAd.ad,
-              content: scheduledAd.ad.content,
-              styles: scheduledAd.ad.styles,
-              type: scheduledAd.ad.type,
-            },
-          })),
+          scheduledAds: item.scheduledAds.map((scheduledAd) => {
+            const ad = scheduledAd.ad;
+            const adData = {
+              id: ad.id,
+              type: ad.type,
+              content: {
+                ...ad.content,
+              },
+              styles: {
+                ...ad.styles,
+              },
+            };
+            return {
+              id: scheduledAd.id,
+              scheduledDateTime: scheduledAd.scheduledDateTime,
+              ad: adData,
+            };
+          }),
           isMerged: item.isMerged,
           rowSpan: item.rowSpan,
           colSpan: item.colSpan,
