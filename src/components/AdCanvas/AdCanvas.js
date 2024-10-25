@@ -359,42 +359,78 @@ const AdCanvas = () => {
   return (
     <div className="ad-canvas">
       <Sidebar />
-      <div>
-        <button onClick={increaseRows}>Increase Rows</button>
-        <button onClick={decreaseRows}>Decrease Rows</button>
-        <button onClick={increaseColumns}>Increase Columns</button>
-        <button onClick={decreaseColumns}>Decrease Columns</button>
-      </div>
-      <div
-        className="grid"
-        style={{
-          "--rows": rows,
-          "--columns": columns,
-        }}
-      >
-        {gridItems.map((item, index) => {
-          const rowIndex = Math.floor(index / columns);
-          const colIndex = index % columns;
-          return (
-            <GridCell
-              key={index}
-              index={index}
-              rowIndex={rowIndex}
-              colIndex={colIndex}
-              item={item}
-              onDrop={handleDrop}
-              onRemove={handleRemove}
-              onEdit={handleEdit}
-              onMerge={handleMerge}
-              isSelected={selectedCells.includes(index)}
-              onSelect={handleCellSelection}
-              isSelectionMode={isSelectionMode}
-              columns={columns}
-              totalCells={totalCells}
-              onUnmerge={handleUnmerge}
-            />
-          );
-        })}
+      <div className="flex flex-row items-stretch gap-2">
+        {/* Decrease Columns button */}
+        <div className="flex flex-col justify-center">
+          <div
+            onClick={decreaseColumns}
+            className="bg-gray-300 text-center h-5/6 rounded-lg px-2 py-4 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center"
+          >
+            -
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div className="flex-1 flex flex-col">
+          {/* Increase Rows button */}
+          <div
+            onClick={increaseRows}
+            className="w-full bg-gray-300 text-center rounded-lg my-2 hover:cursor-pointer"
+          >
+            +
+          </div>
+
+          {/* Grid cells */}
+          <div
+            className="grid flex-1"
+            style={{
+              "--rows": rows,
+              "--columns": columns,
+            }}
+          >
+            {gridItems.map((item, index) => {
+              const rowIndex = Math.floor(index / columns);
+              const colIndex = index % columns;
+              return (
+                <GridCell
+                  key={index}
+                  index={index}
+                  rowIndex={rowIndex}
+                  colIndex={colIndex}
+                  item={item}
+                  onDrop={handleDrop}
+                  onRemove={handleRemove}
+                  onEdit={handleEdit}
+                  onMerge={handleMerge}
+                  isSelected={selectedCells.includes(index)}
+                  onSelect={handleCellSelection}
+                  isSelectionMode={isSelectionMode}
+                  columns={columns}
+                  totalCells={totalCells}
+                  onUnmerge={handleUnmerge}
+                />
+              );
+            })}
+          </div>
+
+          {/* Decrease Rows button */}
+          <div
+            onClick={decreaseRows}
+            className="w-full bg-gray-300 text-center rounded-lg my-2 hover:cursor-pointer"
+          >
+            -
+          </div>
+        </div>
+
+        {/* Increase Columns button */}
+        <div className="flex flex-col justify-center">
+          <div
+            onClick={increaseColumns}
+            className="bg-gray-300 text-center h-5/6 rounded-lg px-2 py-4 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center"
+          >
+            +
+          </div>
+        </div>
       </div>
       <div className="controls">
         <button onClick={() => setIsSelectionMode(!isSelectionMode)}>
