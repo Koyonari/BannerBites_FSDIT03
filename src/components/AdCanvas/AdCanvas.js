@@ -358,26 +358,31 @@ const AdCanvas = () => {
 
   return (
     <div className="ad-canvas">
-      <Sidebar />
       <div className="flex flex-row items-stretch gap-2">
         {/* Decrease Columns button */}
-        <div className="flex flex-col justify-center">
+        <div className="flex flex-col justify-center group">
           <div
             onClick={decreaseColumns}
-            className="bg-gray-300 text-center h-5/6 rounded-lg px-2 py-4 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center"
+            className="bg-gray-300 text-center rounded-lg w-2 group-hover:w-8 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center transition-all duration-200 overflow-hidden"
           >
-            -
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              -
+            </span>
           </div>
         </div>
 
         {/* Grid */}
         <div className="flex-1 flex flex-col">
           {/* Increase Rows button */}
-          <div
-            onClick={increaseRows}
-            className="w-full bg-gray-300 text-center rounded-lg my-2 hover:cursor-pointer"
-          >
-            +
+          <div className="group py-2">
+            <div
+              onClick={increaseRows}
+              className="w-full bg-gray-300 text-center rounded-lg h-2 group-hover:h-8 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center transition-all duration-200 overflow-hidden"
+            >
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                +
+              </span>
+            </div>
           </div>
 
           {/* Grid cells */}
@@ -414,24 +419,33 @@ const AdCanvas = () => {
           </div>
 
           {/* Decrease Rows button */}
-          <div
-            onClick={decreaseRows}
-            className="w-full bg-gray-300 text-center rounded-lg my-2 hover:cursor-pointer"
-          >
-            -
+          <div className="group py-2">
+            <div
+              onClick={decreaseRows}
+              className="w-full bg-gray-300 text-center rounded-lg h-2 group-hover:h-8 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center transition-all duration-200 overflow-hidden"
+            >
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                -
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Increase Columns button */}
-        <div className="flex flex-col justify-center">
+        <div className="flex flex-col justify-center group">
           <div
             onClick={increaseColumns}
-            className="bg-gray-300 text-center h-5/6 rounded-lg px-2 py-4 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center"
+            className="bg-gray-300 text-center rounded-lg w-2 group-hover:w-8 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center transition-all duration-200 overflow-hidden"
           >
-            +
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              +
+            </span>
           </div>
         </div>
       </div>
+
+      <Sidebar />
+
       <div className="controls">
         <button onClick={() => setIsSelectionMode(!isSelectionMode)}>
           {isSelectionMode ? "Exit Selection Mode" : "Enter Selection Mode"}
