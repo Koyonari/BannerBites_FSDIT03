@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import Modal from '../Modal/Modal.js';
 import { Storage } from 'aws-amplify';
-import awsConfig from '../aws-exports'; // Adjust the path as necessary
+import awsConfig from '../../services/aws-exports';
 
 const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({

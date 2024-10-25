@@ -1,13 +1,13 @@
 // aws-exports.js
 const awsConfig = {
     Auth: {
-      identityPoolId: 'your-identity-pool-id', // REQUIRED - Amazon Cognito Identity Pool ID
-      region: 'your-region', // REQUIRED - Amazon Cognito Region
+      identityPoolId: 'us-east-1:93bb0b4e-5322-4ff1-b0f7-f096063bb5b4', // REQUIRED - Amazon Cognito Identity Pool ID
+      region: 'us-east-1', // REQUIRED - Amazon Cognito Region
     },
     Storage: {
       AWSS3: {
-        bucket: 'your-s3-bucket-name', // REQUIRED - Amazon S3 bucket name
-        region: 'your-region', // REQUIRED - Amazon service region
+        bucket: 'ads-public', // Amazon S3 bucket name
+        region: 'us-east-1', // Amazon service region
       },
     },
   };
