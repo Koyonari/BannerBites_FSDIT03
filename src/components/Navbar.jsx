@@ -41,8 +41,8 @@ function Navbar() {
   };
 
   return (
-    <section className="navbar">
-      <div className="nav-container bg-white dark:bg-black transition-colors duration-500 h-24 text-2xl fixed flex justify-between items-center w-full max-md:w-full px-6 font-extrabold border-b-black border-b-2 dark:border-b-white">
+    <section className="h-24">
+      <div className=" bg-white dark:bg-black transition-colors duration-500 h-24 text-2xl fixed flex justify-between items-center w-full max-md:w-full px-6 font-extrabold border-b-black border-b-2 dark:border-b-white">
         <div className="pt-4">
           <h1 className="font-bold text-3xl mb-3 text-black dark:text-white items-center text-center justify-center left-0">
             Banner
@@ -64,7 +64,7 @@ function Navbar() {
       </div>
 
       {/* Hamburger Menu */}
-      <div className="fixed pt-2 right-4 z-[99999] lg:hidden">
+      <div className="fixed pt-6 right-4 z-[99999] lg:hidden">
         <Hamburger
           toggled={isOpen}
           toggle={toggleMenu}
@@ -74,7 +74,7 @@ function Navbar() {
 
       {/* Opened Hamburger Menu */}
       <div
-        className={`mobile-menu fixed top-0 left-0 w-screen bg-black dark:bg-white z-[9999] flex flex-col font-general-sans opacity-85 transform transition-transform duration-500 ease-in-out ${
+        className={`mobile-menu sticky top-0 left-0 w-screen bg-black dark:bg-white z-[9999] flex flex-col font-general-sans opacity-85 transform transition-transform duration-500 ease-in-out ${
           isOpen ? "translate-y-0" : "-translate-y-full"
         }`}
       >
