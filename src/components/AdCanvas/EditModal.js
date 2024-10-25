@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import Modal from '../Modal/Modal.js';
-import { uploadData, getUrl } from '@aws-amplify/storage'; // Import specific functions
+import { uploadData, getUrl } from '@aws-amplify/storage'; // Correct import
 import awsConfig from '../../services/aws-exports';
 
 const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
@@ -98,7 +98,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
       });
 
       // Access bucket name from awsConfig or define it directly
-      const s3Bucket = awsConfig.aws_user_files_s3_bucket; // Adjust as per your aws-exports.js
+      const s3Bucket = awsConfig.aws_user_files_s3_bucket; // Ensure this matches your aws-exports.js
 
       setFormData((prevData) => ({
         ...prevData,
