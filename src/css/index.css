@@ -1,18 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", sans-serif;
+  scroll-behavior: smooth;
+}
+
 /* General styles for the app */
 .App {
   max-width: 900px; /* Maximum width of the app */
-  margin: 0 auto;   /* Center the app */
-  padding: 20px;    /* Padding around the app */
+  margin: 0 auto; /* Center the app */
+  padding: 20px; /* Padding around the app */
   font-family: Arial, sans-serif; /* Font family for the entire app */
   background-color: #f2f2f2; /* Light background for the app */
   color: #333; /* Dark text color */
-}
-
-/* Header styles */
-h1 {
-  text-align: center; /* Center the header text */
-  color: #007bff; /* Primary color for the header */
-  margin-bottom: 30px; /* Space below the header */
 }
 
 /* AdViewer styles (add specific styles here) */

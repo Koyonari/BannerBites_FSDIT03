@@ -13,5 +13,15 @@ module.exports = {
       "2xl": "1536px",
     },
   },
-  plugins: [],
+  plugins: [
+    function ({ addUtilities }) {
+      const newUtilities = {
+        ".outline-3": {
+          "-webkit-text-stroke": "3px",
+        },
+      };
+
+      addUtilities(newUtilities, ["responsive", "hover"]);
+    },
+  ],
 };
