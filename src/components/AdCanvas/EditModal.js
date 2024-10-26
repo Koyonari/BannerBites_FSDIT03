@@ -41,13 +41,13 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
         },
       });
 
-     // Construct the media URL for existing media preview
-     if ((ad.type === "image" || ad.type === "video") && ad.content.s3Key) {
-      const mediaUrl = `https://${process.env.REACT_APP_S3_BUCKET_NAME}.s3.${process.env.REACT_APP_AWS_REGION}.amazonaws.com/${ad.content.s3Key}`;
-      setMediaUrl(mediaUrl);
+      // Construct the media URL for existing media preview
+      if ((ad.type === "image" || ad.type === "video") && ad.content.s3Key) {
+        const mediaUrl = `https://${process.env.REACT_APP_S3_BUCKET_NAME}.s3.${process.env.REACT_APP_AWS_REGION}.amazonaws.com/${ad.content.s3Key}`;
+        setMediaUrl(mediaUrl);
+      }
     }
-  }
-}, [ad]);
+  }, [ad]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -87,30 +87,33 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
     setFile(selectedFile);
-  
+
     try {
       // Request pre-signed URL from backend
-      const response = await fetch("http://localhost:5000/generate-presigned-url", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fileName: selectedFile.name,
-          contentType: selectedFile.type,
-        }),
-      });
-  
+      const response = await fetch(
+        "http://localhost:5000/generate-presigned-url",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fileName: selectedFile.name,
+            contentType: selectedFile.type,
+          }),
+        }
+      );
+
       if (!response.ok) {
         const errorData = await response.json(); // Only read the response once here
         console.error("Error fetching pre-signed URL:", errorData);
         alert("Failed to get pre-signed URL");
         return;
       }
-  
+
       const { url, key } = await response.json(); // Parse the JSON response only once
       console.log("Pre-signed URL received:", url);
-  
+
       // Use the pre-signed URL to upload the file
       const uploadResponse = await fetch(url, {
         method: "PUT",
@@ -119,7 +122,7 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
         },
         body: selectedFile,
       });
-  
+
       if (uploadResponse.ok) {
         console.log("File uploaded successfully");
         setFormData((prevData) => ({
@@ -210,39 +213,21 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
             onChange={handleFileUpload}
           />
 
-          {/* Existing Media Preview */}
-          {mediaUrl && (
+          {/* Existing Media Preview or new file */}
+          {(file || mediaUrl) && (
             <div style={{ marginTop: "10px" }}>
               {ad.type === "image" ? (
                 <img
-                  src={mediaUrl}
-                  alt="Existing Media"
-                  style={{ maxWidth: "100%" }}
-                />
-              ) : (
-                <video controls style={{ width: "100%" }}>
-                  <source
-                    src={mediaUrl}
-                    type={file ? file.type : "video/mp4"}
-                  />
-                  Your browser does not support the video tag.
-                </video>
-              )}
-            </div>
-          )}
-
-          {/* New File Preview */}
-          {file && (
-            <div style={{ marginTop: "10px" }}>
-              {ad.type === "image" ? (
-                <img
-                  src={URL.createObjectURL(file)}
+                  src={file ? URL.createObjectURL(file) : mediaUrl}
                   alt="Preview"
                   style={{ maxWidth: "100%" }}
                 />
               ) : (
                 <video controls style={{ width: "100%" }}>
-                  <source src={URL.createObjectURL(file)} type={file.type} />
+                  <source
+                    src={file ? URL.createObjectURL(file) : mediaUrl}
+                    type={file ? file.type : "video/mp4"}
+                  />
                   Your browser does not support the video tag.
                 </video>
               )}

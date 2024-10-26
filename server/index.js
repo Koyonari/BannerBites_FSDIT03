@@ -47,7 +47,20 @@ const generatePresignedUrl = async (bucketName, key, contentType, expiresIn = 30
 // Generate a pre-signed URL for uploading media to S3
 app.post('/generate-presigned-url', async (req, res) => {
   const { fileName, contentType } = req.body;
-  const key = `media/${Date.now()}-${fileName}`;
+
+  // Determine the folder based on content type
+  let folder;
+  if (contentType.startsWith('image/')) {
+    folder = 'images';
+  } else if (contentType.startsWith('video/')) {
+    folder = 'videos';
+  } else {
+    // Handle unsupported content types
+    return res.status(400).json({ error: 'Unsupported content type' });
+  }
+
+  // Generate the S3 key with the appropriate folder
+  const key = `${folder}/${Date.now()}-${fileName}`;
 
   try {
     const url = await generatePresignedUrl(process.env.S3_BUCKET_NAME, key, contentType, 300);
