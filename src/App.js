@@ -1,14 +1,10 @@
 import React from "react";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
-import AdCanvas from "./components/AdCanvas/AdCanvas";
-import AdViewer from "./components/AdViewer/AdViewer";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "./css/index.css";
-import layout from "./layout";
-import ErrorBoundary from "./components/ErrorBoundary";
+import Home from "./components/Home";
+import Ad from "./components/Ad/Ad";
+import UserHome from "./components/UserHome/UserHome";
 
-// Configure Amplify
 const App = () => {
   return (
     <Router>
