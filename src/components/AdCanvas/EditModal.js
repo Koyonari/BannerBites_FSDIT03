@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import Modal from '../Modal/Modal.js';
-import axios from 'axios'; // Import Axios for HTTP requests
+import { uploadData, getUrl } from '@aws-amplify/storage'; // Correct import
+import awsConfig from '../../services/aws-exports';
 
 const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({
@@ -24,7 +25,6 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
   );
   const [file, setFile] = useState(null); // For new uploads
   const [mediaUrl, setMediaUrl] = useState(''); // For existing media
-  const [uploading, setUploading] = useState(false); // To indicate upload status
 
   useEffect(() => {
     if (ad && ad.content) {
@@ -45,14 +45,9 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
 
       // If editing an existing media ad, fetch the media URL for preview
       if ((ad.type === 'image' || ad.type === 'video') && ad.content.s3Key) {
-        const s3Bucket = ad.content.s3Bucket;
-        const s3Key = ad.content.s3Key;
-        const s3Region = process.env.REACT_APP_AWS_REGION; // Ensure this is set in your frontend's .env
-
-        if (s3Bucket && s3Key && s3Region) {
-          const url = `https://${s3Bucket}.s3.${s3Region}.amazonaws.com/${s3Key}`;
-          setMediaUrl(url);
-        }
+        getUrl(ad.content.s3Key)
+          .then((url) => setMediaUrl(url))
+          .catch((error) => console.error('Error fetching media URL:', error));
       }
     }
   }, [ad]);
@@ -91,74 +86,38 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
     }));
   };
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
+  const handleFileUpload = async (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+    setFile(selectedFile); // Store the file for preview
 
-  const getPresignedUrl = async (file) => {
     try {
-      const response = await axios.get('http://localhost:5000/api/uploadMediaUrl', {
-        params: {
-          fileName: file.name,
-          fileType: file.type,
-        },
+      const s3Key = `media/${Date.now()}-${selectedFile.name}`;
+      await uploadData(s3Key, selectedFile, {
+        contentType: selectedFile.type,
+        level: 'public',
       });
-      return response.data;
-    } catch (error) {
-      console.error('Error getting pre-signed URL:', error);
-      throw error;
-    }
-  };
 
-  const uploadFileToS3 = async (uploadURL, file) => {
-    try {
-      await axios.put(uploadURL, file, {
-        headers: {
-          'Content-Type': file.type,
-        },
-      });
-    } catch (error) {
-      console.error('Error uploading file to S3:', error);
-      throw error;
-    }
-  };
-
-  const handleFileUpload = async () => {
-    if (!file) {
-      alert('No file selected for upload.');
-      return;
-    }
-
-    setUploading(true);
-
-    try {
-      // Step 1: Get pre-signed URL from backend
-      const { uploadURL, fileKey } = await getPresignedUrl(file);
-
-      // Step 2: Upload the file to S3 using the pre-signed URL
-      await uploadFileToS3(uploadURL, file);
-
-      // Step 3: Update formData with S3 details
-      const s3Bucket = process.env.REACT_APP_S3_BUCKET_NAME; // Ensure this is set in your frontend's .env
-      const s3Region = process.env.REACT_APP_AWS_REGION; // Ensure this is set in your frontend's .env
-      const s3Url = `https://${s3Bucket}.s3.${s3Region}.amazonaws.com/${fileKey}`;
+      // Access bucket name from awsConfig or define it directly
+      const s3Bucket = awsConfig.aws_user_files_s3_bucket; // Ensure this matches your aws-exports.js
 
       setFormData((prevData) => ({
         ...prevData,
         content: {
           ...prevData.content,
           s3Bucket: s3Bucket,
-          s3Key: fileKey,
+          s3Key: s3Key,
         },
       }));
 
-      setMediaUrl(s3Url); // Update the media URL for preview
-      alert('File uploaded successfully!');
+      // Fetch the URL of the newly uploaded file for preview
+      const uploadedUrl = await getUrl(s3Key);
+      setMediaUrl(uploadedUrl);
+
+      alert('File uploaded successfully');
     } catch (error) {
-      console.error('Error during file upload:', error);
-      alert('Failed to upload file.');
-    } finally {
-      setUploading(false);
+      console.error('Error uploading file:', error);
+      alert('Error uploading file');
     }
   };
 
@@ -228,11 +187,8 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
           <input
             type="file"
             accept={ad.type + '/*'}
-            onChange={handleFileChange}
+            onChange={handleFileUpload}
           />
-          <button onClick={handleFileUpload} disabled={uploading || !file}>
-            {uploading ? 'Uploading...' : 'Upload File'}
-          </button>
 
           {/* Existing Media Preview */}
           {mediaUrl && (
@@ -246,6 +202,24 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
               ) : (
                 <video controls style={{ width: '100%' }}>
                   <source src={mediaUrl} type={file ? file.type : 'video/mp4'} />
+                  Your browser does not support the video tag.
+                </video>
+              )}
+            </div>
+          )}
+
+          {/* New File Preview */}
+          {file && (
+            <div style={{ marginTop: '10px' }}>
+              {ad.type === 'image' ? (
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt="Preview"
+                  style={{ maxWidth: '100%' }}
+                />
+              ) : (
+                <video controls style={{ width: '100%' }}>
+                  <source src={URL.createObjectURL(file)} type={file.type} />
                   Your browser does not support the video tag.
                 </video>
               )}

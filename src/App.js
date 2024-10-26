@@ -1,31 +1,15 @@
-// App.js
 import React from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import AdCanvas from './components/AdCanvas/AdCanvas';
 import AdViewer from './components/AdViewer/AdViewer';
+import { Amplify } from 'aws-amplify';
 import './css/index.css';
 import layout from './layout'; 
-import { Amplify } from 'aws-amplify';
-import awsConfig from './services/aws-exports';
 import ErrorBoundary from './components/ErrorBoundary';
 
-try {
-  Amplify.configure({
-    ...awsConfig,
-    Storage: {
-      AWSS3: {
-        bucket: awsConfig.aws_user_files_s3_bucket,
-        region: awsConfig.aws_user_files_s3_bucket_region,
-      },
-    },
-  });
-  console.log('Amplify configured successfully.');
-} catch (error) {
-  console.error('Error configuring Amplify:', error);
-}
-
+// Configure Amplify
 const App = () => {
   return (
     <ErrorBoundary>
