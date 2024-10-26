@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@aws-amplify/storage": "^6.6.11",
+    "@aws-amplify/ui-react": "^6.5.5",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^6.1.5",
@@ -11,7 +12,8 @@
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
-    "aws-amplify": "^6.6.6",
+    "amazon-cognito-identity-js": "^6.3.12",
+    "aws-amplify": "^6.6.7",
     "aws-sdk": "^2.1691.0",
     "hamburger-react": "^2.5.1",
     "lucide-react": "^0.453.0",
