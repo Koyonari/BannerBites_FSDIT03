@@ -1,6 +1,7 @@
 // AdCanvas.js
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import axios from 'axios'; 
 import "./AdCanvas.css";
 import Sidebar from "./Sidebar";
 import GridCell from "./GridCell";
@@ -280,13 +281,31 @@ const AdCanvas = () => {
   };
 
   // Handles saving the current layout as a JSON object
-  function handleSaveLayout() {
-    const layout = { rows, columns, gridItems };
-    const cleanedLayout = cleanLayoutJSON(layout);
-    const layoutJSON = JSON.stringify(cleanedLayout, null, 2);
-    console.log("Current Layout JSON:", layoutJSON);
-    alert(layoutJSON);
-  }
+  const handleSaveLayout = async () => {
+    try {
+      // Generate a unique layoutId
+      const layoutId = uuidv4();
+
+      // Construct the layout object
+      const layout = { rows, columns, gridItems, layoutId, name: "Main Layout" }; // You can customize the 'name' as needed
+
+      // Clean the layout JSON
+      const cleanedLayout = cleanLayoutJSON(layout);
+
+      // Send the layout to the backend
+      const response = await axios.post('http://localhost:5000/api/saveLayout', cleanedLayout, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log("Layout saved successfully:", response.data);
+      alert("Layout saved successfully!");
+    } catch (error) {
+      console.error("Error saving layout:", error);
+      alert("Failed to save layout. Please try again.");
+    }
+  };
 
   const cleanLayoutJSON = (layout) => {
     const { rows, columns, gridItems } = layout;
@@ -294,22 +313,28 @@ const AdCanvas = () => {
     const filteredItems = gridItems
       .map((item, index) => {
         if (!item || item.hidden) return null;
+  
         const row = Math.floor(index / columns);
         const column = index % columns;
+  
         return {
           index,
           row,
           column,
-          scheduledAds: item.scheduledAds.map((scheduledAd) => ({
-            id: scheduledAd.id,
-            scheduledDateTime: scheduledAd.scheduledDateTime,
-            ad: {
-              ...scheduledAd.ad,
-              content: scheduledAd.ad.content,
-              styles: scheduledAd.ad.styles,
-              type: scheduledAd.ad.type,
-            },
-          })),
+          scheduledAds: item.scheduledAds.map((scheduledAd) => {
+            const ad = scheduledAd.ad;
+            const adData = {
+              id: ad.id,
+              type: ad.type,
+              content: { ...ad.content },
+              styles: { ...ad.styles },
+            };
+            return {
+              id: scheduledAd.id,
+              scheduledDateTime: scheduledAd.scheduledDateTime,
+              ad: adData,
+            };
+          }),
           isMerged: item.isMerged,
           rowSpan: item.rowSpan,
           colSpan: item.colSpan,
@@ -320,6 +345,8 @@ const AdCanvas = () => {
       .filter((item) => item !== null); // Remove null entries
 
     return {
+      layoutId: layout.layoutId, // Ensure layoutId is included
+      name: layout.name, // Include name if necessary
       rows,
       columns,
       gridItems: filteredItems,
