@@ -279,6 +279,15 @@ const AdCanvas = () => {
     setGridItems(updatedGrid);
   };
 
+  // Handles saving the current layout as a JSON object
+  function handleSaveLayout() {
+    const layout = { rows, columns, gridItems };
+    const cleanedLayout = cleanLayoutJSON(layout);
+    const layoutJSON = JSON.stringify(cleanedLayout, null, 2);
+    console.log("Current Layout JSON:", layoutJSON);
+    alert(layoutJSON);
+  }
+
   const cleanLayoutJSON = (layout) => {
     const { rows, columns, gridItems } = layout;
 
@@ -439,6 +448,7 @@ const AdCanvas = () => {
       <Sidebar />
 
       <div className="controls">
+        <button onClick={handleSaveLayout}>Save Layout</button>;
         <button onClick={() => setIsSelectionMode(!isSelectionMode)}>
           {isSelectionMode ? "Exit Selection Mode" : "Enter Selection Mode"}
         </button>
