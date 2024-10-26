@@ -4,7 +4,6 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import AdCanvas from './components/AdCanvas/AdCanvas';
 import AdViewer from './components/AdViewer/AdViewer';
-import { Amplify } from 'aws-amplify';
 import './css/index.css';
 import layout from './layout'; 
 import ErrorBoundary from './components/ErrorBoundary';

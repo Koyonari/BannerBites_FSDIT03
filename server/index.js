@@ -1,12 +1,11 @@
-// index.js
 const express = require('express');
 const cors = require('cors');
-const { dynamoDb, s3 } = require('./awsMiddleware'); // Import dynamoDb and s3 from awsMiddleware
+const { dynamoDb } = require('./awsMiddleware'); // Import dynamoDb from awsMiddleware
 const { v4: uuidv4 } = require('uuid');
 const dotenv = require('dotenv');
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner'); 
 const { PutCommand } = require('@aws-sdk/lib-dynamodb');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 // Load environment variables
 dotenv.config();
@@ -14,8 +13,14 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Initialize S3 client
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
+// Server configuration
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
 
 // Middleware
 app.use(cors({
@@ -23,46 +28,40 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json({ limit: '10mb' })); // Using express.json() instead of body-parser
+app.use(express.json({ limit: '10mb' }));
 
 // Debugging: Log the dynamoDb object to verify initialization
 console.log('DynamoDB Document Client:', dynamoDb);
 console.log('Has send method:', typeof dynamoDb.send === 'function');
 
-// Endpoint to generate a presigned URL for uploading media to S3
-app.get('/api/uploadMediaUrl', async (req, res) => {
+const generatePresignedUrl = async (bucketName, key, contentType, expiresIn = 300) => {
+  const params = {
+    Bucket: bucketName,
+    Key: key,
+    ContentType: contentType,
+  };
+  const command = new PutObjectCommand(params);
+  return await getSignedUrl(s3Client, command, { expiresIn });
+};
+
+// Generate a pre-signed URL for uploading media to S3
+app.post('/generate-presigned-url', async (req, res) => {
+  const { fileName, contentType } = req.body;
+  const key = `media/${Date.now()}-${fileName}`;
+
   try {
-    const { fileName, fileType } = req.query;
-
-    if (!fileName || !fileType) {
-      return res.status(400).json({ message: 'Missing required query parameters.' });
-    }
-
-    // Generate a unique file key for S3 storage
-    const fileKey = `media/${uuidv4()}-${fileName}`;
-
-    // Define the S3 parameters for uploading
-    const params = {
-      Bucket: process.env.S3_BUCKET_NAME,
-      Key: fileKey,
-      ContentType: fileType,
-      ACL: 'public-read', // Set ACL to make the object publicly readable
-    };
-
-    // Generate a presigned URL using the PutObjectCommand
-    const command = new PutObjectCommand(params);
-    const uploadURL = await getSignedUrl(s3Client, command, { expiresIn: 60 });
-
-    // Return the presigned URL and file key to the client
-    return res.status(200).json({ uploadURL, fileKey });
+    const url = await generatePresignedUrl(process.env.S3_BUCKET_NAME, key, contentType, 300);
+    res.json({ url, key });
   } catch (error) {
-    console.error('Error generating pre-signed URL:', error);
-    return res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error generating pre-signed URL:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 // Endpoint to save layout along with related grid items and scheduled ads
 app.post('/api/saveLayout', async (req, res) => {
+  console.log('Request to /api/saveLayout:', JSON.stringify(req.body, null, 2));
+
   try {
     const layout = req.body;
 
