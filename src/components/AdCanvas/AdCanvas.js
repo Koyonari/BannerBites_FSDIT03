@@ -279,15 +279,6 @@ const AdCanvas = () => {
     setGridItems(updatedGrid);
   };
 
-  // Handles saving the current layout as a JSON object
-  const handleSaveLayout = () => {
-    const layout = { rows, columns, gridItems };
-    const cleanedLayout = cleanLayoutJSON(layout);
-    const layoutJSON = JSON.stringify(cleanedLayout, null, 2);
-    console.log("Current Layout JSON:", layoutJSON);
-    alert(layoutJSON);
-  };
-
   const cleanLayoutJSON = (layout) => {
     const { rows, columns, gridItems } = layout;
 
@@ -357,29 +348,30 @@ const AdCanvas = () => {
   };
 
   return (
-    <div className="ad-canvas">
-      <div className="flex flex-row items-stretch gap-2">
+    <div className="ad-canvas flex flex-col items-center justify-center text-center w-full">
+      <div className="flex flex-row items-stretch gap-2 w-full max-h-[80vh] max-w-[80vw] justify-center">
         {/* Decrease Columns button */}
         <div className="flex flex-col justify-center group">
           <div
             onClick={decreaseColumns}
-            className="bg-gray-300 text-center rounded-lg w-2 group-hover:w-8 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center transition-all duration-200 overflow-hidden"
+            className="bg-gray-300 text-center rounded-lg w-4 md:w-2 lg:w-1 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:w-8 transition-all duration-200 md:overflow-hidden"
           >
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
               -
             </span>
           </div>
         </div>
 
         {/* Grid */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col w-80 max-h-[80h]">
           {/* Increase Rows button */}
           <div className="group py-2">
             <div
               onClick={increaseRows}
-              className="w-full bg-gray-300 text-center rounded-lg h-2 group-hover:h-8 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center transition-all duration-200 overflow-hidden"
+              className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden
+    "
             >
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
                 +
               </span>
             </div>
@@ -387,7 +379,7 @@ const AdCanvas = () => {
 
           {/* Grid cells */}
           <div
-            className="grid flex-1"
+            className="grid flex-1 max-h-[60vh]"
             style={{
               "--rows": rows,
               "--columns": columns,
@@ -422,9 +414,9 @@ const AdCanvas = () => {
           <div className="group py-2">
             <div
               onClick={decreaseRows}
-              className="w-full bg-gray-300 text-center rounded-lg h-2 group-hover:h-8 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center transition-all duration-200 overflow-hidden"
+              className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
             >
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
                 -
               </span>
             </div>
@@ -435,9 +427,9 @@ const AdCanvas = () => {
         <div className="flex flex-col justify-center group">
           <div
             onClick={increaseColumns}
-            className="bg-gray-300 text-center rounded-lg w-2 group-hover:w-8 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center transition-all duration-200 overflow-hidden"
+            className="bg-gray-300 text-center rounded-lg w-4 md:w-2 lg:w-1 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:w-8 transition-all duration-200 md:overflow-hidden"
           >
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
               +
             </span>
           </div>
@@ -459,7 +451,6 @@ const AdCanvas = () => {
           </button>
         )}
       </div>
-      <button onClick={handleSaveLayout}>Save Layout</button>
       {isEditing && currentAd && currentAd.scheduledAd && (
         <EditModal
           ad={currentAd.scheduledAd.ad}

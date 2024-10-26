@@ -17,7 +17,8 @@ const AdComponent = ({ id, type }) => {
     <div
       ref={drag}
       className={`
-        ad-item cursor-move p-2 border-none
+        ad-item cursor-move p-2
+        bg-transparent !shadow-none !border-none !outline-none font-bold
         ${isDragging ? "opacity-50" : "opacity-100"}
       `}
     >
