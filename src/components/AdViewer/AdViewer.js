@@ -4,6 +4,27 @@ import './AdViewer.css';
 
 // Component to represent an individual Ad
 const AdComponent = ({ type, content, styles }) => {
+  // Use the mediaUrl or src directly from the content
+  let mediaUrl = content.mediaUrl || content.src;
+
+  // If mediaUrl is not provided, construct it using s3Bucket and s3Key
+  if (!mediaUrl && content.s3Bucket && content.s3Key) {
+    // Optionally, include s3Region if needed
+    const s3Region = content.s3Region || 'ap-southeast-1'; // Replace with your region if different
+
+    // Encode the s3Key properly to handle spaces and special characters
+    const encodeS3Key = (key) => {
+      return key
+        .split('/')
+        .map((segment) => encodeURIComponent(segment))
+        .join('/');
+    };
+
+    const encodedS3Key = encodeS3Key(content.s3Key);
+
+    mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
+  }
+
   return (
     <div className="ad-item" style={styles}>
       {type === 'text' && (
@@ -14,7 +35,7 @@ const AdComponent = ({ type, content, styles }) => {
       )}
       {type === 'image' && (
         <div>
-          <img src={content.src} alt={content.title} style={{ maxWidth: '100%' }} />
+          <img src={mediaUrl} alt={content.title} style={{ maxWidth: '100%' }} />
           <h3>{content.title}</h3>
           <p>{content.description}</p>
         </div>
@@ -22,7 +43,7 @@ const AdComponent = ({ type, content, styles }) => {
       {type === 'video' && (
         <div>
           <video controls style={{ width: '100%' }}>
-            <source src={content.src} type="video/mp4" />
+            <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
           <h3>{content.title}</h3>
@@ -63,19 +84,20 @@ const AdViewer = ({ layout }) => {
 
         if (scheduledAds && scheduledAds.length > 0) {
           const now = new Date();
-          // Filter ads that are scheduled for now or earlier
+          // Find ads that are scheduled for now or earlier and filter those available
           const availableAds = scheduledAds.filter(
             (scheduledAd) => new Date(scheduledAd.scheduledDateTime) <= now
           );
+
           if (availableAds.length > 0) {
-            // Get the latest scheduled ad
+            // Get the latest ad that should be displayed right now
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
               new Date(currentAd.scheduledDateTime) > new Date(latestAd.scheduledDateTime)
                 ? currentAd
                 : latestAd
             );
           } else {
-            // If no ads are scheduled yet, show the next upcoming ad
+            // No ads available yet, select the next upcoming one
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
               new Date(currentAd.scheduledDateTime) < new Date(nextAd.scheduledDateTime)
                 ? currentAd
