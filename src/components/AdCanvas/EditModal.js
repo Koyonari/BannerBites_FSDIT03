@@ -26,12 +26,17 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
 
   useEffect(() => {
     if (ad && ad.content) {
+      const mediaUrl =
+        ad.content.s3Key &&
+        `https://${process.env.REACT_APP_S3_BUCKET_NAME}.s3.${process.env.REACT_APP_AWS_REGION}.amazonaws.com/${ad.content.s3Key}`;
+  
       setFormData({
         content: {
           title: ad.content.title || "",
           description: ad.content.description || "",
           s3Bucket: ad.content.s3Bucket || "",
           s3Key: ad.content.s3Key || "",
+          src: ad.content.src || mediaUrl || "", // Include src
         },
         styles: ad.styles || {
           font: "Arial",
@@ -40,10 +45,8 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
           borderColor: "#000000",
         },
       });
-
-      // Construct the media URL for existing media preview
-      if ((ad.type === "image" || ad.type === "video") && ad.content.s3Key) {
-        const mediaUrl = `https://${process.env.REACT_APP_S3_BUCKET_NAME}.s3.${process.env.REACT_APP_AWS_REGION}.amazonaws.com/${ad.content.s3Key}`;
+  
+      if (mediaUrl) {
         setMediaUrl(mediaUrl);
       }
     }
@@ -125,15 +128,17 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
 
       if (uploadResponse.ok) {
         console.log("File uploaded successfully");
+        const mediaUrlWithoutParams = url.split("?")[0];
         setFormData((prevData) => ({
           ...prevData,
           content: {
             ...prevData.content,
             s3Bucket: process.env.REACT_APP_S3_BUCKET_NAME,
             s3Key: key,
+            src: mediaUrlWithoutParams, // Set src to the uploaded file URL
           },
         }));
-        setMediaUrl(url.split("?")[0]); // Get media URL without query params
+        setMediaUrl(mediaUrlWithoutParams); // Get media URL without query params
       } else {
         console.error("Failed to upload file:", uploadResponse.statusText);
         alert("Error uploading file");
