@@ -10,6 +10,9 @@ Kelvin
 ```
 
 ---
+# BannerBites
+
+BannerBites is a web application for managing advertisements dynamically with real-time updates. The project utilizes a React.js frontend, a Node.js backend, and AWS DynamoDB/S3 Bucket for data storage with WebSocket support.
 
 ## Project Structure
 
