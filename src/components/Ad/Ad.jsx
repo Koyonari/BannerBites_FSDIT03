@@ -8,18 +8,43 @@ import AdViewer from "../AdViewer/AdViewer";
 import LayoutViewer from "../AdViewer/LayoutViewer";
 import LocationSelector from "../LocationSelector";
 import TVSelector from "../TVSelector";
+import EditModal from "../AdCanvas/EditModal";
+import ScheduleModal from "../AdCanvas/ScheduleModal";
+import "../AdViewer/AdViewer.css";
 import AssignLayoutTab from "../AssignLayoutTab";
 import LayoutSelector from "../AdViewer/LayoutSelector"; // Import the missing LayoutSelector component
 import ErrorBoundary from "../ErrorBoundary";
+import SaveLayoutModal from "../AdCanvas/SaveLayoutModal";
 import Navbar from "../Navbar";
 import { Check, MoveLeft, Merge } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
 
 const Ad = () => {
   const [selectedLayoutId, setSelectedLayoutId] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [selectedTVId, setSelectedTVId] = useState(null);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentAd, setCurrentAd] = useState(null);
+  const [selectedCells, setSelectedCells] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
+  const [isNamingLayout, setIsNamingLayout] = useState(false); // New state
 
+  const [rows, setRows] = useState(2);
+  const [columns, setColumns] = useState(3);
+  const totalCells = rows * columns;
+  const [gridItems, setGridItems] = useState(
+    Array.from({ length: totalCells }, () => ({
+      scheduledAds: [],
+      isMerged: false,
+      hidden: false,
+      rowSpan: 1,
+      colSpan: 1,
+    }))
+  );
   const navigate = useNavigate();
 
   // Handle selecting a location
@@ -52,13 +77,124 @@ const Ad = () => {
     navigate(-1);
   };
 
+  // In handleScheduleSave function
+  const handleScheduleSave = (adItem, scheduledTime, index) => {
+    const updatedGrid = [...gridItems];
+    const scheduledAd = {
+      id: uuidv4(),
+      ad: { ...adItem, id: uuidv4() },
+      scheduledTime, // Store time only
+    };
+    updatedGrid[index].scheduledAds.push(scheduledAd);
+    setGridItems(updatedGrid);
+    setIsScheduling(false);
+    setCurrentScheduleAd(null);
+  };
+
+  // Handles saving an updated ad from the modal
+  const handleSave = (updatedAdData, updatedScheduledDateTime) => {
+    const updatedGrid = [...gridItems];
+    const scheduledAds = updatedGrid[currentAd.index].scheduledAds;
+    const adIndex = scheduledAds.findIndex(
+      (ad) => ad.id === currentAd.scheduledAd.id
+    );
+    if (adIndex !== -1) {
+      scheduledAds[adIndex] = {
+        ...scheduledAds[adIndex],
+        ad: {
+          ...scheduledAds[adIndex].ad,
+          content: updatedAdData.content,
+          styles: updatedAdData.styles,
+        },
+        scheduledDateTime: updatedScheduledDateTime, // Update scheduled time
+      };
+      updatedGrid[currentAd.index].scheduledAds = scheduledAds;
+      setGridItems(updatedGrid);
+    }
+    setIsEditing(false);
+    setCurrentAd(null);
+  };
+
+  // New function to handle the actual save after name is entered
+  const handleLayoutNameSave = async (name) => {
+    try {
+      const layoutId = uuidv4();
+      const layout = { rows, columns, gridItems, layoutId, name };
+
+      const cleanedLayout = cleanLayoutJSON(layout);
+
+      const response = await axios.post(
+        "http://localhost:5000/api/saveLayout",
+        cleanedLayout,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Layout saved successfully:", response.data);
+      alert("Layout saved successfully!");
+      setIsNamingLayout(false); // Close the modal
+    } catch (error) {
+      console.error("Error saving layout:", error);
+      alert("Failed to save layout. Please try again.");
+    }
+  };
+
+  const cleanLayoutJSON = (layout) => {
+    const { rows, columns, gridItems } = layout;
+
+    const filteredItems = gridItems
+      .map((item, index) => {
+        if (!item || item.hidden) return null;
+
+        const row = Math.floor(index / columns);
+        const column = index % columns;
+
+        return {
+          index,
+          row,
+          column,
+          scheduledAds: item.scheduledAds.map((scheduledAd) => {
+            const ad = scheduledAd.ad;
+            const adData = {
+              id: ad.id,
+              type: ad.type,
+              content: { ...ad.content },
+              styles: { ...ad.styles },
+            };
+            return {
+              id: scheduledAd.id,
+              scheduledTime: scheduledAd.scheduledTime,
+              ad: adData,
+            };
+          }),
+          isMerged: item.isMerged,
+          rowSpan: item.rowSpan,
+          colSpan: item.colSpan,
+          mergeDirection: item.mergeDirection,
+          selectedCells: item.selectedCells,
+        };
+      })
+      .filter((item) => item !== null); // Remove null entries
+
+    return {
+      layoutId: layout.layoutId, // Ensure layoutId is included
+      name: layout.name, // Include name if necessary
+      rows,
+      columns,
+      gridItems: filteredItems,
+    };
+  };
+
   return (
     <div>
       <Navbar />
       <div className="px-8 pt-8">
         <ErrorBoundary>
           <DndProvider backend={HTML5Backend}>
-            <div className="App">
+            <div>
               <Routes>
                 <Route path="/" element={<AdCanvas />} />
                 <Route path="ad-canvas" element={<AdCanvas />} />
@@ -120,6 +256,42 @@ const Ad = () => {
             <Check className="h-8 text-white bg-orange-500 rounded-lg py-1.5 w-24" />
           </Link>
         </div>
+      </div>
+
+      <div>
+        {/* Include the SaveLayoutModal */}
+        {isNamingLayout && (
+          <SaveLayoutModal
+            onSave={handleLayoutNameSave}
+            onClose={() => setIsNamingLayout(false)}
+          />
+        )}
+        {isEditing && currentAd && currentAd.scheduledAd && (
+          <EditModal
+            ad={currentAd.scheduledAd.ad}
+            onSave={handleSave}
+            onClose={() => {
+              setIsEditing(false);
+              setCurrentAd(null);
+            }}
+          />
+        )}
+        {isScheduling && currentScheduleAd && (
+          <ScheduleModal
+            ad={currentScheduleAd.item}
+            onSave={(scheduledDateTime) =>
+              handleScheduleSave(
+                currentScheduleAd.item,
+                scheduledDateTime,
+                currentScheduleAd.index
+              )
+            }
+            onClose={() => {
+              setIsScheduling(false);
+              setCurrentScheduleAd(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );
