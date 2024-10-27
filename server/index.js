@@ -122,7 +122,6 @@ app.post('/api/saveLayout', async (req, res) => {
       console.log(`Grid item at index ${item.index} for layout ${layout.layoutId} saved successfully.`);
 
       // Step 3: Save each scheduled ad for the grid item
-       // Step 3: Save each scheduled ad for the grid item
        for (const scheduledAd of item.scheduledAds) {
         const scheduledAdParams = {
           TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,

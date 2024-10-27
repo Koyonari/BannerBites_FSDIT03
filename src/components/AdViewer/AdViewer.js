@@ -1,6 +1,6 @@
 // AdViewer.js
-import React from 'react';
-import './AdViewer.css';
+import React from "react";
+import "./AdViewer.css";
 
 // Component to represent an individual Ad
 const AdComponent = ({ type, content, styles }) => {
@@ -10,14 +10,14 @@ const AdComponent = ({ type, content, styles }) => {
   // If mediaUrl is not provided, construct it using s3Bucket and s3Key
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
     // Optionally, include s3Region if needed
-    const s3Region = content.s3Region || 'ap-southeast-1'; // Replace with your region if different
+    const s3Region = content.s3Region || "ap-southeast-1"; // Replace with your region if different
 
     // Encode the s3Key properly to handle spaces and special characters
     const encodeS3Key = (key) => {
       return key
-        .split('/')
+        .split("/")
         .map((segment) => encodeURIComponent(segment))
-        .join('/');
+        .join("/");
     };
 
     const encodedS3Key = encodeS3Key(content.s3Key);
@@ -27,22 +27,26 @@ const AdComponent = ({ type, content, styles }) => {
 
   return (
     <div className="ad-item" style={styles}>
-      {type === 'text' && (
+      {type === "text" && (
         <div>
           <h3>{content.title}</h3>
           <p>{content.description}</p>
         </div>
       )}
-      {type === 'image' && (
+      {type === "image" && (
         <div>
-          <img src={mediaUrl} alt={content.title} style={{ maxWidth: '100%' }} />
+          <img
+            src={mediaUrl}
+            alt={content.title}
+            style={{ maxWidth: "100%" }}
+          />
           <h3>{content.title}</h3>
           <p>{content.description}</p>
         </div>
       )}
-      {type === 'video' && (
+      {type === "video" && (
         <div>
-          <video controls style={{ width: '100%' }}>
+          <video controls style={{ width: "100%" }}>
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
@@ -66,12 +70,12 @@ const AdViewer = ({ layout }) => {
     <div
       className="ad-viewer-grid"
       style={{
-        display: 'grid',
+        display: "grid",
         gridTemplateRows: `repeat(${rows}, 1fr)`,
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        gap: '10px',
-        width: '100%',
-        height: '100%',
+        gap: "10px",
+        width: "100%",
+        height: "100%",
       }}
     >
       {gridItems.map((item) => {
@@ -84,22 +88,24 @@ const AdViewer = ({ layout }) => {
 
         if (scheduledAds && scheduledAds.length > 0) {
           const now = new Date();
-          // Find ads that are scheduled for now or earlier and filter those available
+          const currentTimeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`; // Format current time as "HH:mm"
+
+          // Filter ads that should be displayed now
           const availableAds = scheduledAds.filter(
-            (scheduledAd) => new Date(scheduledAd.scheduledDateTime) <= now
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
           );
 
           if (availableAds.length > 0) {
-            // Get the latest ad that should be displayed right now
+            // Get the latest ad scheduled before or at the current time
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
-              new Date(currentAd.scheduledDateTime) > new Date(latestAd.scheduledDateTime)
+              currentAd.scheduledTime > latestAd.scheduledTime
                 ? currentAd
                 : latestAd
             );
           } else {
-            // No ads available yet, select the next upcoming one
+            // Get the next upcoming ad
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
-              new Date(currentAd.scheduledDateTime) < new Date(nextAd.scheduledDateTime)
+              currentAd.scheduledTime < nextAd.scheduledTime
                 ? currentAd
                 : nextAd
             );
@@ -109,7 +115,6 @@ const AdViewer = ({ layout }) => {
         if (!adToDisplay) {
           return null; // No ad to display in this cell
         }
-
         const ad = adToDisplay.ad;
         const { type, content, styles } = ad;
 
@@ -126,9 +131,9 @@ const AdViewer = ({ layout }) => {
             style={{
               gridRow: `${gridRowStart} / ${gridRowEnd}`,
               gridColumn: `${gridColumnStart} / ${gridColumnEnd}`,
-              border: '1px solid #ccc',
-              padding: '10px',
-              backgroundColor: '#fafafa',
+              border: "1px solid #ccc",
+              padding: "10px",
+              backgroundColor: "#fafafa",
             }}
           >
             <AdComponent type={type} content={content} styles={styles} />

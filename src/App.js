@@ -3,6 +3,8 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Route, Routes, Link, useNavigate } from 'react-router-dom';
 import AdCanvas from './components/AdCanvas/AdCanvas';
+import AdViewer from "./components/AdViewer/AdViewer";
+import LayoutViewer from "./components/AdViewer/LayoutViewer";
 import LocationSelector from './components/LocationSelector';
 import TVSelector from './components/TVSelector';
 import AssignLayoutTab from './components/AssignLayoutTab';
@@ -10,6 +12,7 @@ import LayoutSelector from './components/AdViewer/LayoutSelector';  // Import th
 import ErrorBoundary from './components/ErrorBoundary';
 
 const App = () => {
+  const [selectedLayoutId, setSelectedLayoutId] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [selectedTVId, setSelectedTVId] = useState(null);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
@@ -20,13 +23,20 @@ const App = () => {
   const handleSelectLocation = (locationId) => {
     setSelectedLocationId(locationId);
     setSelectedTVId(null); // Reset TV selection when a new location is selected
-    navigate('/tvs');
+    navigate("/tvs");
   };
 
   // Handle selecting a TV
   const handleSelectTV = (tvId) => {
     setSelectedTVId(tvId);
-    navigate('/assign-layout');
+    navigate("/assign-layout");
+  };
+
+  // Handle selecting a layout
+  const handleSelectLayout = (layoutId) => {
+    setSelectedLayoutId(layoutId);
+    setIsSelectorOpen(false);
+    navigate("/layout-viewer");
   };
 
   // Handle opening the layout selector modal
@@ -82,16 +92,16 @@ const App = () => {
                 )
               }
             />
+            <Route
+              path="/layout-viewer"
+              element={<LayoutViewer layoutId={selectedLayoutId} />}
+            />
+            <Route path="/ad-viewer" element={<AdViewer />} />
           </Routes>
         </div>
         {isSelectorOpen && (
           <LayoutSelector
-            onSelect={(layoutId) => {
-              // Handle selecting a layout in LayoutSelector
-              console.log("Selected Layout:", layoutId);
-              setIsSelectorOpen(false);
-              navigate('/layout-viewer');
-            }}
+            onSelect={handleSelectLayout}
             onClose={() => setIsSelectorOpen(false)}
           />
         )}
