@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { SketchPicker } from "react-color";
 import Modal from "../Modal/Modal.js";
 
-const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
+const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({
     content: {
       title: "",
@@ -18,20 +18,25 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
       borderColor: "#000000",
     },
   });
-  const [scheduledTime, setScheduledTime] = useState(
-    scheduledDateTime || new Date().toISOString().slice(0, 16)
+  const [scheduledTimeState, setScheduledTimeState] = useState(
+    scheduledTime || "00:00"
   );
   const [file, setFile] = useState(null); // For new uploads
   const [mediaUrl, setMediaUrl] = useState(""); // For existing media
 
   useEffect(() => {
     if (ad && ad.content) {
+      const mediaUrl =
+        ad.content.s3Key &&
+        `https://${process.env.REACT_APP_S3_BUCKET_NAME}.s3.${process.env.REACT_APP_AWS_REGION}.amazonaws.com/${ad.content.s3Key}`;
+  
       setFormData({
         content: {
           title: ad.content.title || "",
           description: ad.content.description || "",
           s3Bucket: ad.content.s3Bucket || "",
           s3Key: ad.content.s3Key || "",
+          src: ad.content.src || mediaUrl || "", // Include src
         },
         styles: ad.styles || {
           font: "Arial",
@@ -40,10 +45,8 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
           borderColor: "#000000",
         },
       });
-
-      // Construct the media URL for existing media preview
-      if ((ad.type === "image" || ad.type === "video") && ad.content.s3Key) {
-        const mediaUrl = `https://${process.env.REACT_APP_S3_BUCKET_NAME}.s3.${process.env.REACT_APP_AWS_REGION}.amazonaws.com/${ad.content.s3Key}`;
+  
+      if (mediaUrl) {
         setMediaUrl(mediaUrl);
       }
     }
@@ -125,15 +128,17 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
 
       if (uploadResponse.ok) {
         console.log("File uploaded successfully");
+        const mediaUrlWithoutParams = url.split("?")[0];
         setFormData((prevData) => ({
           ...prevData,
           content: {
             ...prevData.content,
             s3Bucket: process.env.REACT_APP_S3_BUCKET_NAME,
             s3Key: key,
+            src: mediaUrlWithoutParams, // Set src to the uploaded file URL
           },
         }));
-        setMediaUrl(url.split("?")[0]); // Get media URL without query params
+        setMediaUrl(mediaUrlWithoutParams); // Get media URL without query params
       } else {
         console.error("Failed to upload file:", uploadResponse.statusText);
         alert("Error uploading file");
@@ -243,13 +248,13 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
         onChange={(color) => handleColorChange(color, "borderColor")}
       />
 
-      {/* Scheduled time input */}
-      <label style={{ display: "block", marginTop: "10px" }}>
-        Scheduled Date and Time:
+   {/* Scheduled time input */}
+   <label style={{ display: "block", marginTop: "10px" }}>
+        Scheduled Time:
         <input
-          type="datetime-local"
-          value={scheduledTime}
-          onChange={(e) => setScheduledTime(e.target.value)}
+          type="time"
+          value={scheduledTimeState}
+          onChange={(e) => setScheduledTimeState(e.target.value)}
           style={{ display: "block", marginTop: "5px" }}
         />
       </label>

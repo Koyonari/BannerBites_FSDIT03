@@ -1,12 +1,13 @@
 // AdCanvas.js
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import axios from 'axios'; 
+import axios from "axios";
 import "./AdCanvas.css";
 import Sidebar from "./Sidebar";
 import GridCell from "./GridCell";
 import EditModal from "./EditModal";
 import ScheduleModal from "./ScheduleModal";
+import SaveLayoutModal from "./SaveLayoutModal";
 
 const AdCanvas = () => {
   const [rows, setRows] = useState(2);
@@ -27,6 +28,7 @@ const AdCanvas = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
+  const [isNamingLayout, setIsNamingLayout] = useState(false); // New state
 
   // Resizes the grid based on new dimensions
   const resizeGrid = (newRows, newColumns) => {
@@ -236,13 +238,13 @@ const AdCanvas = () => {
     setCurrentScheduleAd({ item, index });
     setIsScheduling(true);
   };
-  // Handles saving a scheduled ad
-  const handleScheduleSave = (adItem, scheduledDateTime, index) => {
+  // In handleScheduleSave function
+  const handleScheduleSave = (adItem, scheduledTime, index) => {
     const updatedGrid = [...gridItems];
     const scheduledAd = {
       id: uuidv4(),
       ad: { ...adItem, id: uuidv4() },
-      scheduledDateTime,
+      scheduledTime, // Store time only
     };
     updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
@@ -281,26 +283,31 @@ const AdCanvas = () => {
   };
 
   // Handles saving the current layout as a JSON object
-  const handleSaveLayout = async () => {
+  const handleSaveLayout = () => {
+    setIsNamingLayout(true); // Open the modal instead of saving immediately
+  };
+
+  // New function to handle the actual save after name is entered
+  const handleLayoutNameSave = async (name) => {
     try {
-      // Generate a unique layoutId
       const layoutId = uuidv4();
+      const layout = { rows, columns, gridItems, layoutId, name };
 
-      // Construct the layout object
-      const layout = { rows, columns, gridItems, layoutId, name: "Main Layout" }; // You can customize the 'name' as needed
-
-      // Clean the layout JSON
       const cleanedLayout = cleanLayoutJSON(layout);
 
-      // Send the layout to the backend
-      const response = await axios.post('http://localhost:5000/api/saveLayout', cleanedLayout, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/saveLayout",
+        cleanedLayout,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       console.log("Layout saved successfully:", response.data);
       alert("Layout saved successfully!");
+      setIsNamingLayout(false); // Close the modal
     } catch (error) {
       console.error("Error saving layout:", error);
       alert("Failed to save layout. Please try again.");
@@ -313,10 +320,10 @@ const AdCanvas = () => {
     const filteredItems = gridItems
       .map((item, index) => {
         if (!item || item.hidden) return null;
-  
+
         const row = Math.floor(index / columns);
         const column = index % columns;
-  
+
         return {
           index,
           row,
@@ -331,7 +338,7 @@ const AdCanvas = () => {
             };
             return {
               id: scheduledAd.id,
-              scheduledDateTime: scheduledAd.scheduledDateTime,
+              scheduledTime: scheduledAd.scheduledTime,
               ad: adData,
             };
           }),
@@ -488,6 +495,15 @@ const AdCanvas = () => {
           </button>
         )}
       </div>
+      <button onClick={handleSaveLayout}>Save Layout</button>
+
+      {/* Include the SaveLayoutModal */}
+      {isNamingLayout && (
+        <SaveLayoutModal
+          onSave={handleLayoutNameSave}
+          onClose={() => setIsNamingLayout(false)}
+        />
+      )}
       {isEditing && currentAd && currentAd.scheduledAd && (
         <EditModal
           ad={currentAd.scheduledAd.ad}

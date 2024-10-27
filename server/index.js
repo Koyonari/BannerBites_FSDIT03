@@ -5,11 +5,11 @@ const { v4: uuidv4 } = require('uuid');
 const dotenv = require('dotenv');
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner'); 
-const { PutCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, GetCommand, QueryCommand, DynamoDBClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
 
 // Load environment variables
 dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -122,12 +122,12 @@ app.post('/api/saveLayout', async (req, res) => {
       console.log(`Grid item at index ${item.index} for layout ${layout.layoutId} saved successfully.`);
 
       // Step 3: Save each scheduled ad for the grid item
-      for (const scheduledAd of item.scheduledAds) {
+       for (const scheduledAd of item.scheduledAds) {
         const scheduledAdParams = {
           TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
           Item: {
-            gridItemId: `${layout.layoutId}#${item.index}`, // Composite key
-            scheduledDateTime: scheduledAd.scheduledDateTime, // Sort key
+            gridItemId: `${layout.layoutId}#${item.index}`, // Partition key
+            scheduledTime: scheduledAd.scheduledTime,       // Sort key (updated)
             adId: scheduledAd.ad.id,
             index: item.index,
             layoutId: layout.layoutId,
@@ -136,6 +136,7 @@ app.post('/api/saveLayout', async (req, res) => {
         const scheduledAdCommand = new PutCommand(scheduledAdParams);
         await dynamoDb.send(scheduledAdCommand);
         console.log(`Scheduled ad ${scheduledAd.ad.id} for grid item ${item.index} saved successfully.`);
+
 
         // Step 4: Save unique ad details in the Ads table if not already saved
         if (!uniqueAds.has(scheduledAd.ad.id)) {
@@ -161,6 +162,191 @@ app.post('/api/saveLayout', async (req, res) => {
   } catch (error) {
     console.error('Error saving layout and related items:', error);
     return res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+// Endpoint to get all layouts
+app.get('/api/layouts', async (req, res) => {
+  try {
+    const params = {
+      TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
+    };
+
+    const command = new ScanCommand(params);
+    const data = await dynamoDb.send(command);
+
+    res.json(data.Items); // Return the array of layouts
+  } catch (error) {
+    console.error('Error fetching layouts:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+app.get('/api/layouts/:layoutId', async (req, res) => {
+  const { layoutId } = req.params;
+
+  try {
+    // Step 1: Get the layout details
+    const layoutParams = {
+      TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
+      Key: {
+        layoutId: layoutId,
+      },
+    };
+
+    const layoutCommand = new GetCommand(layoutParams);
+    const layoutData = await dynamoDb.send(layoutCommand);
+    const layout = layoutData.Item;
+
+    if (!layout) {
+      return res.status(404).json({ message: 'Layout not found.' });
+    }
+
+    // Step 2: Get the grid items for this layout
+    const gridItemsParams = {
+      TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+      KeyConditionExpression: 'layoutId = :layoutId',
+      ExpressionAttributeValues: {
+        ':layoutId': layoutId,
+      },
+    };
+
+    const gridItemsCommand = new QueryCommand(gridItemsParams);
+    const gridItemsData = await dynamoDb.send(gridItemsCommand);
+    const gridItems = gridItemsData.Items;
+
+    // Step 3: For each grid item, get the scheduled ads
+    for (const item of gridItems) {
+      const scheduledAdsParams = {
+        TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+        KeyConditionExpression: 'gridItemId = :gridItemId',
+        ExpressionAttributeValues: {
+          ':gridItemId': `${layoutId}#${item.index}`,
+        },
+      };
+
+      const scheduledAdsCommand = new QueryCommand(scheduledAdsParams);
+      const scheduledAdsData = await dynamoDb.send(scheduledAdsCommand);
+      const scheduledAds = scheduledAdsData.Items;
+
+      // Step 4: For each scheduled ad, get the ad details
+      for (const scheduledAd of scheduledAds) {
+        const adParams = {
+          TableName: process.env.DYNAMODB_TABLE_ADS,
+          Key: {
+            adId: scheduledAd.adId,
+          },
+        };
+
+        const adCommand = new GetCommand(adParams);
+        const adData = await dynamoDb.send(adCommand);
+        scheduledAd.ad = adData.Item; // Attach the ad details to the scheduledAd
+      }
+
+      item.scheduledAds = scheduledAds; // Attach the scheduled ads to the grid item
+    }
+
+    // Attach the grid items to the layout
+    layout.gridItems = gridItems;
+
+    // Return the complete layout data
+    res.json(layout);
+  } catch (error) {
+    console.error('Error fetching layout data:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+// Get all locations
+app.get('/api/locations', async (req, res) => {
+  try {
+    const params = {
+      TableName: process.env.DYNAMODB_TABLE_LOCATIONS,
+    };
+
+    const command = new ScanCommand(params);
+    const data = await dynamoDb.send(command);
+    res.json(data.Items); // Return list of locations
+  } catch (error) {
+    console.error('Error fetching locations:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+// Function to get the status of an index
+const getIndexStatus = async (tableName, indexName) => {
+  const params = {
+    TableName: tableName,
+  };
+  const command = new DescribeTableCommand(params);
+  const data = await dynamoDb.send(command);
+  const index = data.Table.GlobalSecondaryIndexes.find(i => i.IndexName === indexName);
+  return index ? index.IndexStatus : 'NOT_FOUND';
+};
+
+app.get('/api/locations/:locationId/tvs', async (req, res) => {
+  const { locationId } = req.params;
+  try {
+    const indexStatus = await getIndexStatus(process.env.DYNAMODB_TABLE_TVS, 'locationId-index');
+
+    if (indexStatus === 'ACTIVE') {
+      // Use Query if index is ACTIVE
+      const params = {
+        TableName: process.env.DYNAMODB_TABLE_TVS,
+        IndexName: 'locationId-index',
+        KeyConditionExpression: 'locationId = :locationId',
+        ExpressionAttributeValues: {
+          ':locationId': locationId,
+        },
+      };
+      const command = new QueryCommand(params);
+      const data = await dynamoDb.send(command);
+      res.json(data.Items);
+    } else {
+      // Use Scan if index is still being backfilled
+      console.log('Index still backfilling, using Scan');
+      const params = {
+        TableName: process.env.DYNAMODB_TABLE_TVS,
+        FilterExpression: 'locationId = :locationId',
+        ExpressionAttributeValues: {
+          ':locationId': locationId,
+        },
+      };
+      const command = new ScanCommand(params);
+      const data = await dynamoDb.send(command);
+      res.json(data.Items);
+    }
+  } catch (error) {
+    console.error('Error fetching TVs for location:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+// Assign a layout to a TV
+app.post('/api/tvs/:tvId/layouts', async (req, res) => {
+  const { tvId } = req.params;
+  const { layoutId, assignedDate } = req.body;
+
+  if (!layoutId || !assignedDate) {
+    return res.status(400).json({ message: 'LayoutId and assignedDate are required.' });
+  }
+
+  try {
+    const params = {
+      TableName: process.env.DYNAMODB_TABLE_TVLAYOUTS,
+      Item: {
+        tvId,
+        layoutId,
+        assignedDate,
+      },
+    };
+    const command = new PutCommand(params);
+    await dynamoDb.send(command);
+
+    res.status(200).json({ message: 'Layout assigned to TV successfully.' });
+  } catch (error) {
+    console.error('Error assigning layout to TV:', error);
+    res.status(500).json({ message: 'Internal server error.' });
   }
 });
 
