@@ -12,7 +12,7 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
               <p>
                 <strong>{scheduledAd.ad.content.title}</strong>
                 <br />
-                Scheduled for: {new Date(scheduledAd.scheduledDateTime).toLocaleString()}
+                Scheduled for: {scheduledAd.scheduledTime}
               </p>
               <button onClick={() => onEdit(scheduledAd)}>Edit</button>
               <button onClick={() => onRemove(scheduledAd)}>Remove</button>

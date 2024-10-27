@@ -1,41 +1,18 @@
-// Sidebar.js
 import React from "react";
 import AdComponent from "./AdComponent";
 
 const Sidebar = () => {
-  const adOptions = [
-    {
-      type: "text",
-      content: { title: "Text Ad", description: "This is a text ad." },
-    },
-    {
-      type: "image",
-      content: {
-        src: "https://via.placeholder.com/150",
-        title: "Image Ad",
-        description: "This is an image ad.",
-      },
-    },
-    {
-      type: "video",
-      content: {
-        src: "https://sample-videos.com/video123/mp4/480/asdasdas.mp4",
-        title: "Video Ad",
-        description: "This is a video ad.",
-      },
-    }
-  ];
+  const adOptions = [{ type: "Text" }, { type: "Image" }, { type: "Video" }];
 
   return (
-    <div className="sidebar">
-      <h3>Ad Options</h3>
+    <div className="lg:fixed lg:left-4 lg:top-1/2 lg:-translate-y-1/2 lg:flex-col lg:h-auto lg:w-24 flex flex-row w-3/5 justify-center lg:items-start shadow-none items-center py-4 lg:pl-4 xl:pl-8 bg-transparent border-none">
       {adOptions.map((ad, index) => (
-        <AdComponent
-          key={index}
-          id={`sidebar-${ad.type}-${index}`}
-          type={ad.type}
-          content={ad.content}
-        />
+        <div
+          key={`container-${index}`}
+          className="lg:mb-4 last:lg:mb-0 flex-1 lg:flex-none flex justify-center border-none"
+        >
+          <AdComponent id={`sidebar-${ad.type}-${index}`} type={ad.type} />
+        </div>
       ))}
     </div>
   );

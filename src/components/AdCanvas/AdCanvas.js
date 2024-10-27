@@ -1,11 +1,13 @@
 // AdCanvas.js
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
 import "./AdCanvas.css";
 import Sidebar from "./Sidebar";
 import GridCell from "./GridCell";
 import EditModal from "./EditModal";
 import ScheduleModal from "./ScheduleModal";
+import SaveLayoutModal from "./SaveLayoutModal";
 
 const AdCanvas = () => {
   const [rows, setRows] = useState(2);
@@ -26,6 +28,7 @@ const AdCanvas = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
+  const [isNamingLayout, setIsNamingLayout] = useState(false); // New state
 
   // Resizes the grid based on new dimensions
   const resizeGrid = (newRows, newColumns) => {
@@ -77,15 +80,15 @@ const AdCanvas = () => {
   // Handle merging of cells, including direction and selection
   const handleMerge = (index, direction, selectedCells = []) => {
     const updatedGrid = [...gridItems];
-  
+
     if (!updatedGrid[index] || updatedGrid[index]?.isMerged) {
       alert("Cannot merge empty or already merged cells!");
       return;
     }
-  
+
     const numColumns = columns;
     let indicesToMerge = [];
-  
+
     if (selectedCells.length > 0) {
       // Handle selection-based merging
       indicesToMerge = selectedCells;
@@ -125,13 +128,13 @@ const AdCanvas = () => {
         }
       }
     }
-  
+
     if (indicesToMerge.length > 0) {
       // Combine scheduledAds from the cells being merged
       const mergedScheduledAds = indicesToMerge.reduce((ads, idx) => {
         return ads.concat(updatedGrid[idx].scheduledAds || []);
       }, []);
-  
+
       const mergedItem = {
         scheduledAds: mergedScheduledAds,
         isMerged: true,
@@ -160,9 +163,9 @@ const AdCanvas = () => {
         selectedCells:
           selectedCells.length > 0 ? selectedCells : indicesToMerge,
       };
-  
+
       updatedGrid[indicesToMerge[0]] = mergedItem;
-  
+
       indicesToMerge.slice(1).forEach((cellIndex) => {
         updatedGrid[cellIndex] = {
           scheduledAds: [], // Ensure scheduledAds is initialized
@@ -176,10 +179,10 @@ const AdCanvas = () => {
       alert("Cannot merge the selected cells.");
       return;
     }
-  
+
     setGridItems(updatedGrid);
   };
-  
+
   // Handles selecting cells for merging
   const handleCellSelection = (index) => {
     if (!isSelectionMode) return;
@@ -206,16 +209,16 @@ const AdCanvas = () => {
   const handleUnmerge = (index) => {
     const updatedGrid = [...gridItems];
     const cell = updatedGrid[index];
-  
+
     if (cell.isMerged) {
       const cellsToUnmerge =
         cell.selectedCells && cell.selectedCells.length > 0
           ? cell.selectedCells
           : [index];
-  
+
       // Distribute scheduledAds equally among unmerged cells or keep them in the first cell
       const scheduledAds = cell.scheduledAds;
-  
+
       cellsToUnmerge.forEach((idx, idxIndex) => {
         updatedGrid[idx] = {
           scheduledAds: idxIndex === 0 ? scheduledAds : [], // Keep ads in the first cell
@@ -226,7 +229,7 @@ const AdCanvas = () => {
         };
       });
     }
-  
+
     setGridItems(updatedGrid);
   };
 
@@ -235,13 +238,13 @@ const AdCanvas = () => {
     setCurrentScheduleAd({ item, index });
     setIsScheduling(true);
   };
-  // Handles saving a scheduled ad
-  const handleScheduleSave = (adItem, scheduledDateTime, index) => {
+  // In handleScheduleSave function
+  const handleScheduleSave = (adItem, scheduledTime, index) => {
     const updatedGrid = [...gridItems];
     const scheduledAd = {
       id: uuidv4(),
       ad: { ...adItem, id: uuidv4() },
-      scheduledDateTime,
+      scheduledTime, // Store time only
     };
     updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
@@ -250,69 +253,95 @@ const AdCanvas = () => {
   };
 
   // Handles removing ads from a grid cell
- const handleRemove = (index, scheduledAd) => {
-  const updatedGrid = [...gridItems];
-  const cell = updatedGrid[index];
+  const handleRemove = (index, scheduledAd) => {
+    const updatedGrid = [...gridItems];
+    const cell = updatedGrid[index];
 
-  // Remove the scheduled ad
-  if (cell.scheduledAds && cell.scheduledAds.length > 0) {
-    updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
-      (ad) => ad.id !== scheduledAd.id
-    );
-  }
-  if (
-    updatedGrid[index].scheduledAds.length === 0 &&
-    cell.isMerged
-  ) {
-    const cellsToUnmerge =
-      cell.selectedCells && cell.selectedCells.length > 0
-        ? cell.selectedCells
-        : [index];
+    // Remove the scheduled ad
+    if (cell.scheduledAds && cell.scheduledAds.length > 0) {
+      updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
+        (ad) => ad.id !== scheduledAd.id
+      );
+    }
+    if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
+      const cellsToUnmerge =
+        cell.selectedCells && cell.selectedCells.length > 0
+          ? cell.selectedCells
+          : [index];
 
-    cellsToUnmerge.forEach((idx) => {
-      updatedGrid[idx] = {
-        scheduledAds: [],
-        isMerged: false,
-        hidden: false,
-        rowSpan: 1,
-        colSpan: 1,
-      };
-    });
-  }
-  setGridItems(updatedGrid);
-};
+      cellsToUnmerge.forEach((idx) => {
+        updatedGrid[idx] = {
+          scheduledAds: [],
+          isMerged: false,
+          hidden: false,
+          rowSpan: 1,
+          colSpan: 1,
+        };
+      });
+    }
+    setGridItems(updatedGrid);
+  };
 
   // Handles saving the current layout as a JSON object
   const handleSaveLayout = () => {
-    const layout = { rows, columns, gridItems };
-    const cleanedLayout = cleanLayoutJSON(layout);
-    const layoutJSON = JSON.stringify(cleanedLayout, null, 2);
-    console.log("Current Layout JSON:", layoutJSON);
-    alert(layoutJSON);
+    setIsNamingLayout(true); // Open the modal instead of saving immediately
+  };
+
+  // New function to handle the actual save after name is entered
+  const handleLayoutNameSave = async (name) => {
+    try {
+      const layoutId = uuidv4();
+      const layout = { rows, columns, gridItems, layoutId, name };
+
+      const cleanedLayout = cleanLayoutJSON(layout);
+
+      const response = await axios.post(
+        "http://localhost:5000/api/saveLayout",
+        cleanedLayout,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Layout saved successfully:", response.data);
+      alert("Layout saved successfully!");
+      setIsNamingLayout(false); // Close the modal
+    } catch (error) {
+      console.error("Error saving layout:", error);
+      alert("Failed to save layout. Please try again.");
+    }
   };
 
   const cleanLayoutJSON = (layout) => {
     const { rows, columns, gridItems } = layout;
-  
+
     const filteredItems = gridItems
       .map((item, index) => {
         if (!item || item.hidden) return null;
+
         const row = Math.floor(index / columns);
         const column = index % columns;
+
         return {
           index,
           row,
           column,
-          scheduledAds: item.scheduledAds.map((scheduledAd) => ({
-            id: scheduledAd.id,
-            scheduledDateTime: scheduledAd.scheduledDateTime,
-            ad: {
-              ...scheduledAd.ad,
-              content: scheduledAd.ad.content,
-              styles: scheduledAd.ad.styles,
-              type: scheduledAd.ad.type,
-            },
-          })),
+          scheduledAds: item.scheduledAds.map((scheduledAd) => {
+            const ad = scheduledAd.ad;
+            const adData = {
+              id: ad.id,
+              type: ad.type,
+              content: { ...ad.content },
+              styles: { ...ad.styles },
+            };
+            return {
+              id: scheduledAd.id,
+              scheduledTime: scheduledAd.scheduledTime,
+              ad: adData,
+            };
+          }),
           isMerged: item.isMerged,
           rowSpan: item.rowSpan,
           colSpan: item.colSpan,
@@ -321,85 +350,139 @@ const AdCanvas = () => {
         };
       })
       .filter((item) => item !== null); // Remove null entries
-  
+
     return {
+      layoutId: layout.layoutId, // Ensure layoutId is included
+      name: layout.name, // Include name if necessary
       rows,
       columns,
       gridItems: filteredItems,
     };
   };
-  
+
   // Opens the modal for editing a specific ad
   const handleEdit = (index, scheduledAd) => {
     setCurrentAd({ index, scheduledAd });
     setIsEditing(true);
   };
 
- // Handles saving an updated ad from the modal
- const handleSave = (updatedAdData, updatedScheduledDateTime) => {
-  const updatedGrid = [...gridItems];
-  const scheduledAds = updatedGrid[currentAd.index].scheduledAds;
-  const adIndex = scheduledAds.findIndex(
-    (ad) => ad.id === currentAd.scheduledAd.id
-  );
-  if (adIndex !== -1) {
-    scheduledAds[adIndex] = {
-      ...scheduledAds[adIndex],
-      ad: {
-        ...scheduledAds[adIndex].ad,
-        content: updatedAdData.content,
-        styles: updatedAdData.styles,
-      },
-      scheduledDateTime: updatedScheduledDateTime, // Update scheduled time
-    };
-    updatedGrid[currentAd.index].scheduledAds = scheduledAds;
-    setGridItems(updatedGrid);
-  }
-  setIsEditing(false);
-  setCurrentAd(null);
-};
+  // Handles saving an updated ad from the modal
+  const handleSave = (updatedAdData, updatedScheduledDateTime) => {
+    const updatedGrid = [...gridItems];
+    const scheduledAds = updatedGrid[currentAd.index].scheduledAds;
+    const adIndex = scheduledAds.findIndex(
+      (ad) => ad.id === currentAd.scheduledAd.id
+    );
+    if (adIndex !== -1) {
+      scheduledAds[adIndex] = {
+        ...scheduledAds[adIndex],
+        ad: {
+          ...scheduledAds[adIndex].ad,
+          content: updatedAdData.content,
+          styles: updatedAdData.styles,
+        },
+        scheduledDateTime: updatedScheduledDateTime, // Update scheduled time
+      };
+      updatedGrid[currentAd.index].scheduledAds = scheduledAds;
+      setGridItems(updatedGrid);
+    }
+    setIsEditing(false);
+    setCurrentAd(null);
+  };
 
   return (
-    <div className="ad-canvas">
+    <div className="ad-canvas flex flex-col items-center justify-center text-center w-full">
+      <div className="flex flex-row items-stretch gap-2 w-full max-h-[80vh] max-w-[80vw] justify-center">
+        {/* Decrease Columns button */}
+        <div className="flex flex-col justify-center group">
+          <div
+            onClick={decreaseColumns}
+            className="bg-gray-300 text-center rounded-lg w-4 md:w-2 lg:w-1 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:w-8 transition-all duration-200 md:overflow-hidden"
+          >
+            <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
+              -
+            </span>
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div className="flex-1 flex flex-col w-80 max-h-[80h]">
+          {/* Increase Rows button */}
+          <div className="group py-2">
+            <div
+              onClick={increaseRows}
+              className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden
+    "
+            >
+              <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
+                +
+              </span>
+            </div>
+          </div>
+
+          {/* Grid cells */}
+          <div
+            className="grid flex-1 max-h-[60vh]"
+            style={{
+              "--rows": rows,
+              "--columns": columns,
+            }}
+          >
+            {gridItems.map((item, index) => {
+              const rowIndex = Math.floor(index / columns);
+              const colIndex = index % columns;
+              return (
+                <GridCell
+                  key={index}
+                  index={index}
+                  rowIndex={rowIndex}
+                  colIndex={colIndex}
+                  item={item}
+                  onDrop={handleDrop}
+                  onRemove={handleRemove}
+                  onEdit={handleEdit}
+                  onMerge={handleMerge}
+                  isSelected={selectedCells.includes(index)}
+                  onSelect={handleCellSelection}
+                  isSelectionMode={isSelectionMode}
+                  columns={columns}
+                  totalCells={totalCells}
+                  onUnmerge={handleUnmerge}
+                />
+              );
+            })}
+          </div>
+
+          {/* Decrease Rows button */}
+          <div className="group py-2">
+            <div
+              onClick={decreaseRows}
+              className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
+            >
+              <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
+                -
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Increase Columns button */}
+        <div className="flex flex-col justify-center group">
+          <div
+            onClick={increaseColumns}
+            className="bg-gray-300 text-center rounded-lg w-4 md:w-2 lg:w-1 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:w-8 transition-all duration-200 md:overflow-hidden"
+          >
+            <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
+              +
+            </span>
+          </div>
+        </div>
+      </div>
+
       <Sidebar />
-      <div>
-        <button onClick={increaseRows}>Increase Rows</button>
-        <button onClick={decreaseRows}>Decrease Rows</button>
-        <button onClick={increaseColumns}>Increase Columns</button>
-        <button onClick={decreaseColumns}>Decrease Columns</button>
-      </div>
-      <div
-        className="grid"
-        style={{
-          "--rows": rows,
-          "--columns": columns,
-        }}
-      >
-        {gridItems.map((item, index) => {
-          const rowIndex = Math.floor(index / columns);
-          const colIndex = index % columns;
-          return (
-            <GridCell
-              key={index}
-              index={index}
-              rowIndex={rowIndex}
-              colIndex={colIndex}
-              item={item}
-              onDrop={handleDrop}
-              onRemove={handleRemove}
-              onEdit={handleEdit}
-              onMerge={handleMerge}
-              isSelected={selectedCells.includes(index)}
-              onSelect={handleCellSelection}
-              isSelectionMode={isSelectionMode}
-              columns={columns}
-              totalCells={totalCells}
-              onUnmerge={handleUnmerge}
-            />
-          );
-        })}
-      </div>
+
       <div className="controls">
+        <button onClick={handleSaveLayout}>Save Layout</button>;
         <button onClick={() => setIsSelectionMode(!isSelectionMode)}>
           {isSelectionMode ? "Exit Selection Mode" : "Enter Selection Mode"}
         </button>
@@ -413,6 +496,14 @@ const AdCanvas = () => {
         )}
       </div>
       <button onClick={handleSaveLayout}>Save Layout</button>
+
+      {/* Include the SaveLayoutModal */}
+      {isNamingLayout && (
+        <SaveLayoutModal
+          onSave={handleLayoutNameSave}
+          onClose={() => setIsNamingLayout(false)}
+        />
+      )}
       {isEditing && currentAd && currentAd.scheduledAd && (
         <EditModal
           ad={currentAd.scheduledAd.ad}

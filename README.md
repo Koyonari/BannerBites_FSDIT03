@@ -15,3 +15,8 @@ Kelvin
 
 - React.js
 - TailwindCSS
+
+#### Component Libraries Used
+
+- React Toggle Dark Mode
+- Lucide React
