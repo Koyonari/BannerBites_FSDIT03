@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { SketchPicker } from "react-color";
 import Modal from "../Modal/Modal.js";
 
-const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
+const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({
     content: {
       title: "",
@@ -18,8 +18,8 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
       borderColor: "#000000",
     },
   });
-  const [scheduledTime, setScheduledTime] = useState(
-    scheduledDateTime || new Date().toISOString().slice(0, 16)
+  const [scheduledTimeState, setScheduledTimeState] = useState(
+    scheduledTime || "00:00"
   );
   const [file, setFile] = useState(null); // For new uploads
   const [mediaUrl, setMediaUrl] = useState(""); // For existing media
@@ -248,13 +248,13 @@ const EditModal = ({ ad, scheduledDateTime, onSave, onClose }) => {
         onChange={(color) => handleColorChange(color, "borderColor")}
       />
 
-      {/* Scheduled time input */}
-      <label style={{ display: "block", marginTop: "10px" }}>
-        Scheduled Date and Time:
+   {/* Scheduled time input */}
+   <label style={{ display: "block", marginTop: "10px" }}>
+        Scheduled Time:
         <input
-          type="datetime-local"
-          value={scheduledTime}
-          onChange={(e) => setScheduledTime(e.target.value)}
+          type="time"
+          value={scheduledTimeState}
+          onChange={(e) => setScheduledTimeState(e.target.value)}
           style={{ display: "block", marginTop: "5px" }}
         />
       </label>

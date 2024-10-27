@@ -238,19 +238,19 @@ const AdCanvas = () => {
     setCurrentScheduleAd({ item, index });
     setIsScheduling(true);
   };
-  // Handles saving a scheduled ad
-  const handleScheduleSave = (adItem, scheduledDateTime, index) => {
-    const updatedGrid = [...gridItems];
-    const scheduledAd = {
-      id: uuidv4(),
-      ad: { ...adItem, id: uuidv4() },
-      scheduledDateTime,
-    };
-    updatedGrid[index].scheduledAds.push(scheduledAd);
-    setGridItems(updatedGrid);
-    setIsScheduling(false);
-    setCurrentScheduleAd(null);
+// In handleScheduleSave function
+const handleScheduleSave = (adItem, scheduledTime, index) => {
+  const updatedGrid = [...gridItems];
+  const scheduledAd = {
+    id: uuidv4(),
+    ad: { ...adItem, id: uuidv4() },
+    scheduledTime, // Store time only
   };
+  updatedGrid[index].scheduledAds.push(scheduledAd);
+  setGridItems(updatedGrid);
+  setIsScheduling(false);
+  setCurrentScheduleAd(null);
+};
 
   // Handles removing ads from a grid cell
  const handleRemove = (index, scheduledAd) => {
@@ -337,7 +337,7 @@ const AdCanvas = () => {
             };
             return {
               id: scheduledAd.id,
-              scheduledDateTime: scheduledAd.scheduledDateTime,
+              scheduledTime: scheduledAd.scheduledTime, 
               ad: adData,
             };
           }),
