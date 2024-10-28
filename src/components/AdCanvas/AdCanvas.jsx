@@ -1,4 +1,3 @@
-// AdCanvas.js
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
@@ -399,7 +398,7 @@ const AdCanvas = () => {
             onClick={decreaseColumns}
             className="bg-gray-300 text-center rounded-lg w-4 md:w-2 lg:w-1 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:w-8 transition-all duration-200 md:overflow-hidden"
           >
-            <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
+            <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
               -
             </span>
           </div>
@@ -414,7 +413,7 @@ const AdCanvas = () => {
               className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden
     "
             >
-              <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
+              <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
                 +
               </span>
             </div>
@@ -459,7 +458,7 @@ const AdCanvas = () => {
               onClick={decreaseRows}
               className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
             >
-              <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
+              <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
                 -
               </span>
             </div>
@@ -472,7 +471,7 @@ const AdCanvas = () => {
             onClick={increaseColumns}
             className="bg-gray-300 text-center rounded-lg w-4 md:w-2 lg:w-1 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:w-8 transition-all duration-200 md:overflow-hidden"
           >
-            <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
+            <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
               +
             </span>
           </div>
@@ -495,7 +494,6 @@ const AdCanvas = () => {
           </button>
         )}
       </div>
-      <button onClick={handleSaveLayout}>Save Layout</button>
 
       {/* Include the SaveLayoutModal */}
       {isNamingLayout && (
