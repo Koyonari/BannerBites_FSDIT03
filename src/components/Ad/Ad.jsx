@@ -27,14 +27,12 @@ const Ad = () => {
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentAd, setCurrentAd] = useState(null);
-  const [selectedCells, setSelectedCells] = useState([]);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
   const [isNamingLayout, setIsNamingLayout] = useState(false); // New state
 
-  const [rows, setRows] = useState(2);
-  const [columns, setColumns] = useState(3);
+  const [rows] = useState(2);
+  const [columns] = useState(3);
   const totalCells = rows * columns;
   const [gridItems, setGridItems] = useState(
     Array.from({ length: totalCells }, () => ({

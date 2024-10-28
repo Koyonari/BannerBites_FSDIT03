@@ -1,8 +1,7 @@
-// GridCell.js
 import React, { useState } from "react";
 import { useDrop } from "react-dnd";
 import AdComponent from "./AdComponent";
-import AdListPopup from "./AdListPopup"; // Ensure this component is imported
+import AdListPopup from "./AdListPopup";
 
 const GridCell = ({
   index,
@@ -81,36 +80,36 @@ const GridCell = ({
     }
   };
 
-// Get current time in minutes since midnight
-const now = new Date();
-const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  // Get current time in minutes since midnight
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-let adToDisplay = null;
-if (item && item.scheduledAds && item.scheduledAds.length > 0) {
-  // Sort scheduledAds by time
-  const sortedAds = item.scheduledAds.sort((a, b) => {
-    const [aHour, aMinute] = a.scheduledTime.split(":").map(Number);
-    const [bHour, bMinute] = b.scheduledTime.split(":").map(Number);
-    return aHour * 60 + aMinute - (bHour * 60 + bMinute);
-  });
+  let adToDisplay = null;
+  if (item && item.scheduledAds && item.scheduledAds.length > 0) {
+    // Sort scheduledAds by time
+    const sortedAds = item.scheduledAds.sort((a, b) => {
+      const [aHour, aMinute] = a.scheduledTime.split(":").map(Number);
+      const [bHour, bMinute] = b.scheduledTime.split(":").map(Number);
+      return aHour * 60 + aMinute - (bHour * 60 + bMinute);
+    });
 
-  // Find the latest ad scheduled before or at the current time
-  for (let i = sortedAds.length - 1; i >= 0; i--) {
-    const [adHour, adMinute] = sortedAds[i].scheduledTime
-      .split(":")
-      .map(Number);
-    const adMinutes = adHour * 60 + adMinute;
-    if (adMinutes <= currentMinutes) {
-      adToDisplay = sortedAds[i];
-      break;
+    // Find the latest ad scheduled before or at the current time
+    for (let i = sortedAds.length - 1; i >= 0; i--) {
+      const [adHour, adMinute] = sortedAds[i].scheduledTime
+        .split(":")
+        .map(Number);
+      const adMinutes = adHour * 60 + adMinute;
+      if (adMinutes <= currentMinutes) {
+        adToDisplay = sortedAds[i];
+        break;
+      }
+    }
+
+    // If no ad is found, display the earliest ad scheduled for the day
+    if (!adToDisplay) {
+      adToDisplay = sortedAds[0];
     }
   }
-
-  // If no ad is found, display the earliest ad scheduled for the day
-  if (!adToDisplay) {
-    adToDisplay = sortedAds[0];
-  }
-}
 
   // CSS classes for merged, selected, and selectable cells
   const mergedClass = item?.isMerged

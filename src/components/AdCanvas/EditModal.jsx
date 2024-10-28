@@ -1,7 +1,7 @@
 // EditModal.js
 import React, { useEffect, useState } from "react";
 import { SketchPicker } from "react-color";
-import Modal from "../Modal/Modal.js";
+import Modal from "../Modal/Modal";
 
 const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({
@@ -29,7 +29,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
       const mediaUrl =
         ad.content.s3Key &&
         `https://${process.env.REACT_APP_S3_BUCKET_NAME}.s3.${process.env.REACT_APP_AWS_REGION}.amazonaws.com/${ad.content.s3Key}`;
-  
+
       setFormData({
         content: {
           title: ad.content.title || "",
@@ -45,7 +45,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
           borderColor: "#000000",
         },
       });
-  
+
       if (mediaUrl) {
         setMediaUrl(mediaUrl);
       }
@@ -248,8 +248,8 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
         onChange={(color) => handleColorChange(color, "borderColor")}
       />
 
-   {/* Scheduled time input */}
-   <label style={{ display: "block", marginTop: "10px" }}>
+      {/* Scheduled time input */}
+      <label style={{ display: "block", marginTop: "10px" }}>
         Scheduled Time:
         <input
           type="time"

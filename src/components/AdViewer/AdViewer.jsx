@@ -1,4 +1,3 @@
-// AdViewer.js
 import React from "react";
 import "./AdViewer.css";
 
@@ -88,7 +87,10 @@ const AdViewer = ({ layout }) => {
 
         if (scheduledAds && scheduledAds.length > 0) {
           const now = new Date();
-          const currentTimeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`; // Format current time as "HH:mm"
+          const currentTimeString = `${now
+            .getHours()
+            .toString()
+            .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`; // Format current time as "HH:mm"
 
           // Filter ads that should be displayed now
           const availableAds = scheduledAds.filter(
