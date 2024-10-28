@@ -24,7 +24,7 @@ const s3Client = new S3Client({
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000', // Replace with your frontend's URL in production
+  origin: 'http://localhost:3000', // Replace with frontend's URL in production
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
