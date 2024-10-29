@@ -344,18 +344,38 @@ const AdCanvas = () => {
   };
 
   const handleDrop = (item, index, rowIndex, colIndex) => {
-    // Open the scheduling modal
-    setCurrentScheduleAd({ item, index });
+    // Ensure the item has the required structure
+    const normalizedItem = {
+      id: item.id || uuidv4(),
+      type: item.type || "default",
+      content: item.content || item, // If content doesn't exist, use the entire item as content
+      styles: item.styles || {},
+    };
+
+    setCurrentScheduleAd({ item: normalizedItem, index });
     setIsScheduling(true);
   };
-  // In handleScheduleSave function
+
   const handleScheduleSave = (adItem, scheduledTime, index) => {
     const updatedGrid = [...gridItems];
+
+    // Create a properly structured scheduled ad
     const scheduledAd = {
       id: uuidv4(),
-      ad: { ...adItem, id: uuidv4() },
-      scheduledTime, // Store time only
+      ad: {
+        id: adItem.id || uuidv4(),
+        type: adItem.type || "default",
+        content: adItem.content || adItem,
+        styles: adItem.styles || {},
+      },
+      scheduledTime,
     };
+
+    // Ensure the scheduledAds array exists
+    if (!updatedGrid[index].scheduledAds) {
+      updatedGrid[index].scheduledAds = [];
+    }
+
     updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
     setIsScheduling(false);
@@ -366,7 +386,6 @@ const AdCanvas = () => {
   const handleRemove = (index, scheduledAd) => {
     const updatedGrid = [...gridItems];
     const cell = updatedGrid[index];
-
     // Remove the scheduled ad
     if (cell.scheduledAds && cell.scheduledAds.length > 0) {
       updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
@@ -378,7 +397,6 @@ const AdCanvas = () => {
         cell.selectedCells && cell.selectedCells.length > 0
           ? cell.selectedCells
           : [index];
-
       cellsToUnmerge.forEach((idx) => {
         updatedGrid[idx] = {
           scheduledAds: [],
@@ -472,7 +490,7 @@ const AdCanvas = () => {
   };
 
   // Handles saving an updated ad from the modal
-  const handleSave = (updatedAdData, updatedScheduledDateTime) => {
+  const handleSave = (updatedAdData, updatedScheduledTime) => {
     const updatedGrid = [...gridItems];
     const scheduledAds = updatedGrid[currentAd.index].scheduledAds;
     const adIndex = scheduledAds.findIndex(
@@ -486,7 +504,7 @@ const AdCanvas = () => {
           content: updatedAdData.content,
           styles: updatedAdData.styles,
         },
-        scheduledDateTime: updatedScheduledDateTime,
+        scheduledDateTime: updatedScheduledTime,
       };
       updatedGrid[currentAd.index].scheduledAds = scheduledAds;
       setGridItems(updatedGrid);
