@@ -26,7 +26,7 @@ const AdCanvas = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
-  const [isNamingLayout, setIsNamingLayout] = useState(false); // New state
+  const [isNamingLayout, setIsNamingLayout] = useState(false);
 
   // Resizes the grid based on new dimensions
   const resizeGrid = (newRows, newColumns) => {
@@ -166,7 +166,7 @@ const AdCanvas = () => {
 
       indicesToMerge.slice(1).forEach((cellIndex) => {
         updatedGrid[cellIndex] = {
-          scheduledAds: [], // Ensure scheduledAds is initialized
+          scheduledAds: [],
           isMerged: true,
           hidden: true,
           rowSpan: 1,
@@ -185,11 +185,35 @@ const AdCanvas = () => {
   const handleCellSelection = (index) => {
     if (!isSelectionMode) return;
 
+    // Check if the cell is already merged or hidden
+    const cell = gridItems[index];
+    if (cell.hidden || (cell.isMerged && !selectedCells.includes(index))) {
+      return; // Don't allow selection of hidden or already merged cells
+    }
+
     setSelectedCells((prev) => {
+      // If the cell is already selected, remove it
       if (prev.includes(index)) {
         return prev.filter((i) => i !== index);
       }
-      return [...prev, index];
+
+      // Add the cell to selection
+      const newSelection = [...prev, index];
+
+      // Validate if the new selection forms a rectangle
+      const rows = newSelection.map((idx) => Math.floor(idx / columns));
+      const cols = newSelection.map((idx) => idx % columns);
+      const minRow = Math.min(...rows);
+      const maxRow = Math.max(...rows);
+      const minCol = Math.min(...cols);
+      const maxCol = Math.max(...cols);
+
+      // Check if all cells in the rectangle are selected
+      const isValidRectangle =
+        newSelection.length === (maxRow - minRow + 1) * (maxCol - minCol + 1);
+
+      // Only update if it forms a valid rectangle
+      return isValidRectangle ? newSelection : prev;
     });
   };
 
@@ -385,6 +409,7 @@ const AdCanvas = () => {
 
   return (
     <div className="ad-canvas flex flex-col items-center justify-center text-center w-full">
+      {" "}
       <div className="flex flex-row items-stretch gap-2 w-full max-h-[80vh] max-w-[80vw] justify-center">
         {/* Decrease Columns button */}
         <div className="flex flex-col justify-center group">
@@ -418,6 +443,7 @@ const AdCanvas = () => {
             className="grid flex-1 max-h-[60vh] gap-2.5 w-full auto-rows-[minmax(150px,auto)]"
             style={{
               gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
+              gridAutoFlow: "dense",
               "--rows": rows,
               "--columns": columns,
             }}
@@ -439,6 +465,7 @@ const AdCanvas = () => {
                   isSelected={selectedCells.includes(index)}
                   onSelect={handleCellSelection}
                   isSelectionMode={isSelectionMode}
+                  setIsSelectionMode={setIsSelectionMode}
                   columns={columns}
                   totalCells={totalCells}
                   onUnmerge={handleUnmerge}
@@ -472,11 +499,16 @@ const AdCanvas = () => {
           </div>
         </div>
       </div>
-
       <Sidebar />
-
       <div className="controls">
-        <button onClick={() => setIsSelectionMode(!isSelectionMode)}>
+        <button
+          onClick={() => {
+            setIsSelectionMode(!isSelectionMode);
+            if (!isSelectionMode) {
+              setSelectedCells([]);
+            }
+          }}
+        >
           {isSelectionMode ? "Exit Selection Mode" : "Enter Selection Mode"}
         </button>
         {isSelectionMode && (
@@ -488,7 +520,6 @@ const AdCanvas = () => {
           </button>
         )}
       </div>
-
       {/* Include the SaveLayoutModal */}
       {isNamingLayout && (
         <SaveLayoutModal

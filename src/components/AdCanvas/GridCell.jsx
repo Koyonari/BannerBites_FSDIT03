@@ -44,7 +44,7 @@ const GridCell = ({
   isSelected,
   onSelect,
   isSelectionMode,
-  onSelectionModeChange,
+  setIsSelectionMode,
   columns,
   totalCells,
 }) => {
@@ -68,17 +68,22 @@ const GridCell = ({
 
   const handleCellClick = (e) => {
     e.stopPropagation();
-    if (isSelectionMode && item && !item.isMerged) {
+    if (item && !item.hidden && !item.isMerged) {
+      if (!isSelectionMode) {
+        setIsSelectionMode(true);
+      }
       onSelect(index);
     }
   };
 
   const handleCheckboxChange = (checked) => {
-    if (item && !item.isMerged) {
-      if (!isSelectionMode && checked) {
-        onSelectionModeChange(true);
+    if (item && !item.hidden && !item.isMerged) {
+      if (!isSelectionMode) {
+        setIsSelectionMode(true); // Enter selection mode first
+        onSelect(index); // Then select the cell
+      } else {
+        onSelect(index);
       }
-      onSelect(index);
     }
   };
 
@@ -149,7 +154,8 @@ const GridCell = ({
       : "merged-vertical"
     : "";
 
-  const selectionClass = isSelectionMode && item ? "selectable" : "";
+  const selectionClass =
+    isSelectionMode && !item?.hidden && !item?.isMerged ? "selectable" : "";
   const selectedClass = isSelected ? "selected" : "";
 
   if (item?.hidden) {
@@ -168,8 +174,8 @@ const GridCell = ({
         gridColumn: item?.colSpan ? `span ${item.colSpan}` : "auto",
       }}
     >
-      {/* Always show checkbox for non-merged cells */}
-      {item && !item.isMerged && (
+      {/* Show checkbox for all non-hidden cells */}
+      {item && !item.hidden && (
         <div className="absolute top-2 left-2 z-10">
           <Checkbox
             checked={isSelected}
