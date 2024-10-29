@@ -69,9 +69,6 @@ const GridCell = ({
   const handleCellClick = (e) => {
     e.stopPropagation();
     if (item && !item.hidden && !item.isMerged) {
-      if (!isSelectionMode) {
-        setIsSelectionMode(true);
-      }
       onSelect(index);
     }
   };
@@ -198,20 +195,14 @@ const GridCell = ({
             styles={adToDisplay.ad.styles}
           />
           <div className="actions mt-4 flex gap-5 flex-wrap">
-            <button className="" onClick={handleEdit}>
-              Edit
-            </button>
-            <button className="" onClick={togglePopup}>
-              View List
-            </button>
+            <button onClick={handleEdit}>Edit</button>
+            <button onClick={togglePopup}>View List</button>
             {!item.isMerged && !isSelectionMode && (
               <>
-                <button className="" onClick={handleMergeHorizontal}>
+                <button onClick={handleMergeHorizontal}>
                   Merge Horizontally
                 </button>
-                <button className="" onClick={handleMergeVertical}>
-                  Merge Vertically
-                </button>
+                <button onClick={handleMergeVertical}>Merge Vertically</button>
               </>
             )}
             <button onClick={handleRemove}>Remove</button>

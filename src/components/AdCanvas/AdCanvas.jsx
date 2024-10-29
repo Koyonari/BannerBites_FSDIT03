@@ -124,11 +124,20 @@ const AdCanvas = () => {
           alert("Cannot merge vertically. Adjacent cell is invalid.");
           return;
         }
+        if (
+          updatedGrid[bottomIndex] &&
+          !updatedGrid[bottomIndex].isMerged &&
+          !updatedGrid[bottomIndex].hidden
+        ) {
+          indicesToMerge = [index, bottomIndex];
+        } else {
+          alert("Cannot merge vertically. Adjacent cell is invalid.");
+          return;
+        }
       }
     }
 
     if (indicesToMerge.length > 0) {
-      // Combine scheduledAds from the cells being merged
       const mergedScheduledAds = indicesToMerge.reduce((ads, idx) => {
         return ads.concat(updatedGrid[idx].scheduledAds || []);
       }, []);
@@ -238,10 +247,73 @@ const AdCanvas = () => {
       return;
     }
 
-    // Proceed with merging as rectangle shape is valid
-    handleMerge(selectedCells[0], "selection", selectedCells);
+    // Validate that the selected cells are in a single row or column or form a valid rectangle.
+    const isValidMerge = validateMerge(selectedCells);
+    if (!isValidMerge) {
+      alert(
+        "Invalid merge. Please select contiguous cells in a row, column, or valid rectangular block."
+      );
+      return;
+    }
+
+    const sortedCells = [...selectedCells].sort((a, b) => a - b);
+    handleMerge(sortedCells[0], "selection", sortedCells);
     setSelectedCells([]);
     setIsSelectionMode(false);
+  };
+
+  // New function to validate selected cells for merging
+  const validateMerge = (selectedCells) => {
+    if (selectedCells.length <= 1) {
+      return false; // Cannot merge a single cell
+    }
+
+    const rows = selectedCells.map((index) => Math.floor(index / columns));
+    const cols = selectedCells.map((index) => index % columns);
+
+    // Check if all cells are in the same row
+    const allInSameRow = rows.every((row) => row === rows[0]);
+    if (allInSameRow) {
+      // Ensure they are adjacent in the row
+      const sortedCols = [...cols].sort((a, b) => a - b);
+      for (let i = 1; i < sortedCols.length; i++) {
+        if (sortedCols[i] !== sortedCols[i - 1] + 1) {
+          return false; // There is a gap in the selected cells
+        }
+      }
+      return true;
+    }
+
+    // Check if all cells are in the same column
+    const allInSameColumn = cols.every((col) => col === cols[0]);
+    if (allInSameColumn) {
+      // Ensure they are adjacent in the column
+      const sortedRows = [...rows].sort((a, b) => a - b);
+      for (let i = 1; i < sortedRows.length; i++) {
+        if (sortedRows[i] !== sortedRows[i - 1] + 1) {
+          return false; // There is a gap in the selected cells
+        }
+      }
+      return true;
+    }
+
+    // Check if cells form a valid rectangular block
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+    const minCol = Math.min(...cols);
+    const maxCol = Math.max(...cols);
+
+    // Validate that all cells within this rectangle are selected
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        const index = row * columns + col;
+        if (!selectedCells.includes(index)) {
+          return false; // Missing cell within the rectangular block
+        }
+      }
+    }
+
+    return true; // The cells form a valid rectangular block
   };
 
   const handleUnmerge = (index) => {
@@ -414,7 +486,7 @@ const AdCanvas = () => {
           content: updatedAdData.content,
           styles: updatedAdData.styles,
         },
-        scheduledDateTime: updatedScheduledDateTime, // Update scheduled time
+        scheduledDateTime: updatedScheduledDateTime,
       };
       updatedGrid[currentAd.index].scheduledAds = scheduledAds;
       setGridItems(updatedGrid);
