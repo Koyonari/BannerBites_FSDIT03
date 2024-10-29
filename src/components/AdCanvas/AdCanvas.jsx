@@ -425,7 +425,6 @@ const AdCanvas = () => {
 
   return (
     <div className="ad-canvas flex flex-col items-center justify-center text-center w-full">
-      {" "}
       <div className="flex flex-row items-stretch gap-2 w-full max-h-[80vh] max-w-[80vw] justify-center">
         {/* Decrease Columns button */}
         <div className="flex flex-col justify-center group">
@@ -445,8 +444,7 @@ const AdCanvas = () => {
           <div className="group py-2">
             <div
               onClick={increaseRows}
-              className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden
-    "
+              className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
             >
               <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
                 +
