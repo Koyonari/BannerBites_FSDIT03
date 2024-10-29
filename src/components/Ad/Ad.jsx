@@ -12,7 +12,7 @@ import EditModal from "../AdCanvas/EditModal";
 import ScheduleModal from "../AdCanvas/ScheduleModal";
 import "../AdViewer/AdViewer.css";
 import AssignLayoutTab from "../AssignLayoutTab";
-import LayoutSelector from "../AdViewer/LayoutSelector"; // Import the missing LayoutSelector component
+import LayoutSelector from "../AdViewer/LayoutSelector";
 import ErrorBoundary from "../ErrorBoundary";
 import SaveLayoutModal from "../AdCanvas/SaveLayoutModal";
 import Navbar from "../Navbar";
@@ -29,8 +29,7 @@ const Ad = () => {
   const [currentAd, setCurrentAd] = useState(null);
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
-  const [isNamingLayout, setIsNamingLayout] = useState(false); // New state
-
+  const [isNamingLayout, setIsNamingLayout] = useState(false);
   const [rows] = useState(2);
   const [columns] = useState(3);
   const totalCells = rows * columns;
@@ -63,11 +62,6 @@ const Ad = () => {
     setSelectedLayoutId(layoutId);
     setIsSelectorOpen(false);
     navigate("/layout-viewer");
-  };
-
-  // Handle opening the layout selector modal
-  const handleOpenSelector = () => {
-    setIsSelectorOpen(true);
   };
 
   // Handle going to the previous page
@@ -114,11 +108,15 @@ const Ad = () => {
   };
 
   // New function to handle the actual save after name is entered
+  const handleOpenSelector = async () => {
+    setIsNamingLayout(true);
+  };
+
+  // Modified handleLayoutNameSave to navigate after successful save
   const handleLayoutNameSave = async (name) => {
     try {
       const layoutId = uuidv4();
       const layout = { rows, columns, gridItems, layoutId, name };
-
       const cleanedLayout = cleanLayoutJSON(layout);
 
       const response = await axios.post(
@@ -132,8 +130,10 @@ const Ad = () => {
       );
 
       console.log("Layout saved successfully:", response.data);
-      alert("Layout saved successfully!");
-      setIsNamingLayout(false); // Close the modal
+      setIsNamingLayout(false);
+      setSelectedLayoutId(layoutId); // Store the new layout ID
+      setIsSelectorOpen(true); // Open layout selector after saving
+      navigate("/ad-viewer"); // Navigate to ad-viewer
     } catch (error) {
       console.error("Error saving layout:", error);
       alert("Failed to save layout. Please try again.");
@@ -175,11 +175,11 @@ const Ad = () => {
           selectedCells: item.selectedCells,
         };
       })
-      .filter((item) => item !== null); // Remove null entries
+      .filter((item) => item !== null);
 
     return {
-      layoutId: layout.layoutId, // Ensure layoutId is included
-      name: layout.name, // Include name if necessary
+      layoutId: layout.layoutId,
+      name: layout.name,
       rows,
       columns,
       gridItems: filteredItems,
@@ -218,7 +218,7 @@ const Ad = () => {
                       <h2>Please select a location first</h2>
                     )
                   }
-                />{" "}
+                />
                 <Route
                   path="/assign-layout"
                   element={

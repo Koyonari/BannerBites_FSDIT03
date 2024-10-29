@@ -1,11 +1,12 @@
 # Full Stack Development Assignment
 
 ### Contributors
+
 - Yeo Jin Rong
 - An Yong Shyan
 - Ng Kai Huat Jason
 - Liang Ding Xuan
-- Kelvin
+- Tan Guo Zhi Kelvin
 
 ---
 
@@ -23,6 +24,7 @@ BannerBites is a web application for managing advertisements dynamically with re
 ### Frontend (React.js)
 
 #### AWS Services
+
 - `@aws-amplify/storage`
 - `@aws-amplify/ui-react`
 - `amazon-cognito-identity-js`
@@ -30,6 +32,7 @@ BannerBites is a web application for managing advertisements dynamically with re
 - `aws-sdk`
 
 #### UI & Styling
+
 - `@emotion/react`
 - `@emotion/styled`
 - `@mui/icons-material`
@@ -37,11 +40,13 @@ BannerBites is a web application for managing advertisements dynamically with re
 - `tailwindcss`
 
 #### Testing
+
 - `@testing-library/jest-dom`
 - `@testing-library/react`
 - `@testing-library/user-event`
 
 #### Utilities
+
 - `hamburger-react`
 - `lucide-react`
 - `axios`
@@ -63,22 +68,26 @@ BannerBites is a web application for managing advertisements dynamically with re
 ### Backend (Node.js)
 
 #### AWS SDK
+
 - `@aws-sdk/client-dynamodb`
 - `@aws-sdk/client-s3`
 - `@aws-sdk/lib-dynamodb`
 - `@aws-sdk/s3-request-presigner`
 
 #### Server Framework & Middleware
+
 - `express`
 - `cors`
 - `body-parser`
 - `dotenv`
 
 #### Real-time Communication
+
 - `socket.io`
 - `ws`
 
 #### Utilities
+
 - `uuid`
 
 ### Development Dependencies
@@ -101,4 +110,3 @@ BannerBites is a web application for managing advertisements dynamically with re
 
 - `npm start`: Start server.
 - `npm run dev`: Development mode with Nodemon.
-

@@ -281,11 +281,6 @@ const AdCanvas = () => {
     setGridItems(updatedGrid);
   };
 
-  // Handles saving the current layout as a JSON object
-  const handleSaveLayout = () => {
-    setIsNamingLayout(true); // Open the modal instead of saving immediately
-  };
-
   // New function to handle the actual save after name is entered
   const handleLayoutNameSave = async (name) => {
     try {
@@ -421,7 +416,7 @@ const AdCanvas = () => {
 
           {/* Grid cells */}
           <div
-            className="grid flex-1 max-h-[60vh]"
+            className="grid flex-1 max-h-[60vh] gap-2.5 w-full auto-rows-[minmax(150px,auto)] grid-cols-3"
             style={{
               "--rows": rows,
               "--columns": columns,
@@ -481,7 +476,6 @@ const AdCanvas = () => {
       <Sidebar />
 
       <div className="controls">
-        <button onClick={handleSaveLayout}>Save Layout</button>;
         <button onClick={() => setIsSelectionMode(!isSelectionMode)}>
           {isSelectionMode ? "Exit Selection Mode" : "Enter Selection Mode"}
         </button>
