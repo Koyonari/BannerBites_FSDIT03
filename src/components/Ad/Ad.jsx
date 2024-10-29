@@ -10,7 +10,6 @@ import LocationSelector from "../LocationSelector";
 import TVSelector from "../TVSelector";
 import EditModal from "../AdCanvas/EditModal";
 import ScheduleModal from "../AdCanvas/ScheduleModal";
-import "../AdViewer/AdViewer.css";
 import AssignLayoutTab from "../AssignLayoutTab";
 import LayoutSelector from "../AdViewer/LayoutSelector";
 import ErrorBoundary from "../ErrorBoundary";
