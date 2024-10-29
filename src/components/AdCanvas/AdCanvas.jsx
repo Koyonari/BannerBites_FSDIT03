@@ -197,32 +197,48 @@ const AdCanvas = () => {
         return prev.filter((i) => i !== index);
       }
 
-      // Add the cell to selection
-      const newSelection = [...prev, index];
-
-      // Validate if the new selection forms a rectangle
-      const rows = newSelection.map((idx) => Math.floor(idx / columns));
-      const cols = newSelection.map((idx) => idx % columns);
-      const minRow = Math.min(...rows);
-      const maxRow = Math.max(...rows);
-      const minCol = Math.min(...cols);
-      const maxCol = Math.max(...cols);
-
-      // Check if all cells in the rectangle are selected
-      const isValidRectangle =
-        newSelection.length === (maxRow - minRow + 1) * (maxCol - minCol + 1);
-
-      // Only update if it forms a valid rectangle
-      return isValidRectangle ? newSelection : prev;
+      return [...prev, index];
     });
   };
 
-  // Handle merging for selected cells
+  // Helper function to check if selected cells form a rectangle
+  const isRectangleShape = (selectedCells) => {
+    const rows = selectedCells.map((index) => Math.floor(index / columns));
+    const cols = selectedCells.map((index) => index % columns);
+
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+    const minCol = Math.min(...cols);
+    const maxCol = Math.max(...cols);
+
+    // Check if cells fill the rectangle area completely
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        const index = row * columns + col;
+        if (!selectedCells.includes(index)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  // Update handleMergeSelected to validate rectangle shape
   const handleMergeSelected = () => {
     if (selectedCells.length < 2) {
-      alert("Please select at least 2 cells to merge");
+      alert("Please select at least 2 cells to merge.");
       return;
     }
+
+    // Validate that selected cells form a valid rectangle
+    if (!isRectangleShape(selectedCells)) {
+      alert("Selected cells must form a rectangle or square and be adjacent.");
+      setSelectedCells([]); // Clear selection
+      setIsSelectionMode(false);
+      return;
+    }
+
+    // Proceed with merging as rectangle shape is valid
     handleMerge(selectedCells[0], "selection", selectedCells);
     setSelectedCells([]);
     setIsSelectionMode(false);
