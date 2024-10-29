@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
-import "./AdCanvas.css";
 import Sidebar from "./Sidebar";
 import GridCell from "./GridCell";
 import EditModal from "./EditModal";
@@ -27,7 +26,7 @@ const AdCanvas = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
-  const [isNamingLayout, setIsNamingLayout] = useState(false); // New state
+  const [isNamingLayout, setIsNamingLayout] = useState(false);
 
   // Resizes the grid based on new dimensions
   const resizeGrid = (newRows, newColumns) => {
@@ -125,11 +124,20 @@ const AdCanvas = () => {
           alert("Cannot merge vertically. Adjacent cell is invalid.");
           return;
         }
+        if (
+          updatedGrid[bottomIndex] &&
+          !updatedGrid[bottomIndex].isMerged &&
+          !updatedGrid[bottomIndex].hidden
+        ) {
+          indicesToMerge = [index, bottomIndex];
+        } else {
+          alert("Cannot merge vertically. Adjacent cell is invalid.");
+          return;
+        }
       }
     }
 
     if (indicesToMerge.length > 0) {
-      // Combine scheduledAds from the cells being merged
       const mergedScheduledAds = indicesToMerge.reduce((ads, idx) => {
         return ads.concat(updatedGrid[idx].scheduledAds || []);
       }, []);
@@ -167,7 +175,7 @@ const AdCanvas = () => {
 
       indicesToMerge.slice(1).forEach((cellIndex) => {
         updatedGrid[cellIndex] = {
-          scheduledAds: [], // Ensure scheduledAds is initialized
+          scheduledAds: [],
           isMerged: true,
           hidden: true,
           rowSpan: 1,
@@ -186,23 +194,126 @@ const AdCanvas = () => {
   const handleCellSelection = (index) => {
     if (!isSelectionMode) return;
 
+    // Check if the cell is already merged or hidden
+    const cell = gridItems[index];
+    if (cell.hidden || (cell.isMerged && !selectedCells.includes(index))) {
+      return; // Don't allow selection of hidden or already merged cells
+    }
+
     setSelectedCells((prev) => {
+      // If the cell is already selected, remove it
       if (prev.includes(index)) {
         return prev.filter((i) => i !== index);
       }
+
       return [...prev, index];
     });
   };
 
-  // Handle merging for selected cells
+  // Helper function to check if selected cells form a rectangle
+  const isRectangleShape = (selectedCells) => {
+    const rows = selectedCells.map((index) => Math.floor(index / columns));
+    const cols = selectedCells.map((index) => index % columns);
+
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+    const minCol = Math.min(...cols);
+    const maxCol = Math.max(...cols);
+
+    // Check if cells fill the rectangle area completely
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        const index = row * columns + col;
+        if (!selectedCells.includes(index)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  // Update handleMergeSelected to validate rectangle shape
   const handleMergeSelected = () => {
     if (selectedCells.length < 2) {
-      alert("Please select at least 2 cells to merge");
+      alert("Please select at least 2 cells to merge.");
       return;
     }
-    handleMerge(selectedCells[0], "selection", selectedCells);
+
+    // Validate that selected cells form a valid rectangle
+    if (!isRectangleShape(selectedCells)) {
+      alert("Selected cells must form a rectangle or square and be adjacent.");
+      setSelectedCells([]); // Clear selection
+      setIsSelectionMode(false);
+      return;
+    }
+
+    // Validate that the selected cells are in a single row or column or form a valid rectangle.
+    const isValidMerge = validateMerge(selectedCells);
+    if (!isValidMerge) {
+      alert(
+        "Invalid merge. Please select contiguous cells in a row, column, or valid rectangular block."
+      );
+      return;
+    }
+
+    const sortedCells = [...selectedCells].sort((a, b) => a - b);
+    handleMerge(sortedCells[0], "selection", sortedCells);
     setSelectedCells([]);
     setIsSelectionMode(false);
+  };
+
+  // New function to validate selected cells for merging
+  const validateMerge = (selectedCells) => {
+    if (selectedCells.length <= 1) {
+      return false; // Cannot merge a single cell
+    }
+
+    const rows = selectedCells.map((index) => Math.floor(index / columns));
+    const cols = selectedCells.map((index) => index % columns);
+
+    // Check if all cells are in the same row
+    const allInSameRow = rows.every((row) => row === rows[0]);
+    if (allInSameRow) {
+      // Ensure they are adjacent in the row
+      const sortedCols = [...cols].sort((a, b) => a - b);
+      for (let i = 1; i < sortedCols.length; i++) {
+        if (sortedCols[i] !== sortedCols[i - 1] + 1) {
+          return false; // There is a gap in the selected cells
+        }
+      }
+      return true;
+    }
+
+    // Check if all cells are in the same column
+    const allInSameColumn = cols.every((col) => col === cols[0]);
+    if (allInSameColumn) {
+      // Ensure they are adjacent in the column
+      const sortedRows = [...rows].sort((a, b) => a - b);
+      for (let i = 1; i < sortedRows.length; i++) {
+        if (sortedRows[i] !== sortedRows[i - 1] + 1) {
+          return false; // There is a gap in the selected cells
+        }
+      }
+      return true;
+    }
+
+    // Check if cells form a valid rectangular block
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+    const minCol = Math.min(...cols);
+    const maxCol = Math.max(...cols);
+
+    // Validate that all cells within this rectangle are selected
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        const index = row * columns + col;
+        if (!selectedCells.includes(index)) {
+          return false; // Missing cell within the rectangular block
+        }
+      }
+    }
+
+    return true; // The cells form a valid rectangular block
   };
 
   const handleUnmerge = (index) => {
@@ -233,18 +344,38 @@ const AdCanvas = () => {
   };
 
   const handleDrop = (item, index, rowIndex, colIndex) => {
-    // Open the scheduling modal
-    setCurrentScheduleAd({ item, index });
+    // Ensure the item has the required structure
+    const normalizedItem = {
+      id: item.id || uuidv4(),
+      type: item.type || "default",
+      content: item.content || item, // If content doesn't exist, use the entire item as content
+      styles: item.styles || {},
+    };
+
+    setCurrentScheduleAd({ item: normalizedItem, index });
     setIsScheduling(true);
   };
-  // In handleScheduleSave function
+
   const handleScheduleSave = (adItem, scheduledTime, index) => {
     const updatedGrid = [...gridItems];
+
+    // Create a properly structured scheduled ad
     const scheduledAd = {
       id: uuidv4(),
-      ad: { ...adItem, id: uuidv4() },
-      scheduledTime, // Store time only
+      ad: {
+        id: adItem.id || uuidv4(),
+        type: adItem.type || "default",
+        content: adItem.content || adItem,
+        styles: adItem.styles || {},
+      },
+      scheduledTime,
     };
+
+    // Ensure the scheduledAds array exists
+    if (!updatedGrid[index].scheduledAds) {
+      updatedGrid[index].scheduledAds = [];
+    }
+
     updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
     setIsScheduling(false);
@@ -255,7 +386,6 @@ const AdCanvas = () => {
   const handleRemove = (index, scheduledAd) => {
     const updatedGrid = [...gridItems];
     const cell = updatedGrid[index];
-
     // Remove the scheduled ad
     if (cell.scheduledAds && cell.scheduledAds.length > 0) {
       updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
@@ -267,7 +397,6 @@ const AdCanvas = () => {
         cell.selectedCells && cell.selectedCells.length > 0
           ? cell.selectedCells
           : [index];
-
       cellsToUnmerge.forEach((idx) => {
         updatedGrid[idx] = {
           scheduledAds: [],
@@ -279,11 +408,6 @@ const AdCanvas = () => {
       });
     }
     setGridItems(updatedGrid);
-  };
-
-  // Handles saving the current layout as a JSON object
-  const handleSaveLayout = () => {
-    setIsNamingLayout(true); // Open the modal instead of saving immediately
   };
 
   // New function to handle the actual save after name is entered
@@ -366,7 +490,7 @@ const AdCanvas = () => {
   };
 
   // Handles saving an updated ad from the modal
-  const handleSave = (updatedAdData, updatedScheduledDateTime) => {
+  const handleSave = (updatedAdData, updatedScheduledTime) => {
     const updatedGrid = [...gridItems];
     const scheduledAds = updatedGrid[currentAd.index].scheduledAds;
     const adIndex = scheduledAds.findIndex(
@@ -380,7 +504,7 @@ const AdCanvas = () => {
           content: updatedAdData.content,
           styles: updatedAdData.styles,
         },
-        scheduledDateTime: updatedScheduledDateTime, // Update scheduled time
+        scheduledDateTime: updatedScheduledTime,
       };
       updatedGrid[currentAd.index].scheduledAds = scheduledAds;
       setGridItems(updatedGrid);
@@ -410,8 +534,7 @@ const AdCanvas = () => {
           <div className="group py-2">
             <div
               onClick={increaseRows}
-              className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden
-    "
+              className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
             >
               <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
                 +
@@ -421,8 +544,10 @@ const AdCanvas = () => {
 
           {/* Grid cells */}
           <div
-            className="grid flex-1 max-h-[60vh]"
+            className="grid flex-1 max-h-[60vh] gap-2.5 w-full auto-rows-[minmax(150px,auto)]"
             style={{
+              gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
+              gridAutoFlow: "dense",
               "--rows": rows,
               "--columns": columns,
             }}
@@ -444,6 +569,7 @@ const AdCanvas = () => {
                   isSelected={selectedCells.includes(index)}
                   onSelect={handleCellSelection}
                   isSelectionMode={isSelectionMode}
+                  setIsSelectionMode={setIsSelectionMode}
                   columns={columns}
                   totalCells={totalCells}
                   onUnmerge={handleUnmerge}
@@ -477,12 +603,16 @@ const AdCanvas = () => {
           </div>
         </div>
       </div>
-
       <Sidebar />
-
       <div className="controls">
-        <button onClick={handleSaveLayout}>Save Layout</button>;
-        <button onClick={() => setIsSelectionMode(!isSelectionMode)}>
+        <button
+          onClick={() => {
+            setIsSelectionMode(!isSelectionMode);
+            if (!isSelectionMode) {
+              setSelectedCells([]);
+            }
+          }}
+        >
           {isSelectionMode ? "Exit Selection Mode" : "Enter Selection Mode"}
         </button>
         {isSelectionMode && (
@@ -494,7 +624,6 @@ const AdCanvas = () => {
           </button>
         )}
       </div>
-
       {/* Include the SaveLayoutModal */}
       {isNamingLayout && (
         <SaveLayoutModal
