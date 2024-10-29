@@ -415,8 +415,9 @@ const AdCanvas = () => {
 
           {/* Grid cells */}
           <div
-            className="grid flex-1 max-h-[60vh] gap-2.5 w-full auto-rows-[minmax(150px,auto)] grid-cols-3"
+            className="grid flex-1 max-h-[60vh] gap-2.5 w-full auto-rows-[minmax(150px,auto)]"
             style={{
+              gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
               "--rows": rows,
               "--columns": columns,
             }}
