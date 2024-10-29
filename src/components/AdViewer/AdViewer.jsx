@@ -1,5 +1,4 @@
 import React from "react";
-import "./AdViewer.css";
 
 // Component to represent an individual Ad
 const AdComponent = ({ type, content, styles }) => {
