@@ -1,7 +1,7 @@
 // AdCanvas.js
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import axios from 'axios'; 
+import axios from "axios";
 import "./AdCanvas.css";
 import Sidebar from "./Sidebar";
 import GridCell from "./GridCell";
@@ -80,15 +80,15 @@ const AdCanvas = () => {
   // Handle merging of cells, including direction and selection
   const handleMerge = (index, direction, selectedCells = []) => {
     const updatedGrid = [...gridItems];
-  
+
     if (!updatedGrid[index] || updatedGrid[index]?.isMerged) {
       alert("Cannot merge empty or already merged cells!");
       return;
     }
-  
+
     const numColumns = columns;
     let indicesToMerge = [];
-  
+
     if (selectedCells.length > 0) {
       // Handle selection-based merging
       indicesToMerge = selectedCells;
@@ -128,13 +128,13 @@ const AdCanvas = () => {
         }
       }
     }
-  
+
     if (indicesToMerge.length > 0) {
       // Combine scheduledAds from the cells being merged
       const mergedScheduledAds = indicesToMerge.reduce((ads, idx) => {
         return ads.concat(updatedGrid[idx].scheduledAds || []);
       }, []);
-  
+
       const mergedItem = {
         scheduledAds: mergedScheduledAds,
         isMerged: true,
@@ -163,9 +163,9 @@ const AdCanvas = () => {
         selectedCells:
           selectedCells.length > 0 ? selectedCells : indicesToMerge,
       };
-  
+
       updatedGrid[indicesToMerge[0]] = mergedItem;
-  
+
       indicesToMerge.slice(1).forEach((cellIndex) => {
         updatedGrid[cellIndex] = {
           scheduledAds: [], // Ensure scheduledAds is initialized
@@ -179,10 +179,10 @@ const AdCanvas = () => {
       alert("Cannot merge the selected cells.");
       return;
     }
-  
+
     setGridItems(updatedGrid);
   };
-  
+
   // Handles selecting cells for merging
   const handleCellSelection = (index) => {
     if (!isSelectionMode) return;
@@ -201,29 +201,31 @@ const AdCanvas = () => {
       alert("Please select at least 2 cells to merge");
       return;
     }
-  
+
     // Validate that the selected cells are in a single row or column or form a valid rectangle.
     const isValidMerge = validateMerge(selectedCells);
     if (!isValidMerge) {
-      alert("Invalid merge. Please select contiguous cells in a row, column, or valid rectangular block.");
+      alert(
+        "Invalid merge. Please select contiguous cells in a row, column, or valid rectangular block."
+      );
       return;
     }
-  
+
     const sortedCells = [...selectedCells].sort((a, b) => a - b);
     handleMerge(sortedCells[0], "selection", sortedCells);
     setSelectedCells([]);
     setIsSelectionMode(false);
   };
-  
+
   // New function to validate selected cells for merging
   const validateMerge = (selectedCells) => {
     if (selectedCells.length <= 1) {
       return false; // Cannot merge a single cell
     }
-  
+
     const rows = selectedCells.map((index) => Math.floor(index / columns));
     const cols = selectedCells.map((index) => index % columns);
-  
+
     // Check if all cells are in the same row
     const allInSameRow = rows.every((row) => row === rows[0]);
     if (allInSameRow) {
@@ -236,7 +238,7 @@ const AdCanvas = () => {
       }
       return true;
     }
-  
+
     // Check if all cells are in the same column
     const allInSameColumn = cols.every((col) => col === cols[0]);
     if (allInSameColumn) {
@@ -249,13 +251,13 @@ const AdCanvas = () => {
       }
       return true;
     }
-  
+
     // Check if cells form a valid rectangular block
     const minRow = Math.min(...rows);
     const maxRow = Math.max(...rows);
     const minCol = Math.min(...cols);
     const maxCol = Math.max(...cols);
-  
+
     // Validate that all cells within this rectangle are selected
     for (let row = minRow; row <= maxRow; row++) {
       for (let col = minCol; col <= maxCol; col++) {
@@ -265,23 +267,23 @@ const AdCanvas = () => {
         }
       }
     }
-  
+
     return true; // The cells form a valid rectangular block
   };
 
   const handleUnmerge = (index) => {
     const updatedGrid = [...gridItems];
     const cell = updatedGrid[index];
-  
+
     if (cell.isMerged) {
       const cellsToUnmerge =
         cell.selectedCells && cell.selectedCells.length > 0
           ? cell.selectedCells
           : [index];
-  
+
       // Distribute scheduledAds equally among unmerged cells or keep them in the first cell
       const scheduledAds = cell.scheduledAds;
-  
+
       cellsToUnmerge.forEach((idx, idxIndex) => {
         updatedGrid[idx] = {
           scheduledAds: idxIndex === 0 ? scheduledAds : [], // Keep ads in the first cell
@@ -292,7 +294,7 @@ const AdCanvas = () => {
         };
       });
     }
-  
+
     setGridItems(updatedGrid);
   };
 
@@ -301,52 +303,56 @@ const AdCanvas = () => {
     setCurrentScheduleAd({ item, index });
     setIsScheduling(true);
   };
-// In handleScheduleSave function
-const handleScheduleSave = (adItem, scheduledTime, index) => {
-  const updatedGrid = [...gridItems];
-  const scheduledAd = {
-    id: uuidv4(),
-    ad: { ...adItem, id: uuidv4() },
-    scheduledTime, // Store time only
+
+  // In handleScheduleSave function
+  const handleScheduleSave = (adItem, scheduledTime, index) => {
+    // Validate that adItem has a content property
+    if (!adItem.content) {
+      console.error("AdItem is missing the 'content' property:", adItem);
+      alert("Failed to schedule the ad. Missing content information.");
+      return;
+    }
+    const updatedGrid = [...gridItems];
+    const scheduledAd = {
+      id: uuidv4(),
+      ad: { ...adItem, id: uuidv4() },
+      scheduledTime, // Store time only
+    };
+    updatedGrid[index].scheduledAds.push(scheduledAd);
+    setGridItems(updatedGrid);
+    setIsScheduling(false);
+    setCurrentScheduleAd(null);
   };
-  updatedGrid[index].scheduledAds.push(scheduledAd);
-  setGridItems(updatedGrid);
-  setIsScheduling(false);
-  setCurrentScheduleAd(null);
-};
 
   // Handles removing ads from a grid cell
- const handleRemove = (index, scheduledAd) => {
-  const updatedGrid = [...gridItems];
-  const cell = updatedGrid[index];
+  const handleRemove = (index, scheduledAd) => {
+    const updatedGrid = [...gridItems];
+    const cell = updatedGrid[index];
 
-  // Remove the scheduled ad
-  if (cell.scheduledAds && cell.scheduledAds.length > 0) {
-    updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
-      (ad) => ad.id !== scheduledAd.id
-    );
-  }
-  if (
-    updatedGrid[index].scheduledAds.length === 0 &&
-    cell.isMerged
-  ) {
-    const cellsToUnmerge =
-      cell.selectedCells && cell.selectedCells.length > 0
-        ? cell.selectedCells
-        : [index];
+    // Remove the scheduled ad
+    if (cell.scheduledAds && cell.scheduledAds.length > 0) {
+      updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
+        (ad) => ad.id !== scheduledAd.id
+      );
+    }
+    if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
+      const cellsToUnmerge =
+        cell.selectedCells && cell.selectedCells.length > 0
+          ? cell.selectedCells
+          : [index];
 
-    cellsToUnmerge.forEach((idx) => {
-      updatedGrid[idx] = {
-        scheduledAds: [],
-        isMerged: false,
-        hidden: false,
-        rowSpan: 1,
-        colSpan: 1,
-      };
-    });
-  }
-  setGridItems(updatedGrid);
-};
+      cellsToUnmerge.forEach((idx) => {
+        updatedGrid[idx] = {
+          scheduledAds: [],
+          isMerged: false,
+          hidden: false,
+          rowSpan: 1,
+          colSpan: 1,
+        };
+      });
+    }
+    setGridItems(updatedGrid);
+  };
 
   // Handles saving the current layout as a JSON object
   const handleSaveLayout = () => {
@@ -361,11 +367,15 @@ const handleScheduleSave = (adItem, scheduledTime, index) => {
 
       const cleanedLayout = cleanLayoutJSON(layout);
 
-      const response = await axios.post('http://localhost:5000/api/saveLayout', cleanedLayout, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/saveLayout",
+        cleanedLayout,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       console.log("Layout saved successfully:", response.data);
       alert("Layout saved successfully!");
@@ -378,14 +388,14 @@ const handleScheduleSave = (adItem, scheduledTime, index) => {
 
   const cleanLayoutJSON = (layout) => {
     const { rows, columns, gridItems } = layout;
-  
+
     const filteredItems = gridItems
       .map((item, index) => {
         if (!item || item.hidden) return null;
-  
+
         const row = Math.floor(index / columns);
         const column = index % columns;
-  
+
         return {
           index,
           row,
@@ -400,7 +410,7 @@ const handleScheduleSave = (adItem, scheduledTime, index) => {
             };
             return {
               id: scheduledAd.id,
-              scheduledTime: scheduledAd.scheduledTime, 
+              scheduledTime: scheduledAd.scheduledTime,
               ad: adData,
             };
           }),
@@ -412,7 +422,7 @@ const handleScheduleSave = (adItem, scheduledTime, index) => {
         };
       })
       .filter((item) => item !== null); // Remove null entries
-  
+
     return {
       layoutId: layout.layoutId, // Ensure layoutId is included
       name: layout.name, // Include name if necessary
@@ -421,36 +431,36 @@ const handleScheduleSave = (adItem, scheduledTime, index) => {
       gridItems: filteredItems,
     };
   };
-  
+
   // Opens the modal for editing a specific ad
   const handleEdit = (index, scheduledAd) => {
     setCurrentAd({ index, scheduledAd });
     setIsEditing(true);
   };
 
- // Handles saving an updated ad from the modal
- const handleSave = (updatedAdData, updatedScheduledDateTime) => {
-  const updatedGrid = [...gridItems];
-  const scheduledAds = updatedGrid[currentAd.index].scheduledAds;
-  const adIndex = scheduledAds.findIndex(
-    (ad) => ad.id === currentAd.scheduledAd.id
-  );
-  if (adIndex !== -1) {
-    scheduledAds[adIndex] = {
-      ...scheduledAds[adIndex],
-      ad: {
-        ...scheduledAds[adIndex].ad,
-        content: updatedAdData.content,
-        styles: updatedAdData.styles,
-      },
-      scheduledDateTime: updatedScheduledDateTime, // Update scheduled time
-    };
-    updatedGrid[currentAd.index].scheduledAds = scheduledAds;
-    setGridItems(updatedGrid);
-  }
-  setIsEditing(false);
-  setCurrentAd(null);
-};
+  // Handles saving an updated ad from the modal
+  const handleSave = (updatedAdData, updatedScheduledTime) => {
+    const updatedGrid = [...gridItems];
+    const scheduledAds = updatedGrid[currentAd.index].scheduledAds;
+    const adIndex = scheduledAds.findIndex(
+      (ad) => ad.id === currentAd.scheduledAd.id
+    );
+    if (adIndex !== -1) {
+      scheduledAds[adIndex] = {
+        ...scheduledAds[adIndex],
+        ad: {
+          ...scheduledAds[adIndex].ad,
+          content: updatedAdData.content,
+          styles: updatedAdData.styles,
+        },
+        scheduledDateTime: updatedScheduledTime, // Update scheduled time
+      };
+      updatedGrid[currentAd.index].scheduledAds = scheduledAds;
+      setGridItems(updatedGrid);
+    }
+    setIsEditing(false);
+    setCurrentAd(null);
+  };
 
   return (
     <div className="ad-canvas">
@@ -527,10 +537,10 @@ const handleScheduleSave = (adItem, scheduledTime, index) => {
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
           ad={currentScheduleAd.item}
-          onSave={(scheduledDateTime) =>
+          onSave={(scheduledTime) =>
             handleScheduleSave(
               currentScheduleAd.item,
-              scheduledDateTime,
+              scheduledTime,
               currentScheduleAd.index
             )
           }
