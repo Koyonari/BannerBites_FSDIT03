@@ -80,95 +80,55 @@ const AdCanvas = () => {
   // Handle merging of cells, including direction and selection
   const handleMerge = (index, direction, selectedCells = []) => {
     const updatedGrid = [...gridItems];
-  
+ 
     if (!updatedGrid[index] || updatedGrid[index]?.isMerged) {
       alert("Cannot merge empty or already merged cells!");
       return;
     }
-  
+ 
     const numColumns = columns;
     let indicesToMerge = [];
-  
+ 
     if (selectedCells.length > 0) {
       // Handle selection-based merging
       indicesToMerge = selectedCells;
-    } else if (direction === "horizontal" || direction === "vertical") {
-      // Handle directional merging
-      if (direction === "horizontal") {
-        if ((index + 1) % numColumns === 0) {
-          alert("Cannot merge horizontally. No adjacent cell to the right.");
-          return;
+    } else if (direction === "vertical") {
+      // Correct vertical merging calculation
+      let nextIndex = index;
+      while (nextIndex < totalCells) {
+        const belowIndex = nextIndex + numColumns;
+        if (belowIndex >= totalCells || updatedGrid[belowIndex]?.isMerged || updatedGrid[belowIndex]?.hidden) {
+          break;
         }
-        const rightIndex = index + 1;
-        if (
-          updatedGrid[rightIndex] &&
-          !updatedGrid[rightIndex].isMerged &&
-          !updatedGrid[rightIndex].hidden
-        ) {
-          indicesToMerge = [index, rightIndex];
-        } else {
-          alert("Cannot merge horizontally. Adjacent cell is invalid.");
-          return;
-        }
-      } else if (direction === "vertical") {
-        const bottomIndex = index + numColumns;
-        if (bottomIndex >= totalCells) {
-          alert("Cannot merge vertically. No adjacent cell below.");
-          return;
-        }
-        if (
-          updatedGrid[bottomIndex] &&
-          !updatedGrid[bottomIndex].isMerged &&
-          !updatedGrid[bottomIndex].hidden
-        ) {
-          indicesToMerge = [index, bottomIndex];
-        } else {
-          alert("Cannot merge vertically. Adjacent cell is invalid.");
-          return;
-        }
+        indicesToMerge.push(belowIndex);
+        nextIndex = belowIndex;
       }
+ 
+      indicesToMerge.unshift(index); // Include the initial cell
     }
-  
+ 
     if (indicesToMerge.length > 0) {
-      // Combine scheduledAds from the cells being merged
       const mergedScheduledAds = indicesToMerge.reduce((ads, idx) => {
         return ads.concat(updatedGrid[idx].scheduledAds || []);
       }, []);
-  
+ 
+      // Set merged properties properly based on selected cells
       const mergedItem = {
         scheduledAds: mergedScheduledAds,
         isMerged: true,
         hidden: false,
-        rowSpan:
-          selectedCells.length > 0
-            ? Math.max(
-                ...selectedCells.map((idx) => Math.floor(idx / columns))
-              ) -
-              Math.min(
-                ...selectedCells.map((idx) => Math.floor(idx / columns))
-              ) +
-              1
-            : direction === "vertical"
-            ? 2
-            : 1,
-        colSpan:
-          selectedCells.length > 0
-            ? Math.max(...selectedCells.map((idx) => idx % columns)) -
-              Math.min(...selectedCells.map((idx) => idx % columns)) +
-              1
-            : direction === "horizontal"
-            ? 2
-            : 1,
-        mergeDirection: direction || "selection",
-        selectedCells:
-          selectedCells.length > 0 ? selectedCells : indicesToMerge,
+        rowSpan: indicesToMerge.length, // Use length for vertical span
+        colSpan: 1,
+        mergeDirection: "vertical",
+        selectedCells: indicesToMerge,
       };
-  
+ 
       updatedGrid[indicesToMerge[0]] = mergedItem;
-  
+ 
+      // Hide the remaining cells
       indicesToMerge.slice(1).forEach((cellIndex) => {
         updatedGrid[cellIndex] = {
-          scheduledAds: [], // Ensure scheduledAds is initialized
+          scheduledAds: [],
           isMerged: true,
           hidden: true,
           rowSpan: 1,
@@ -179,7 +139,7 @@ const AdCanvas = () => {
       alert("Cannot merge the selected cells.");
       return;
     }
-  
+ 
     setGridItems(updatedGrid);
   };
   
