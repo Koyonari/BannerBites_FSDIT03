@@ -6,7 +6,7 @@ import AdListPopup from "./AdListPopup";
 const Checkbox = ({ checked, onChange, className }) => (
   <div
     className={`w-4 h-4 border-2 rounded cursor-pointer flex items-center justify-center bg-white hover:bg-gray-50 ${
-      checked ? "border-blue-500" : "border-gray-300"
+      checked ? "border-orange-500" : "border-gray-300"
     } ${className}`}
     onClick={(e) => {
       e.stopPropagation();
@@ -15,7 +15,7 @@ const Checkbox = ({ checked, onChange, className }) => (
   >
     {checked && (
       <svg
-        className="w-3 h-3 text-blue-500"
+        className="w-3 h-3 text-orange-500"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -68,19 +68,15 @@ const GridCell = ({
 
   const handleCellClick = (e) => {
     e.stopPropagation();
-    if (item && !item.hidden && !item.isMerged) {
-      onSelect(index);
-    }
+    // Remove direct cell click selection
   };
 
   const handleCheckboxChange = (checked) => {
     if (item && !item.hidden && !item.isMerged) {
       if (!isSelectionMode) {
-        setIsSelectionMode(true); // Enter selection mode first
-        onSelect(index); // Then select the cell
-      } else {
-        onSelect(index);
+        setIsSelectionMode(true); // Enter selection mode
       }
+      onSelect(index); // Select/deselect the cell
     }
   };
 

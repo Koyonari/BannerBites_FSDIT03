@@ -192,20 +192,19 @@ const AdCanvas = () => {
 
   // Handles selecting cells for merging
   const handleCellSelection = (index) => {
-    if (!isSelectionMode) return;
-
-    // Check if the cell is already merged or hidden
     const cell = gridItems[index];
-    if (cell.hidden || (cell.isMerged && !selectedCells.includes(index))) {
-      return; // Don't allow selection of hidden or already merged cells
+    if (cell.hidden || cell.isMerged) {
+      return;
     }
 
     setSelectedCells((prev) => {
-      // If the cell is already selected, remove it
       if (prev.includes(index)) {
-        return prev.filter((i) => i !== index);
+        const newSelection = prev.filter((i) => i !== index);
+        if (newSelection.length === 0) {
+          setIsSelectionMode(false); // Exit selection mode if no cells are selected
+        }
+        return newSelection;
       }
-
       return [...prev, index];
     });
   };
@@ -605,20 +604,11 @@ const AdCanvas = () => {
       </div>
       <Sidebar />
       <div className="controls">
-        <button
-          onClick={() => {
-            setIsSelectionMode(!isSelectionMode);
-            if (!isSelectionMode) {
-              setSelectedCells([]);
-            }
-          }}
-        >
-          {isSelectionMode ? "Exit Selection Mode" : "Enter Selection Mode"}
-        </button>
         {isSelectionMode && (
           <button
             onClick={handleMergeSelected}
             disabled={selectedCells.length < 2}
+            className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors duration-200"
           >
             Merge Selected ({selectedCells.length})
           </button>
