@@ -160,7 +160,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
     onClose();
   };
 
-  // Ensure ad.type is lowercase for consistency
+  // Convert ad.type to lowercase to be used later
   const adType = ad?.type?.toLowerCase() || "";
 
   return (
