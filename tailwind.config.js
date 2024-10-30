@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class",
   content: ["./src/**/*.{js,jsx,ts,tsx}", "*.jsx", "App.js"],
   theme: {
     extend: {},
@@ -13,5 +14,20 @@ module.exports = {
       "2xl": "1536px",
     },
   },
-  plugins: [],
+  plugins: [
+    function ({ addUtilities }) {
+      const newUtilities = {
+        ".outline-3": {
+          "-webkit-text-stroke": "3px",
+          "-webkit-text-stroke-color": "#000000",
+        },
+        ".outline-1": {
+          "-webkit-text-stroke": "0.4px",
+          "-webkit-text-stroke-color": "#000000",
+        },
+      };
+
+      addUtilities(newUtilities, ["responsive", "hover"]);
+    },
+  ],
 };
