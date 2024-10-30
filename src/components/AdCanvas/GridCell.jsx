@@ -107,7 +107,17 @@ const GridCell = ({
   const handleEdit = (e) => {
     e.stopPropagation();
     if (adToDisplay) {
-      onEdit(index, adToDisplay);
+      const adToEdit = {
+        ...adToDisplay,
+        ad: {
+          ...adToDisplay.ad,
+          type: adToDisplay.ad.type
+            ? adToDisplay.ad.type.charAt(0).toUpperCase() +
+              adToDisplay.ad.type.slice(1)
+            : adToDisplay.ad.type,
+        },
+      };
+      onEdit(index, adToEdit);
     } else {
       alert("No ad to edit");
     }
