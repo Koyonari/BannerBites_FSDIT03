@@ -1,4 +1,3 @@
-// ScheduleModal.js
 import React, { useState } from "react";
 
 const ScheduleModal = ({ ad, onSave, onClose }) => {

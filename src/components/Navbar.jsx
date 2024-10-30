@@ -43,7 +43,7 @@ function Navbar() {
   };
 
   const handleHome = () => {
-    navigate("/");
+    navigate("/userhome");
   };
 
   const handleLayoutClick = () => {
@@ -59,7 +59,7 @@ function Navbar() {
             <span className="text-orange-500 outline-1">Bites</span>
           </h1>
         </div>
-        <div className="nav-links hidden lg:flex items-center gap-12">
+        <div className="nav-links hidden lg:flex items-center gap-12 mr-6">
           <HomeIcon
             className="w-6 h-6 text-black dark:text-white transition-colors duration-500 cursor-pointer"
             onClick={handleHome}
