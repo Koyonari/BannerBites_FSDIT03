@@ -1,5 +1,6 @@
 // AdViewer.js
 import React from "react";
+import { useState, useEffect } from "react";
 import "./AdViewer.css";
 
 // Component to represent an individual Ad
@@ -19,7 +20,9 @@ const AdComponent = ({ type, content, styles }) => {
         .map((segment) => encodeURIComponent(segment))
         .join("/");
     };
+
     const encodedS3Key = encodeS3Key(content.s3Key);
+
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
 
@@ -73,6 +76,8 @@ const AdViewer = ({ layout }) => {
     return <div>No layout provided</div>;
   }
 
+  const { rows, columns, gridItems } = layout;
+
   return (
     <div
       className="ad-viewer-grid"
@@ -94,8 +99,7 @@ const AdViewer = ({ layout }) => {
         let adToDisplay = null;
 
         if (scheduledAds && scheduledAds.length > 0) {
-          const now = new Date();
-          const currentTimeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`; // Format current time as "HH:mm"
+          const currentTimeString = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`; // Format current time as "HH:mm"
 
           // Filter ads that should be displayed now
           const availableAds = scheduledAds.filter(
