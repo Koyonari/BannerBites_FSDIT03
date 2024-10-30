@@ -530,14 +530,14 @@ const AdCanvas = () => {
 
         {/* Grid */}
         <div className="flex-1 flex flex-col w-80 max-h-[80h]">
-          {/* Increase Rows button */}
+          {/* Decrease Rows button */}
           <div className="group py-2">
             <div
-              onClick={increaseRows}
+              onClick={decreaseRows}
               className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
             >
               <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
-                +
+                -
               </span>
             </div>
           </div>
@@ -578,14 +578,14 @@ const AdCanvas = () => {
             })}
           </div>
 
-          {/* Decrease Rows button */}
+          {/* Increase Rows button */}
           <div className="group py-2">
             <div
-              onClick={decreaseRows}
+              onClick={increaseRows}
               className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
             >
               <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
-                -
+                +
               </span>
             </div>
           </div>
