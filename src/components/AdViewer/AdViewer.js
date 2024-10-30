@@ -19,9 +19,7 @@ const AdComponent = ({ type, content, styles }) => {
         .map((segment) => encodeURIComponent(segment))
         .join("/");
     };
-
     const encodedS3Key = encodeS3Key(content.s3Key);
-
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
 
@@ -60,11 +58,20 @@ const AdComponent = ({ type, content, styles }) => {
 
 // Main AdViewer component to render the layout
 const AdViewer = ({ layout }) => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Set up a timer to update the current time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer); // Cleanup on unmount
+  }, []);
+
   if (!layout) {
     return <div>No layout provided</div>;
   }
-
-  const { rows, columns, gridItems } = layout;
 
   return (
     <div
