@@ -252,7 +252,7 @@ const GridCell = ({
   return (
     <div
       ref={drop}
-      className={`grid-cell border border-gray-400 p-2 bg-white min-h-[150px] flex flex-col gap-2 box-border transition-transform duration-200 ease-in-out hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:bg-orange-50 relative hover:outline-orange-300 ${
+      className={`grid-cell border border-gray-400 p-2 bg-white flex flex-col gap-2 box-border transition-transform duration-200 ease-in-out hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:bg-orange-50 relative hover:outline-orange-300 ${
         isOver ? "bg-orange-50 outline-orange-300" : ""
       } ${mergedClass} ${selectionClass} ${selectedClass} ${
         item?.isHidden ? "hidden" : ""

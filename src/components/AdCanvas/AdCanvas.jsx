@@ -6,6 +6,8 @@ import GridCell from "./GridCell";
 import EditModal from "./EditModal";
 import ScheduleModal from "./ScheduleModal";
 import SaveLayoutModal from "./SaveLayoutModal";
+import { MoveLeft, Merge, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const AdCanvas = () => {
   const [rows, setRows] = useState(2);
@@ -27,6 +29,15 @@ const AdCanvas = () => {
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
   const [isNamingLayout, setIsNamingLayout] = useState(false);
+  const navigate = useNavigate();
+
+  const handleMoveLeft = () => {
+    navigate(-1);
+  };
+
+  const handleOpenSelector = async () => {
+    setIsNamingLayout(true);
+  };
 
   // Resizes the grid based on new dimensions
   const resizeGrid = (newRows, newColumns) => {
@@ -414,7 +425,6 @@ const AdCanvas = () => {
     try {
       const layoutId = uuidv4();
       const layout = { rows, columns, gridItems, layoutId, name };
-
       const cleanedLayout = cleanLayoutJSON(layout);
 
       const response = await axios.post(
@@ -428,8 +438,8 @@ const AdCanvas = () => {
       );
 
       console.log("Layout saved successfully:", response.data);
-      alert("Layout saved successfully!");
-      setIsNamingLayout(false); // Close the modal
+      setIsNamingLayout(false);
+      navigate("/ad-viewer"); // Navigate to ad-viewer after saving
     } catch (error) {
       console.error("Error saving layout:", error);
       alert("Failed to save layout. Please try again.");
@@ -513,8 +523,8 @@ const AdCanvas = () => {
   };
 
   return (
-    <div className="ad-canvas flex flex-col items-center justify-center text-center w-full">
-      <div className="flex flex-row items-stretch gap-2 w-full max-h-[80vh] max-w-[80vw] justify-center">
+    <div className="ad-canvas flex flex-col items-center justify-center text-center w-full h-full">
+      <div className="flex flex-row items-stretch gap-2 w-full h-[70vh] max-w-[80vw] justify-center">
         {/* Decrease Columns button */}
         <div className="flex flex-col justify-center group">
           <div
@@ -543,9 +553,10 @@ const AdCanvas = () => {
 
           {/* Grid cells */}
           <div
-            className="grid flex-1 max-h-[60vh] gap-2.5 w-full auto-rows-[minmax(150px,auto)]"
+            className="grid flex-1 h-[60vh] gap-2.5 w-full auto-rows-[minmax(150px,auto)]"
             style={{
               gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
               gridAutoFlow: "dense",
               "--rows": rows,
               "--columns": columns,
@@ -603,18 +614,30 @@ const AdCanvas = () => {
         </div>
       </div>
       <Sidebar />
-      <div className="controls">
-        {isSelectionMode && (
-          <button
-            onClick={handleMergeSelected}
-            disabled={selectedCells.length < 2}
-            className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors duration-200"
-          >
-            Merge Selected ({selectedCells.length})
-          </button>
-        )}
+
+      {/* Add navigation buttons */}
+      <div className="flex flex-row justify-between py-4 lg:py-8 w-4/5 mx-auto">
+        <MoveLeft
+          onClick={handleMoveLeft}
+          className="h-8 text-white bg-orange-500 rounded-lg py-1 w-24 hover:cursor-pointer"
+        />
+        <Merge
+          onClick={handleMergeSelected}
+          disabled={selectedCells.length < 2}
+          className={`h-8 text-white rounded-lg py-2 w-24 transition-colors duration-300 ${
+            selectedCells.length < 2
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-orange-500 hover:cursor-pointer"
+          }`}
+        />
+
+        <Check
+          onClick={handleOpenSelector}
+          className="h-8 text-white bg-orange-500 rounded-lg py-1.5 w-24 hover:cursor-pointer"
+        />
       </div>
-      {/* Include the SaveLayoutModal */}
+
+      {/* Modals */}
       {isNamingLayout && (
         <SaveLayoutModal
           onSave={handleLayoutNameSave}
