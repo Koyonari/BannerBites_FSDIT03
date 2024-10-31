@@ -74,16 +74,6 @@ const GridCell = ({
     }
   };
 
-  const handleMergeHorizontal = (e) => {
-    e.stopPropagation();
-    onMerge(index, "horizontal");
-  };
-
-  const handleMergeVertical = (e) => {
-    e.stopPropagation();
-    onMerge(index, "vertical");
-  };
-
   const handleUnmerge = (e) => {
     e.stopPropagation();
     onUnmerge(index);
@@ -290,22 +280,6 @@ const GridCell = ({
           >
             View List
           </button>
-          {!item.isMerged && !isSelectionMode && (
-            <>
-              <button
-                onClick={handleMergeHorizontal}
-                className="px-2 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                Merge H
-              </button>
-              <button
-                onClick={handleMergeVertical}
-                className="px-2 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                Merge V
-              </button>
-            </>
-          )}
           <button
             onClick={handleRemove}
             className="px-2 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
