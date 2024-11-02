@@ -6,6 +6,7 @@ import GridCell from "./GridCell";
 import EditModal from "./EditModal";
 import ScheduleModal from "./ScheduleModal";
 import SaveLayoutModal from "./SaveLayoutModal";
+import SelectionModePopup from "./SelectionModePopup";
 import { MoveLeft, Merge, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -439,7 +440,7 @@ const AdCanvas = () => {
 
       console.log("Layout saved successfully:", response.data);
       setIsNamingLayout(false);
-      navigate("/ad-viewer"); // Navigate to ad-viewer after saving
+      navigate("/ad-viewer");
     } catch (error) {
       console.error("Error saving layout:", error);
       alert("Failed to save layout. Please try again.");
@@ -523,8 +524,8 @@ const AdCanvas = () => {
   };
 
   return (
-    <div className="ad-canvas flex flex-col items-center justify-center text-center w-full h-full">
-      <div className="flex flex-row items-stretch gap-2 w-full h-[70vh] max-w-[80vw] justify-center">
+    <div className="ad-canvas flex flex-col items-center justify-center text-center w-full">
+      <div className="flex flex-row items-stretch gap-2 w-full max-w-[80vw] justify-center">
         {/* Decrease Columns button */}
         <div className="flex flex-col justify-center group">
           <div
@@ -537,8 +538,8 @@ const AdCanvas = () => {
           </div>
         </div>
 
-        {/* Grid */}
-        <div className="flex-1 flex flex-col w-80 max-h-[80h]">
+        {/* Grid Container with aspect ratio wrapper */}
+        <div className="flex-1 flex flex-col w-80">
           {/* Decrease Rows button */}
           <div className="group py-2">
             <div
@@ -551,41 +552,45 @@ const AdCanvas = () => {
             </div>
           </div>
 
-          {/* Grid cells */}
-          <div
-            className="grid flex-1 h-[60vh] gap-2.5 w-full auto-rows-[minmax(150px,auto)]"
-            style={{
-              gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
-              gridAutoFlow: "dense",
-              "--rows": rows,
-              "--columns": columns,
-            }}
-          >
-            {gridItems.map((item, index) => {
-              const rowIndex = Math.floor(index / columns);
-              const colIndex = index % columns;
-              return (
-                <GridCell
-                  key={index}
-                  index={index}
-                  rowIndex={rowIndex}
-                  colIndex={colIndex}
-                  item={item}
-                  onDrop={handleDrop}
-                  onRemove={handleRemove}
-                  onEdit={handleEdit}
-                  onMerge={handleMerge}
-                  isSelected={selectedCells.includes(index)}
-                  onSelect={handleCellSelection}
-                  isSelectionMode={isSelectionMode}
-                  setIsSelectionMode={setIsSelectionMode}
-                  columns={columns}
-                  totalCells={totalCells}
-                  onUnmerge={handleUnmerge}
-                />
-              );
-            })}
+          {/* Aspect ratio container */}
+          <div className="relative w-full h-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
+            {" "}
+            {/* Grid cells container */}
+            <div
+              className="absolute top-0 left-0 w-full h-full grid gap-2.5 auto-rows-fr"
+              style={{
+                gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
+                gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
+                gridAutoFlow: "dense",
+                "--rows": rows,
+                "--columns": columns,
+              }}
+            >
+              {gridItems.map((item, index) => {
+                const rowIndex = Math.floor(index / columns);
+                const colIndex = index % columns;
+                return (
+                  <GridCell
+                    key={index}
+                    index={index}
+                    rowIndex={rowIndex}
+                    colIndex={colIndex}
+                    item={item}
+                    onDrop={handleDrop}
+                    onRemove={handleRemove}
+                    onEdit={handleEdit}
+                    onMerge={handleMerge}
+                    isSelected={selectedCells.includes(index)}
+                    onSelect={handleCellSelection}
+                    isSelectionMode={isSelectionMode}
+                    setIsSelectionMode={setIsSelectionMode}
+                    columns={columns}
+                    totalCells={totalCells}
+                    onUnmerge={handleUnmerge}
+                  />
+                );
+              })}
+            </div>
           </div>
 
           {/* Increase Rows button */}
@@ -613,27 +618,28 @@ const AdCanvas = () => {
           </div>
         </div>
       </div>
+
+      <SelectionModePopup isVisible={isSelectionMode} />
       <Sidebar />
 
-      {/* Add navigation buttons */}
+      {/* Navigation buttons */}
       <div className="flex flex-row justify-between py-4 lg:py-8 w-4/5 mx-auto">
         <MoveLeft
           onClick={handleMoveLeft}
-          className="h-8 text-white bg-orange-500 rounded-lg py-1 w-24 hover:cursor-pointer"
+          className="h-8 text-white bg-orange-500 rounded-lg py-1 md:w-24 sm:w-20 w-16 xl:w-28 xl:h-10 2xl:w-40 2xl:h-16 2xl:py-2 hover:cursor-pointer"
         />
         <Merge
           onClick={handleMergeSelected}
           disabled={selectedCells.length < 2}
-          className={`h-8 text-white rounded-lg py-2 w-24 transition-colors duration-300 ${
+          className={`h-8 text-white rounded-lg py-2 transition-colors duration-300 md:w-24 sm:w-20 w-16 xl:w-28 xl:h-10 2xl:w-40 2xl:h-16 2xl:py-3.5 ${
             selectedCells.length < 2
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-orange-500 hover:cursor-pointer"
           }`}
         />
-
         <Check
           onClick={handleOpenSelector}
-          className="h-8 text-white bg-orange-500 rounded-lg py-1.5 w-24 hover:cursor-pointer"
+          className="h-8 text-white bg-orange-500 rounded-lg py-1.5 md:w-24 sm:w-20 w-16 xl:w-28 xl:h-10 2xl:w-40 2xl:h-16 2xl:py-3 hover:cursor-pointer"
         />
       </div>
 

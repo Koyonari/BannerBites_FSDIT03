@@ -1,5 +1,5 @@
 import React from "react";
-import { HomeIcon, CircleUserRound } from "lucide-react";
+import { HomeIcon, CircleUserRound, LayoutList } from "lucide-react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
@@ -8,6 +8,7 @@ const icons = {
   navbar: [
     { href: "/userhome", icon: HomeIcon, label: "Home" },
     { href: "#", icon: CircleUserRound, label: "Profile" },
+    { href: "/layouts", icon: LayoutList, label: "LayoutList" },
   ],
 };
 
@@ -35,7 +36,6 @@ const Hero = () => {
   };
 
   const HomeIconComponent = icons.navbar[0].icon;
-  const ProfileIconComponent = icons.navbar[1].icon;
 
   return (
     <div className="flex flex-col align-center justify-center items-center h-screen bg-white dark:bg-black transition-colors duration-200">
@@ -51,18 +51,20 @@ const Hero = () => {
         >
           <HomeIconComponent className="w-6 h-6 text-black dark:text-white" />
         </Link>
+
+        <Link
+          key="home"
+          to={icons.navbar[2].href}
+          className="flex flex-col items-center"
+        >
+          <LayoutList className="w-6 h-6 text-black dark:text-white" />
+        </Link>
+
         <DarkModeSwitch
           checked={isDarkMode}
           onChange={toggleDarkMode}
           size={24}
         />
-        <Link
-          key="profile"
-          to={icons.navbar[1].href}
-          className="flex flex-col items-center"
-        >
-          <ProfileIconComponent className="w-6 h-6 text-black dark:text-white" />
-        </Link>
       </div>
     </div>
   );

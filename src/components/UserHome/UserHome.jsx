@@ -23,12 +23,12 @@ const Card = ({ title, date, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="card max-w-96 sm:h-full w-4/5 h-40 bg-black dark:bg-white dark:text-black text-white rounded-xl relative flex flex-col justify-center items-center cursor-pointer hover:opacity-80 transition-opacity"
+      className="card max-w-96 sm:h-full w-4/5 lg:h-[35vh] lg:w-[28vw] bg-black dark:bg-white dark:text-black text-white rounded-xl relative flex flex-col justify-center items-center cursor-pointer hover:opacity-80 transition-opacity"
     >
       <EditIcon className="absolute top-4 right-4 text-white dark:text-black" />
       <div>
-        <h1 className="text-md font-bold px-6 py-4 md:px-2">{title}</h1>
-        <p className="text-xs px-6 py-4 md:px-2">Date Created: {date}</p>
+        <h1 className="text-xl font-bold px-6 py-4 md:px-2">{title}</h1>
+        <p className="text-md px-6 py-4 md:px-2">Date Created: {date}</p>
       </div>
     </div>
   );
@@ -171,7 +171,7 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
         </Link>
       </div>
 
-      <div className="w-full py-12 px-4 grid gap-4 lg:gap-6 justify-items-center grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <div className="w-full py-16 px-16 grid gap-4 lg:gap-6 justify-items-center grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {sortedLocations.map((location) => (
           <Card
             key={location.locationId}

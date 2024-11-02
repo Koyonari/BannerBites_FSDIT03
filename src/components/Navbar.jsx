@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
-import { HomeIcon, CircleUserRound, LayoutList } from "lucide-react";
+import { HomeIcon, LayoutList } from "lucide-react";
 import Hamburger from "hamburger-react";
 import { useNavigate } from "react-router-dom";
 import React from "react";
@@ -51,7 +51,7 @@ function Navbar() {
   };
 
   return (
-    <section className="h-24">
+    <section className="h-24 !z-[10000]">
       <div className="bg-white dark:bg-black transition-colors duration-500 h-24 text-2xl fixed flex justify-between items-center w-full max-md:w-full px-6 font-extrabold border-b-black border-b-2 dark:border-b-white">
         <div className="pt-4">
           <h1 className="font-bold text-3xl mb-3 text-black dark:text-white items-center text-center justify-center left-0">
@@ -75,8 +75,6 @@ function Navbar() {
             moonColor="white"
             sunColor="black"
           />
-          <p className="dark:text-white text-4xl font-normal pb-1">|</p>
-          <CircleUserRound className="w-6 h-6 text-black dark:text-white transition-colors duration-500" />
         </div>
       </div>
 
@@ -115,9 +113,6 @@ function Navbar() {
             moonColor="white"
             sunColor="white"
           />
-        </div>
-        <div className="flex items-center justify-center gap-4 py-8 border-white/20 border-b">
-          <CircleUserRound className="w-6 h-6 text-white dark:text-white transition-colors duration-300" />
         </div>
       </div>
     </section>

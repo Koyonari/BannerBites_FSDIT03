@@ -184,9 +184,9 @@ const LayoutList = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg shadow p-6">
+    <div className="container p-4">
+      <div className="grid md:flex md:grid-cols-2">
+        <div className="bg-white rounded-lg shadow p-6 md:w-[20vw]">
           <h2 className="text-xl font-bold mb-4">Available Layouts</h2>
           {loading && !selectedLayout && (
             <div className="flex items-center justify-center p-4 text-gray-600">
@@ -231,7 +231,7 @@ const LayoutList = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 ml-[2vw] w-[78vw] border border-orange-500">
           <h2 className="text-xl font-bold mb-4">Layout Preview</h2>
           {loading && selectedLayout && (
             <div className="flex items-center justify-center p-4 text-gray-600">
