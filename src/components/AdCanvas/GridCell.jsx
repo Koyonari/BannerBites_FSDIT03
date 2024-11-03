@@ -1,9 +1,13 @@
 import React, { useState } from "react";
 import { useDrop } from "react-dnd";
+import { Tooltip } from "react-tooltip";
 import AdListPopup from "./AdListPopup";
 
-const Checkbox = ({ checked, onChange, className }) => (
+const Checkbox = ({ checked, onChange, className, showHelp }) => (
   <div
+    id="cellCheckbox"
+    data-tooltip-id="checkbox-tooltip"
+    data-tooltip-content="Click to multi-select cells"
     className={`w-4 h-4 border-2 cursor-pointer flex items-center justify-center bg-white hover:bg-gray-50 ${
       checked ? "border-orange-500" : "border-gray-300"
     } ${className}`}
@@ -44,8 +48,7 @@ const GridCell = ({
   onSelect,
   isSelectionMode,
   setIsSelectionMode,
-  columns,
-  totalCells,
+  showHelp,
 }) => {
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -239,6 +242,27 @@ const GridCell = ({
     return null;
   }
 
+  // Tooltip style
+  const tooltipStyle = {
+    backgroundColor: "rgb(255, 255, 255)",
+    color: "black",
+    boxShadow:
+      "0 4px 6px -1px rgba(0, 0, 0, 1), 0 2px 4px -1px rgba(0, 0, 0, 1)",
+    border: "none",
+    borderRadius: "6px",
+    padding: "8px 12px",
+    fontSize: "14px",
+    zIndex: 1000,
+  };
+
+  // Tooltip Props
+  const tooltipProps = {
+    className: "custom-tooltip",
+    style: tooltipStyle,
+    isOpen: showHelp,
+    place: "right",
+  };
+
   return (
     <div
       ref={drop}
@@ -260,7 +284,9 @@ const GridCell = ({
             checked={isSelected}
             onChange={handleCheckboxChange}
             className="transition-colors duration-200 ease-in-out"
+            showHelp={showHelp}
           />
+          <Tooltip id="checkbox-tooltip" {...tooltipProps} />
         </div>
       )}
 

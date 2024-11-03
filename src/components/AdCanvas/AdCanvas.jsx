@@ -7,10 +7,12 @@ import EditModal from "./EditModal";
 import ScheduleModal from "./ScheduleModal";
 import SaveLayoutModal from "./SaveLayoutModal";
 import SelectionModePopup from "./SelectionModePopup";
-import { MoveLeft, Merge, Check } from "lucide-react";
+import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Tooltip } from "react-tooltip";
 
 const AdCanvas = () => {
+  const [showHelp, setShowHelp] = useState(false);
   const [rows, setRows] = useState(2);
   const [columns, setColumns] = useState(3);
   const totalCells = rows * columns;
@@ -523,12 +525,68 @@ const AdCanvas = () => {
     setCurrentAd(null);
   };
 
+  // Tooltip styles
+  const tooltipStyle = {
+    backgroundColor: "rgb(255, 255, 255)",
+    color: "black",
+    boxShadow:
+      "0 4px 6px -1px rgba(0, 0, 0, 1), 0 2px 4px -1px rgba(0, 0, 0, 1)",
+    border: "none",
+    borderRadius: "6px",
+    padding: "8px 12px",
+    fontSize: "14px",
+    zIndex: 1000,
+  };
+
+  // Tooltip props
+  const tooltipPropsLeft = {
+    className: "custom-tooltip",
+    style: tooltipStyle,
+    isOpen: showHelp,
+    place: "left",
+  };
+  const tooltipPropsRight = {
+    className: "custom-tooltip",
+    style: tooltipStyle,
+    isOpen: showHelp,
+    place: "right",
+  };
+  const tooltipPropsTop = {
+    className: "custom-tooltip",
+    style: tooltipStyle,
+    isOpen: showHelp,
+    place: "top",
+  };
+
+  // Tooltip information
+  const tooltips = {
+    addRows: "Click + to add rows",
+    remRows: "Click - to remove rows",
+    addCols: "Click + to add columns",
+    remCols: "Click - to remove columns",
+    sidebar: "Drag & drop element to add to grid",
+    merge: "Click while selecting multiple cells to merge",
+  };
+
   return (
     <div className="ad-canvas flex flex-col items-center justify-center text-center w-full">
+      <div className="absolute top-[calc(6rem+1rem)] right-4 z-50">
+        <CircleHelp
+          className={`w-6 h-6 cursor-pointer transition-colors duration-200 ${
+            showHelp ? "text-orange-500" : "text-gray-600"
+          }`}
+          fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
+          strokeWidth={2}
+          onClick={() => setShowHelp(!showHelp)}
+        />
+      </div>
       <div className="flex flex-row items-stretch gap-2 w-full max-w-[80vw] justify-center">
         {/* Decrease Columns button */}
         <div className="flex flex-col justify-center group">
           <div
+            id="remCols"
+            data-tooltip-id="remCols-tooltip"
+            data-tooltip-content={tooltips.remCols}
             onClick={decreaseColumns}
             className="bg-gray-300 text-center rounded-lg w-4 md:w-2 lg:w-1 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:w-8 transition-all duration-200 md:overflow-hidden"
           >
@@ -543,6 +601,9 @@ const AdCanvas = () => {
           {/* Decrease Rows button */}
           <div className="group py-2">
             <div
+              id="remRows"
+              data-tooltip-id="remRows-tooltip"
+              data-tooltip-content={tooltips.remRows}
               onClick={decreaseRows}
               className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
             >
@@ -554,7 +615,6 @@ const AdCanvas = () => {
 
           {/* Aspect ratio container */}
           <div className="relative w-full h-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
-            {" "}
             {/* Grid cells container */}
             <div
               className="absolute top-0 left-0 w-full h-full grid gap-2.5 auto-rows-fr"
@@ -587,6 +647,7 @@ const AdCanvas = () => {
                     columns={columns}
                     totalCells={totalCells}
                     onUnmerge={handleUnmerge}
+                    showHelp={showHelp}
                   />
                 );
               })}
@@ -596,6 +657,9 @@ const AdCanvas = () => {
           {/* Increase Rows button */}
           <div className="group py-2">
             <div
+              id="addRows"
+              data-tooltip-id="addRows-tooltip"
+              data-tooltip-content={tooltips.addRows}
               onClick={increaseRows}
               className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
             >
@@ -609,6 +673,9 @@ const AdCanvas = () => {
         {/* Increase Columns button */}
         <div className="flex flex-col justify-center group">
           <div
+            id="addCols"
+            data-tooltip-id="addCols-tooltip"
+            data-tooltip-content={tooltips.addCols}
             onClick={increaseColumns}
             className="bg-gray-300 text-center rounded-lg w-4 md:w-2 lg:w-1 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:w-8 transition-all duration-200 md:overflow-hidden"
           >
@@ -619,7 +686,10 @@ const AdCanvas = () => {
         </div>
       </div>
 
+      {/* Popup when in selection mode */}
       <SelectionModePopup isVisible={isSelectionMode} />
+
+      {/* Sidebar */}
       <Sidebar />
 
       {/* Navigation buttons */}
@@ -628,20 +698,37 @@ const AdCanvas = () => {
           onClick={handleMoveLeft}
           className="h-8 text-white bg-orange-500 rounded-lg py-1 md:w-24 sm:w-20 w-16 xl:w-28 xl:h-10 2xl:w-40 2xl:h-16 2xl:py-2 hover:cursor-pointer"
         />
-        <Merge
-          onClick={handleMergeSelected}
-          disabled={selectedCells.length < 2}
-          className={`h-8 text-white rounded-lg py-2 transition-colors duration-300 md:w-24 sm:w-20 w-16 xl:w-28 xl:h-10 2xl:w-40 2xl:h-16 2xl:py-3.5 ${
-            selectedCells.length < 2
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-orange-500 hover:cursor-pointer"
-          }`}
-        />
+
+        <div
+          id="merge"
+          data-tooltip-id="merge-tooltip"
+          data-tooltip-content={tooltips.merge}
+        >
+          <Merge
+            onClick={handleMergeSelected}
+            disabled={selectedCells.length < 2}
+            className={`h-8 text-white rounded-lg py-2 transition-colors duration-300 md:w-24 sm:w-20 w-16 xl:w-28 xl:h-10 2xl:w-40 2xl:h-16 2xl:py-3.5 ${
+              selectedCells.length < 2
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-orange-500 hover:cursor-pointer"
+            }`}
+          />
+        </div>
+
         <Check
           onClick={handleOpenSelector}
           className="h-8 text-white bg-orange-500 rounded-lg py-1.5 md:w-24 sm:w-20 w-16 xl:w-28 xl:h-10 2xl:w-40 2xl:h-16 2xl:py-3 hover:cursor-pointer"
         />
       </div>
+
+      {/* Hint/tooltip components */}
+      <Tooltip id="sidebar-tooltip" {...tooltipPropsRight} />
+      <Tooltip id="merge-tooltip" {...tooltipPropsRight} />
+      <Tooltip id="check-tooltip" {...tooltipPropsLeft} />
+      <Tooltip id="addRows-tooltip" {...tooltipPropsRight} />
+      <Tooltip id="remRows-tooltip" {...tooltipPropsTop} />
+      <Tooltip id="addCols-tooltip" {...tooltipPropsRight} />
+      <Tooltip id="remCols-tooltip" {...tooltipPropsRight} />
 
       {/* Modals */}
       {isNamingLayout && (
