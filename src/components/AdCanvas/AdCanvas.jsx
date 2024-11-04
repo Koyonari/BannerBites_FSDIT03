@@ -23,7 +23,7 @@ const AdCanvas = () => {
       hidden: false,
       rowSpan: 1,
       colSpan: 1,
-    }))
+    })),
   );
   const [isEditing, setIsEditing] = useState(false);
   const [currentAd, setCurrentAd] = useState(null);
@@ -163,23 +163,23 @@ const AdCanvas = () => {
         rowSpan:
           selectedCells.length > 0
             ? Math.max(
-                ...selectedCells.map((idx) => Math.floor(idx / columns))
+                ...selectedCells.map((idx) => Math.floor(idx / columns)),
               ) -
               Math.min(
-                ...selectedCells.map((idx) => Math.floor(idx / columns))
+                ...selectedCells.map((idx) => Math.floor(idx / columns)),
               ) +
               1
             : direction === "vertical"
-            ? 2
-            : 1,
+              ? 2
+              : 1,
         colSpan:
           selectedCells.length > 0
             ? Math.max(...selectedCells.map((idx) => idx % columns)) -
               Math.min(...selectedCells.map((idx) => idx % columns)) +
               1
             : direction === "horizontal"
-            ? 2
-            : 1,
+              ? 2
+              : 1,
         mergeDirection: direction || "selection",
         selectedCells:
           selectedCells.length > 0 ? selectedCells : indicesToMerge,
@@ -264,7 +264,7 @@ const AdCanvas = () => {
     const isValidMerge = validateMerge(selectedCells);
     if (!isValidMerge) {
       alert(
-        "Invalid merge. Please select contiguous cells in a row, column, or valid rectangular block."
+        "Invalid merge. Please select contiguous cells in a row, column, or valid rectangular block.",
       );
       return;
     }
@@ -402,7 +402,7 @@ const AdCanvas = () => {
     // Remove the scheduled ad
     if (cell.scheduledAds && cell.scheduledAds.length > 0) {
       updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
-        (ad) => ad.id !== scheduledAd.id
+        (ad) => ad.id !== scheduledAd.id,
       );
     }
     if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
@@ -437,7 +437,7 @@ const AdCanvas = () => {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       console.log("Layout saved successfully:", response.data);
@@ -506,7 +506,7 @@ const AdCanvas = () => {
     const updatedGrid = [...gridItems];
     const scheduledAds = updatedGrid[currentAd.index].scheduledAds;
     const adIndex = scheduledAds.findIndex(
-      (ad) => ad.id === currentAd.scheduledAd.id
+      (ad) => ad.id === currentAd.scheduledAd.id,
     );
     if (adIndex !== -1) {
       scheduledAds[adIndex] = {
@@ -569,10 +569,10 @@ const AdCanvas = () => {
   };
 
   return (
-    <div className="ad-canvas flex flex-col items-center justify-center text-center w-full">
-      <div className="absolute top-[calc(6rem+1rem)] right-4 z-10">
+    <div className="ad-canvas flex w-full flex-col items-center justify-center text-center">
+      <div className="absolute right-4 top-[calc(6rem+1rem)] z-10">
         <CircleHelp
-          className={`w-6 h-6 cursor-pointer transition-colors duration-200 z-0 ${
+          className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 ${
             showHelp ? "text-orange-500" : "text-gray-600"
           }`}
           fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
@@ -580,24 +580,24 @@ const AdCanvas = () => {
           onClick={() => setShowHelp(!showHelp)}
         />
       </div>
-      <div className="flex flex-row items-stretch gap-2 w-full max-w-[80vw] justify-center">
+      <div className="flex w-full max-w-[80vw] flex-row items-stretch justify-center gap-2">
         {/* Decrease Columns button */}
-        <div className="flex flex-col justify-center group">
+        <div className="group flex flex-col justify-center">
           <div
             id="remCols"
             data-tooltip-id="remCols-tooltip"
             data-tooltip-content={tooltips.remCols}
             onClick={decreaseColumns}
-            className="bg-gray-300 text-center rounded-lg w-4 md:w-2 lg:w-1 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:w-8 transition-all duration-200 md:overflow-hidden"
+            className="flex h-5/6 w-4 items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
           >
-            <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
+            <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
               -
             </span>
           </div>
         </div>
 
         {/* Grid Container with aspect ratio wrapper */}
-        <div className="flex-1 flex flex-col w-80">
+        <div className="flex w-80 flex-1 flex-col">
           {/* Decrease Rows button */}
           <div className="group py-2">
             <div
@@ -605,19 +605,19 @@ const AdCanvas = () => {
               data-tooltip-id="remRows-tooltip"
               data-tooltip-content={tooltips.remRows}
               onClick={decreaseRows}
-              className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
+              className="flex h-4 w-full items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
             >
-              <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
+              <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                 -
               </span>
             </div>
           </div>
 
           {/* Aspect ratio container */}
-          <div className="relative w-full h-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
+          <div className="relative h-full w-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
             {/* Grid cells container */}
             <div
-              className="absolute top-0 left-0 w-full h-full grid gap-2.5 auto-rows-fr"
+              className="absolute left-0 top-0 grid h-full w-full auto-rows-fr gap-2.5"
               style={{
                 gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
                 gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
@@ -661,9 +661,9 @@ const AdCanvas = () => {
               data-tooltip-id="addRows-tooltip"
               data-tooltip-content={tooltips.addRows}
               onClick={increaseRows}
-              className="w-full bg-gray-300 text-center rounded-lg h-4 md:h-2 lg:h-1 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:h-8 transition-all duration-200 md:overflow-hidden"
+              className="flex h-4 w-full items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
             >
-              <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
+              <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                 +
               </span>
             </div>
@@ -671,15 +671,15 @@ const AdCanvas = () => {
         </div>
 
         {/* Increase Columns button */}
-        <div className="flex flex-col justify-center group">
+        <div className="group flex flex-col justify-center">
           <div
             id="addCols"
             data-tooltip-id="addCols-tooltip"
             data-tooltip-content={tooltips.addCols}
             onClick={increaseColumns}
-            className="bg-gray-300 text-center rounded-lg w-4 md:w-2 lg:w-1 h-5/6 hover:cursor-pointer hover:bg-gray-400 flex items-center justify-center md:group-hover:w-8 transition-all duration-200 md:overflow-hidden"
+            className="flex h-5/6 w-4 items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
           >
-            <span className="md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200 font-bold">
+            <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
               +
             </span>
           </div>
@@ -693,10 +693,10 @@ const AdCanvas = () => {
       <Sidebar />
 
       {/* Navigation buttons */}
-      <div className="flex flex-row justify-between py-4 lg:py-8 w-4/5 mx-auto">
+      <div className="mx-auto flex w-4/5 flex-row justify-between py-4 lg:py-8">
         <MoveLeft
           onClick={handleMoveLeft}
-          className="h-8 text-white bg-orange-500 rounded-lg py-1 md:w-24 sm:w-20 w-16 xl:w-28 xl:h-10 2xl:w-40 2xl:h-16 2xl:py-2 hover:cursor-pointer"
+          className="h-8 w-16 rounded-lg bg-orange-500 py-1 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
         />
 
         <div
@@ -707,9 +707,9 @@ const AdCanvas = () => {
           <Merge
             onClick={handleMergeSelected}
             disabled={selectedCells.length < 2}
-            className={`h-8 text-white rounded-lg py-2 transition-colors duration-300 md:w-24 sm:w-20 w-16 xl:w-28 xl:h-10 2xl:w-40 2xl:h-16 2xl:py-3.5 ${
+            className={`h-8 w-16 rounded-lg py-2 text-white transition-colors duration-300 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
               selectedCells.length < 2
-                ? "bg-gray-400 cursor-not-allowed"
+                ? "cursor-not-allowed bg-gray-400"
                 : "bg-orange-500 hover:cursor-pointer"
             }`}
           />
@@ -717,7 +717,7 @@ const AdCanvas = () => {
 
         <Check
           onClick={handleOpenSelector}
-          className="h-8 text-white bg-orange-500 rounded-lg py-1.5 md:w-24 sm:w-20 w-16 xl:w-28 xl:h-10 2xl:w-40 2xl:h-16 2xl:py-3 hover:cursor-pointer"
+          className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
         />
       </div>
 
@@ -754,7 +754,7 @@ const AdCanvas = () => {
             handleScheduleSave(
               currentScheduleAd.item,
               scheduledDateTime,
-              currentScheduleAd.index
+              currentScheduleAd.index,
             )
           }
           onClose={() => {

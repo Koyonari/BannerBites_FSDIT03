@@ -23,11 +23,11 @@ const Card = ({ title, date, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="card max-w-96 sm:h-full w-4/5 lg:h-[35vh] lg:w-[28vw] bg-black dark:bg-white dark:text-black text-white rounded-xl relative flex flex-col justify-center items-center cursor-pointer hover:opacity-80 transition-opacity"
+      className="card relative flex w-4/5 max-w-96 cursor-pointer flex-col items-center justify-center rounded-xl bg-black text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-black sm:h-full lg:h-[35vh] lg:w-[28vw]"
     >
-      <EditIcon className="absolute top-4 right-4 text-white dark:text-black" />
+      <EditIcon className="absolute right-4 top-4 text-white dark:text-black" />
       <div>
-        <h1 className="text-xl font-bold px-6 py-4 md:px-2">{title}</h1>
+        <h1 className="px-6 py-4 text-xl font-bold md:px-2">{title}</h1>
         <p className="text-md px-6 py-4 md:px-2">Date Created: {date}</p>
       </div>
     </div>
@@ -84,7 +84,7 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
   };
 
   const filteredLocations = locations.filter((location) =>
-    location.name.toLowerCase().includes(searchTerm.toLowerCase())
+    location.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const sortedLocations = [...filteredLocations].sort((a, b) => {
@@ -97,12 +97,12 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
 
   if (showLayoutAssignment) {
     return (
-      <section className="bg-white dark:bg-black min-h-screen">
+      <section className="min-h-screen bg-white dark:bg-black">
         <Navbar />
         <div className="p-4">
           <button
             onClick={handleBack}
-            className="mb-4 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+            className="mb-4 rounded-md bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
           >
             ← Back to TV Selection
           </button>
@@ -117,12 +117,12 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
 
   if (showTVSelector) {
     return (
-      <section className="bg-white dark:bg-black min-h-screen">
+      <section className="min-h-screen bg-white dark:bg-black">
         <Navbar />
         <div className="p-4">
           <button
             onClick={handleBack}
-            className="mb-4 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+            className="mb-4 rounded-md bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
           >
             ← Back to Locations
           </button>
@@ -136,10 +136,10 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
   }
 
   return (
-    <section className="bg-white dark:bg-black h-screen">
+    <section className="h-screen bg-white dark:bg-black">
       <Navbar />
-      <div className="flex gap-4 justify-center pt-4 md:px-4">
-        <div className="flex py-2 px-4 items-center rounded-md w-1/6 border-[#0000003a] dark:border-white border h-12 sm:h-14">
+      <div className="flex justify-center gap-4 pt-4 md:px-4">
+        <div className="flex h-12 w-1/6 items-center rounded-md border border-[#0000003a] px-4 py-2 dark:border-white sm:h-14">
           <TextField
             className="w-full dark:text-white"
             select
@@ -154,7 +154,7 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
             ))}
           </TextField>
         </div>
-        <div className="flex py-2 px-4 items-center rounded-md w-1/2 h-12 sm:h-14">
+        <div className="flex h-12 w-1/2 items-center rounded-md px-4 py-2 sm:h-14">
           <TextField
             id="outlined-basic"
             variant="outlined"
@@ -164,14 +164,14 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Link key="home" to={"/ad"} className="bg-orange-500 rounded-md w-1/6">
-          <button className="text-xs md:text-base text-white font-bold py-2 px-4 w-full text-center h-full">
+        <Link key="home" to={"/ad"} className="w-1/6 rounded-md bg-orange-500">
+          <button className="h-full w-full px-4 py-2 text-center text-xs font-bold text-white md:text-base">
             Create New
           </button>
         </Link>
       </div>
 
-      <div className="w-full py-16 px-16 grid gap-4 lg:gap-6 justify-items-center grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid w-full grid-cols-1 justify-items-center gap-4 px-16 py-16 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
         {sortedLocations.map((location) => (
           <Card
             key={location.locationId}

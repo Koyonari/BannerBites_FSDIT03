@@ -42,7 +42,7 @@ const ScheduleModal = ({ ad, onSave, onClose }) => {
               type="time"
               value={scheduledTime}
               onChange={(e) => setScheduledTime(e.target.value)}
-              className="block w-full rounded-md border-2 p-2 focus:border-orange-500 focus:outline-none focus:ring-2 "
+              className="block w-full rounded-md border-2 p-2 focus:border-orange-500 focus:outline-none focus:ring-2"
             />
           </label>
         </div>

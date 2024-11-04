@@ -8,7 +8,7 @@ const Checkbox = ({ checked, onChange, className, showHelp }) => (
     id="cellCheckbox"
     data-tooltip-id="checkbox-tooltip"
     data-tooltip-content="Click to multi-select cells"
-    className={`w-4 h-4 border-2 cursor-pointer flex items-center justify-center bg-white hover:bg-gray-50 ${
+    className={`flex h-4 w-4 cursor-pointer items-center justify-center border-2 bg-white hover:bg-gray-50 ${
       checked ? "border-orange-500" : "border-gray-300"
     } ${className}`}
     onClick={(e) => {
@@ -18,7 +18,7 @@ const Checkbox = ({ checked, onChange, className, showHelp }) => (
   >
     {checked && (
       <svg
-        className="w-3 h-3 text-orange-500"
+        className="h-3 w-3 text-orange-500"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -58,7 +58,7 @@ const GridCell = ({
         isOver: monitor.isOver(),
       }),
     }),
-    [onDrop, index, rowIndex, colIndex]
+    [onDrop, index, rowIndex, colIndex],
   );
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -136,7 +136,7 @@ const GridCell = ({
   const renderAdContent = () => {
     if (!adToDisplay || !adToDisplay.ad)
       return (
-        <div className="flex items-center justify-center h-full w-full">
+        <div className="flex h-full w-full items-center justify-center">
           <p className="text-center">Drop ad here</p>
         </div>
       );
@@ -165,7 +165,7 @@ const GridCell = ({
     if (hasNoContent) {
       return (
         <div
-          className="flex items-center justify-center h-full w-full"
+          className="flex h-full w-full items-center justify-center"
           style={contentStyle}
         >
           <p className="text-center text-gray-500">{type} Ad</p>
@@ -185,13 +185,13 @@ const GridCell = ({
       case "image":
         return (
           <div style={contentStyle}>
-            <h3 className="font-bold mb-2">{content.title}</h3>
+            <h3 className="mb-2 font-bold">{content.title}</h3>
             {content.src && (
-              <div className="flex-1 min-h-0 relative">
+              <div className="relative min-h-0 flex-1">
                 <img
                   src={content.src}
                   alt={content.title}
-                  className="w-full h-full object-contain"
+                  className="h-full w-full object-contain"
                 />
               </div>
             )}
@@ -204,12 +204,12 @@ const GridCell = ({
       case "video":
         return (
           <div style={contentStyle} className="overflow-hidden">
-            <h3 className="font-bold mb-2">{content.title}</h3>
+            <h3 className="mb-2 font-bold">{content.title}</h3>
             {content.src && (
-              <div className="flex-1 min-h-0 relative">
+              <div className="relative min-h-0 flex-1">
                 <video
                   controls
-                  className="w-full h-full object-contain"
+                  className="h-full w-full object-contain"
                   style={{ maxHeight: "150px" }}
                 >
                   <source src={content.src} type="video/mp4" />
@@ -265,7 +265,7 @@ const GridCell = ({
   return (
     <div
       ref={drop}
-      className={`grid-cell z-[5] border border-gray-400 p-2 bg-white flex flex-col gap-2 box-border transition-transform duration-200 ease-in-out hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:bg-orange-50 relative hover:outline-orange-300 ${
+      className={`grid-cell relative z-[5] box-border flex flex-col gap-2 border border-gray-400 bg-white p-2 transition-transform duration-200 ease-in-out hover:bg-orange-50 hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-orange-300 ${
         isOver ? "bg-orange-50 outline-orange-300" : ""
       } ${mergedClass} ${selectionClass} ${selectedClass} ${
         item?.isHidden ? "hidden" : ""
@@ -278,7 +278,7 @@ const GridCell = ({
       }}
     >
       {item && !item.hidden && (
-        <div className="absolute top-3 left-3 z-10">
+        <div className="absolute left-3 top-3 z-10">
           <Checkbox
             checked={isSelected}
             onChange={handleCheckboxChange}
@@ -292,28 +292,28 @@ const GridCell = ({
       <div className="flex-1 overflow-hidden">{renderAdContent()}</div>
 
       {adToDisplay && (
-        <div className="actions flex gap-2 flex-wrap mt-auto">
+        <div className="actions mt-auto flex flex-wrap gap-2">
           <button
             onClick={handleEdit}
-            className="px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="rounded bg-blue-500 px-2 py-1 text-sm text-white hover:bg-blue-600"
           >
             Edit
           </button>
           <button
             onClick={togglePopup}
-            className="px-2 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+            className="rounded bg-gray-500 px-2 py-1 text-sm text-white hover:bg-gray-600"
           >
             View List
           </button>
           <button
             onClick={handleRemove}
-            className="px-2 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+            className="rounded bg-red-500 px-2 py-1 text-sm text-white hover:bg-red-600"
           >
             Remove
           </button>
           {item.isMerged && (
             <button
-              className="px-2 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600"
+              className="rounded bg-yellow-500 px-2 py-1 text-sm text-white hover:bg-yellow-600"
               onClick={handleUnmerge}
             >
               Unmerge

@@ -21,7 +21,7 @@ const LayoutList = () => {
       const data = await response.json();
       const uniqueLayouts = data.filter(
         (layout, index, self) =>
-          index === self.findIndex((l) => l.layoutId === layout.layoutId)
+          index === self.findIndex((l) => l.layoutId === layout.layoutId),
       );
       setLayouts(uniqueLayouts);
     } catch (err) {
@@ -36,7 +36,7 @@ const LayoutList = () => {
       setLoading(true);
       setError(null);
       const response = await fetch(
-        `http://localhost:5000/api/layouts/${layoutId}`
+        `http://localhost:5000/api/layouts/${layoutId}`,
       );
       if (!response.ok) {
         throw new Error("Failed to fetch layout details");
@@ -67,7 +67,7 @@ const LayoutList = () => {
 
     return (
       <div
-        className="rounded-lg overflow-hidden shadow-sm h-full"
+        className="h-full overflow-hidden rounded-lg shadow-sm"
         style={styles}
       >
         {type === "text" && (
@@ -81,7 +81,7 @@ const LayoutList = () => {
             <img
               src={mediaUrl}
               alt={content.title}
-              className="w-full h-auto object-cover"
+              className="h-auto w-full object-cover"
             />
             <div className="p-4">
               <h3 className="text-lg font-semibold">{content.title}</h3>
@@ -114,7 +114,7 @@ const LayoutList = () => {
 
     return (
       <div
-        className="grid gap-4 w-full h-full"
+        className="grid h-full w-full gap-4"
         style={{
           gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
           gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
@@ -138,20 +138,20 @@ const LayoutList = () => {
               .padStart(2, "0")}`;
 
             const availableAds = scheduledAds.filter(
-              (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
+              (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
             );
 
             if (availableAds.length > 0) {
               adToDisplay = availableAds.reduce((latestAd, currentAd) =>
                 currentAd.scheduledTime > latestAd.scheduledTime
                   ? currentAd
-                  : latestAd
+                  : latestAd,
               );
             } else {
               adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
                 currentAd.scheduledTime < nextAd.scheduledTime
                   ? currentAd
-                  : nextAd
+                  : nextAd,
               );
             }
           }
@@ -169,7 +169,7 @@ const LayoutList = () => {
           return (
             <div
               key={index}
-              className="bg-white rounded-lg"
+              className="rounded-lg bg-white"
               style={{
                 gridRow: `${gridRowStart} / ${gridRowEnd}`,
                 gridColumn: `${gridColumnStart} / ${gridColumnEnd}`,
@@ -186,11 +186,11 @@ const LayoutList = () => {
   return (
     <div className="container p-4">
       <div className="grid md:flex md:grid-cols-2">
-        <div className="bg-white rounded-lg shadow p-6 md:w-[20vw]">
-          <h2 className="text-xl font-bold mb-4">Available Layouts</h2>
+        <div className="rounded-lg bg-white p-6 shadow md:w-[20vw]">
+          <h2 className="mb-4 text-xl font-bold">Available Layouts</h2>
           {loading && !selectedLayout && (
             <div className="flex items-center justify-center p-4 text-gray-600">
-              <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+              <svg className="mr-2 h-5 w-5 animate-spin" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -210,7 +210,7 @@ const LayoutList = () => {
             </div>
           )}
           {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-4">
+            <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-600">
               Error: {error}
             </div>
           )}
@@ -218,10 +218,10 @@ const LayoutList = () => {
             {layouts.map((layout) => (
               <button
                 key={layout.layoutId}
-                className={`w-full px-4 py-2 rounded-lg text-left transition-colors ${
+                className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
                   selectedLayout?.layoutId === layout.layoutId
                     ? "bg-blue-600 text-white"
-                    : "bg-gray-50 hover:bg-gray-100 text-gray-700"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
                 onClick={() => fetchLayoutDetails(layout.layoutId)}
               >
@@ -231,11 +231,11 @@ const LayoutList = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 ml-[2vw] w-[78vw] border border-orange-500">
-          <h2 className="text-xl font-bold mb-4">Layout Preview</h2>
+        <div className="ml-[2vw] w-[78vw] rounded-lg border border-orange-500 bg-white p-6 shadow">
+          <h2 className="mb-4 text-xl font-bold">Layout Preview</h2>
           {loading && selectedLayout && (
             <div className="flex items-center justify-center p-4 text-gray-600">
-              <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+              <svg className="mr-2 h-5 w-5 animate-spin" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -256,7 +256,7 @@ const LayoutList = () => {
           )}
           {selectedLayout && !loading && <AdViewer layout={selectedLayout} />}
           {!selectedLayout && !loading && (
-            <div className="text-center text-gray-500 p-4">
+            <div className="p-4 text-center text-gray-500">
               Select a layout to preview
             </div>
           )}

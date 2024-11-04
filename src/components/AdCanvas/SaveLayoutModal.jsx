@@ -19,7 +19,7 @@ const SaveLayoutModal = ({ onSave, onClose }) => {
         <b>Save Layout</b>
       </h2>
       <input
-        className="border border-gray-300 rounded-md mt-3 text-sm"
+        className="mt-3 rounded-md border border-gray-300 text-sm"
         type="text"
         value={layoutName}
         onChange={(e) => setLayoutName(e.target.value)}
@@ -28,7 +28,7 @@ const SaveLayoutModal = ({ onSave, onClose }) => {
       />
       <div style={{ textAlign: "right" }} className="text-xs lg:text-sm">
         <button
-          className="bg-orange-500 p-1 text-white rounded-md px-2.5"
+          className="rounded-md bg-orange-500 p-1 px-2.5 text-white"
           onClick={handleSave}
           style={{ marginRight: "10px" }}
         >

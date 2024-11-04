@@ -19,7 +19,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
     },
   });
   const [scheduledTimeState, setScheduledTimeState] = useState(
-    scheduledTime || "00:00"
+    scheduledTime || "00:00",
   );
   const [file, setFile] = useState(null);
   const [mediaUrl, setMediaUrl] = useState("");
@@ -106,7 +106,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             fileName: selectedFile.name,
             contentType: selectedFile.type,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -165,19 +165,19 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
   return (
     <Modal isOpen={!!ad} onClose={onClose}>
-      <div className="fixed inset-0 flex items-center justify-center p-4 bg-black bg-opacity-50">
-        <div className="bg-white rounded-lg w-full max-w-2xl flex flex-col max-h-screen">
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="flex max-h-screen w-full max-w-2xl flex-col rounded-lg bg-white">
           {/* Header */}
-          <div className="p-6 border-b">
+          <div className="border-b p-6">
             <h3 className="text-2xl font-semibold">
               Edit {adType.charAt(0).toUpperCase() + adType.slice(1)} Ad
             </h3>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 space-y-4 overflow-y-auto p-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="mb-1 block text-sm font-medium text-gray-700">
                 Title
               </label>
               <input
@@ -185,20 +185,20 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                 type="text"
                 value={formData.content.title}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-orange-500"
+                className="w-full rounded-md border p-2 focus:ring-2 focus:ring-orange-500"
                 placeholder="Enter title"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="mb-1 block text-sm font-medium text-gray-700">
                 Description
               </label>
               <textarea
                 name="description"
                 value={formData.content.description}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-orange-500 min-h-24"
+                className="min-h-24 w-full rounded-md border p-2 focus:ring-2 focus:ring-orange-500"
                 placeholder="Enter description"
               />
             </div>
@@ -207,7 +207,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             {adType === "text" && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
                     Font Family
                   </label>
                   <input
@@ -215,13 +215,13 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                     type="text"
                     value={formData.styles.font}
                     onChange={handleStyleChange}
-                    className="w-full p-2 border rounded-md"
+                    className="w-full rounded-md border p-2"
                     placeholder="Font Family (e.g., Arial)"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
                     Font Size
                   </label>
                   <input
@@ -229,22 +229,22 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                     type="text"
                     value={formData.styles.fontSize}
                     onChange={handleStyleChange}
-                    className="w-full p-2 border rounded-md"
+                    className="w-full rounded-md border p-2"
                     placeholder="Font Size (e.g., 14px)"
                   />
                 </div>
 
                 {/* Text Color Picker */}
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
                     Text Color
                   </label>
                   <div
                     onClick={() => setShowTextColorPicker(!showTextColorPicker)}
-                    className="w-full p-2 border rounded-md flex items-center space-x-2 cursor-pointer"
+                    className="flex w-full cursor-pointer items-center space-x-2 rounded-md border p-2"
                   >
                     <div
-                      className="w-6 h-6 rounded border"
+                      className="h-6 w-6 rounded border"
                       style={{ backgroundColor: formData.styles.textColor }}
                     />
                     <span>{formData.styles.textColor}</span>
@@ -271,14 +271,14 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             {(adType === "image" || adType === "video") && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
                     Upload {adType}
                   </label>
                   <input
                     type="file"
                     accept={`${adType}/*`}
                     onChange={handleFileUpload}
-                    className="w-full p-2 border rounded-md"
+                    className="w-full rounded-md border p-2"
                   />
                 </div>
 
@@ -288,7 +288,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                       <img
                         src={file ? URL.createObjectURL(file) : mediaUrl}
                         alt="Preview"
-                        className="max-w-full h-auto rounded-md"
+                        className="h-auto max-w-full rounded-md"
                       />
                     ) : (
                       <video controls className="w-full rounded-md">
@@ -306,15 +306,15 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
             {/* Border Color */}
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="mb-1 block text-sm font-medium text-gray-700">
                 Border Color
               </label>
               <div
                 onClick={() => setShowBorderColorPicker(!showBorderColorPicker)}
-                className="w-full p-2 border rounded-md flex items-center space-x-2 cursor-pointer"
+                className="flex w-full cursor-pointer items-center space-x-2 rounded-md border p-2"
               >
                 <div
-                  className="w-6 h-6 rounded border"
+                  className="h-6 w-6 rounded border"
                   style={{ backgroundColor: formData.styles.borderColor }}
                 />
                 <span>{formData.styles.borderColor}</span>
@@ -337,30 +337,30 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
             {/* Scheduled Time */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="mb-1 block text-sm font-medium text-gray-700">
                 Scheduled Time
               </label>
               <input
                 type="time"
                 value={scheduledTimeState}
                 onChange={(e) => setScheduledTimeState(e.target.value)}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-orange-500"
+                className="w-full rounded-md border p-2 focus:ring-2 focus:ring-orange-500"
               />
             </div>
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t bg-gray-50">
+          <div className="border-t bg-gray-50 p-6">
             <div className="flex justify-end space-x-4">
               <button
                 onClick={onClose}
-                className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                className="rounded-md border px-4 py-2 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600"
+                className="rounded-md bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
                 disabled={isUploading}
               >
                 {isUploading ? "Uploading..." : "Save Changes"}

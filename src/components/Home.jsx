@@ -38,18 +38,18 @@ const Hero = () => {
   const HomeIconComponent = icons.navbar[0].icon;
 
   return (
-    <div className="flex flex-col align-center justify-center items-center h-screen bg-white dark:bg-black transition-colors duration-200">
-      <h1 className="font-bold text-7xl mb-3 text-black dark:text-white">
+    <div className="align-center flex h-screen flex-col items-center justify-center bg-white transition-colors duration-200 dark:bg-black">
+      <h1 className="mb-3 text-7xl font-bold text-black dark:text-white">
         Banner
-        <span className="outline-3 text-orange-500">Bites</span>
+        <span className="text-orange-500 outline-3">Bites</span>
       </h1>
-      <div className="relative w-96 p-6 text-center border-2 rounded-lg flex justify-center space-x-16 border-orange-500 bg-white dark:bg-black">
+      <div className="relative flex w-96 justify-center space-x-16 rounded-lg border-2 border-orange-500 bg-white p-6 text-center dark:bg-black">
         <Link
           key="home"
           to={icons.navbar[0].href}
           className="flex flex-col items-center"
         >
-          <HomeIconComponent className="w-6 h-6 text-black dark:text-white" />
+          <HomeIconComponent className="h-6 w-6 text-black dark:text-white" />
         </Link>
 
         <Link
@@ -57,7 +57,7 @@ const Hero = () => {
           to={icons.navbar[2].href}
           className="flex flex-col items-center"
         >
-          <LayoutList className="w-6 h-6 text-black dark:text-white" />
+          <LayoutList className="h-6 w-6 text-black dark:text-white" />
         </Link>
 
         <DarkModeSwitch

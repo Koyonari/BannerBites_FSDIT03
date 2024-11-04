@@ -105,7 +105,7 @@ const AdViewer = ({ layout }) => {
 
           // Filter ads that should be displayed now
           const availableAds = scheduledAds.filter(
-            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
           );
 
           if (availableAds.length > 0) {
@@ -113,14 +113,14 @@ const AdViewer = ({ layout }) => {
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
               currentAd.scheduledTime > latestAd.scheduledTime
                 ? currentAd
-                : latestAd
+                : latestAd,
             );
           } else {
             // Get the next upcoming ad
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
               currentAd.scheduledTime < nextAd.scheduledTime
                 ? currentAd
-                : nextAd
+                : nextAd,
             );
           }
         }

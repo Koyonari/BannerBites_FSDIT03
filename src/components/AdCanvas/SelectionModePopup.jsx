@@ -1,9 +1,7 @@
 const SelectionModePopup = ({ isVisible }) => {
   return (
     <div
-      className={`fixed z-[1000] bg-white right-0 top-[80vh] transform border-orange-500 border-e-0 border-2 
-          -translate-y-1/2 text-black p-4 rounded-l-2xl shadow-lg transition-transform duration-300 ease-in-out
-          ${isVisible ? "translate-x-0" : "translate-x-full"}`}
+      className={`fixed right-0 top-[80vh] z-[1000] -translate-y-1/2 transform rounded-l-2xl border-2 border-e-0 border-orange-500 bg-white p-4 text-black shadow-lg transition-transform duration-300 ease-in-out ${isVisible ? "translate-x-0" : "translate-x-full"}`}
       style={{
         transform: `translate(${isVisible ? "0" : "100%"}, -50%)`,
       }}
