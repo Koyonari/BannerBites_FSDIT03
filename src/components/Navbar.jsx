@@ -51,8 +51,8 @@ function Navbar() {
   };
 
   return (
-    <section className="h-24 !z-[10000]">
-      <div className="bg-white dark:bg-black transition-colors duration-500 h-24 text-2xl fixed flex justify-between items-center w-full max-md:w-full px-6 font-extrabold border-b-black border-b-2 dark:border-b-white">
+    <section className="h-24">
+      <div className="bg-white !z-[999] dark:bg-black transition-colors duration-500 h-24 text-2xl fixed flex justify-between items-center w-full max-md:w-full px-6 font-extrabold border-b-black border-b-2 dark:border-b-white">
         <div className="pt-4">
           <h1 className="font-bold text-3xl mb-3 text-black dark:text-white items-center text-center justify-center left-0">
             Banner
