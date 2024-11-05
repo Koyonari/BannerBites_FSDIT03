@@ -724,7 +724,6 @@ const AdCanvas = () => {
       {/* Hint/tooltip components */}
       <Tooltip id="sidebar-tooltip" {...tooltipPropsRight} />
       <Tooltip id="merge-tooltip" {...tooltipPropsRight} />
-      <Tooltip id="check-tooltip" {...tooltipPropsLeft} />
       <Tooltip id="addRows-tooltip" {...tooltipPropsRight} />
       <Tooltip id="remRows-tooltip" {...tooltipPropsTop} />
       <Tooltip id="addCols-tooltip" {...tooltipPropsRight} />
