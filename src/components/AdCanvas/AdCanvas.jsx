@@ -28,6 +28,7 @@ const AdCanvas = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentAd, setCurrentAd] = useState(null);
   const [selectedCells, setSelectedCells] = useState([]);
+  const [selectedMergedCells, setSelectedMergedCells] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
@@ -207,20 +208,39 @@ const AdCanvas = () => {
   // Handles selecting cells for merging
   const handleCellSelection = (index) => {
     const cell = gridItems[index];
-    if (cell.hidden || cell.isMerged) {
+
+    // If the cell is merged
+    if (cell.isMerged && !cell.hidden) {
+      setSelectedMergedCells((prev) => {
+        if (prev.includes(index)) {
+          const newSelection = prev.filter((i) => i !== index);
+          if (newSelection.length === 0) {
+            setIsSelectionMode(false);
+          }
+          return newSelection;
+        }
+        return [...prev, index];
+      });
+      setIsSelectionMode(true);
       return;
     }
 
-    setSelectedCells((prev) => {
-      if (prev.includes(index)) {
-        const newSelection = prev.filter((i) => i !== index);
-        if (newSelection.length === 0) {
-          setIsSelectionMode(false); // Exit selection mode if no cells are selected
+    // For non-merged cells
+    if (!cell.hidden) {
+      setSelectedCells((prev) => {
+        if (prev.includes(index)) {
+          const newSelection = prev.filter((i) => i !== index);
+          if (newSelection.length === 0) {
+            setIsSelectionMode(false);
+          }
+          return newSelection;
         }
-        return newSelection;
+        return [...prev, index];
+      });
+      if (!isSelectionMode) {
+        setIsSelectionMode(true);
       }
-      return [...prev, index];
-    });
+    }
   };
 
   // Helper function to check if selected cells form a rectangle
@@ -246,23 +266,65 @@ const AdCanvas = () => {
   };
 
   // Update handleMergeSelected to validate rectangle shape
+  // Update handleMergeSelected to preserve merged cells on invalid merges
   const handleMergeSelected = () => {
+    // Case 1: Single merged cell selected - unmerge it
+    if (selectedMergedCells.length === 1 && selectedCells.length === 0) {
+      handleUnmerge(selectedMergedCells[0]);
+      setSelectedMergedCells([]);
+      setIsSelectionMode(false);
+      return;
+    }
+
+    // Case 2: Multiple cells selected including merged cells
+    if (selectedMergedCells.length > 0) {
+      // First validate if the merge would be valid
+      const unmergedCells = selectedMergedCells.reduce((acc, index) => {
+        const cell = gridItems[index];
+        if (cell.selectedCells) {
+          return [...acc, ...cell.selectedCells];
+        }
+        return [...acc, index];
+      }, []);
+
+      // Combine with regular selected cells
+      const allCellsToMerge = [
+        ...new Set([...unmergedCells, ...selectedCells]),
+      ];
+
+      // Only proceed with unmerging if the new merge would be valid
+      if (isRectangleShape(allCellsToMerge) && validateMerge(allCellsToMerge)) {
+        // Now it's safe to unmerge existing cells
+        selectedMergedCells.forEach((index) => {
+          handleUnmerge(index);
+        });
+
+        const sortedCells = [...allCellsToMerge].sort((a, b) => a - b);
+        handleMerge(sortedCells[0], "selection", sortedCells);
+      } else {
+        alert("Selected cells must form a valid rectangle or square.");
+      }
+
+      setSelectedMergedCells([]);
+      setSelectedCells([]);
+      setIsSelectionMode(false);
+      return;
+    }
+
+    // Case 3: Regular merge operation for non-merged cells
     if (selectedCells.length < 2) {
       alert("Please select at least 2 cells to merge.");
       return;
     }
 
-    // Validate that selected cells form a valid rectangle
     if (!isRectangleShape(selectedCells)) {
       alert("Selected cells must form a rectangle or square and be adjacent.");
-      setSelectedCells([]); // Clear selection
+      setSelectedCells([]);
       setIsSelectionMode(false);
       return;
     }
 
-    // Validate that the selected cells are in a single row or column or form a valid rectangle.
-    const isValidMerge = validateMerge(selectedCells);
-    if (!isValidMerge) {
+    if (!validateMerge(selectedCells)) {
       alert(
         "Invalid merge. Please select contiguous cells in a row, column, or valid rectangular block.",
       );
@@ -538,13 +600,6 @@ const AdCanvas = () => {
     zIndex: 1000,
   };
 
-  // Tooltip props
-  const tooltipPropsLeft = {
-    className: "custom-tooltip",
-    style: tooltipStyle,
-    isOpen: showHelp,
-    place: "left",
-  };
   const tooltipPropsRight = {
     className: "custom-tooltip",
     style: tooltipStyle,
@@ -567,6 +622,13 @@ const AdCanvas = () => {
     sidebar: "Drag & drop element to add to grid",
     merge: "Click while selecting multiple cells to merge",
   };
+
+  const isMergeButtonActive =
+    selectedCells.length >= 2 || selectedMergedCells.length >= 1;
+  const mergeButtonTooltip =
+    selectedMergedCells.length === 1
+      ? "Click to unmerge selected cell"
+      : "Click to merge selected cells";
 
   return (
     <div className="ad-canvas flex w-full flex-col items-center justify-center text-center">
@@ -702,13 +764,13 @@ const AdCanvas = () => {
         <div
           id="merge"
           data-tooltip-id="merge-tooltip"
-          data-tooltip-content={tooltips.merge}
+          data-tooltip-content={mergeButtonTooltip}
         >
           <Merge
             onClick={handleMergeSelected}
-            disabled={selectedCells.length < 2}
+            disabled={!isMergeButtonActive}
             className={`h-8 w-16 rounded-lg py-2 text-white transition-colors duration-300 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
-              selectedCells.length < 2
+              !isMergeButtonActive
                 ? "cursor-not-allowed bg-gray-400"
                 : "bg-orange-500 hover:cursor-pointer"
             }`}

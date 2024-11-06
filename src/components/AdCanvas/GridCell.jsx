@@ -41,7 +41,6 @@ const GridCell = ({
   onDrop,
   onRemove,
   onEdit,
-  onMerge,
   onUnmerge,
   item,
   isSelected,
@@ -49,6 +48,9 @@ const GridCell = ({
   isSelectionMode,
   setIsSelectionMode,
   showHelp,
+  selectedMergedCells = [],
+  onSelectMerged,
+  onMergeFailure,
 }) => {
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -68,12 +70,23 @@ const GridCell = ({
     setIsPopupOpen(!isPopupOpen);
   };
 
+  // Determine if this cell is selected (either as a regular cell or as part of a merged group)
+  const isCellSelected = item?.isMerged
+    ? selectedMergedCells.includes(index) // If it's merged, check if it's in selectedMergedCells
+    : isSelected; // If not merged, use regular isSelected prop
+
   const handleCheckboxChange = (checked) => {
-    if (item && !item.hidden && !item.isMerged) {
+    if (item && !item.hidden) {
       if (!isSelectionMode) {
         setIsSelectionMode(true);
       }
-      onSelect(index);
+
+      if (item.isMerged && typeof onSelectMerged === "function") {
+        // Always call onSelectMerged for merged cells, regardless of current selection state
+        onSelectMerged(index);
+      } else if (typeof onSelect === "function") {
+        onSelect(index);
+      }
     }
   };
 
@@ -156,7 +169,6 @@ const GridCell = ({
       gap: "8px",
     };
 
-    // Show placeholder if content is missing
     const hasNoContent =
       type?.toLowerCase() === "text"
         ? !content?.title && !content?.description
@@ -229,20 +241,18 @@ const GridCell = ({
   };
 
   const mergedClass = item?.isMerged
-    ? item.mergeDirection === "horizontal"
-      ? "merged-horizontal"
-      : "merged-vertical"
+    ? `${item.mergeDirection === "horizontal" ? "merged-horizontal" : "merged-vertical"}${
+        item.mergeError ? " merge-error" : ""
+      }`
     : "";
 
-  const selectionClass =
-    isSelectionMode && !item?.hidden && !item?.isMerged ? "selectable" : "";
-  const selectedClass = isSelected ? "selected" : "";
+  const selectionClass = isSelectionMode && !item?.hidden ? "selectable" : "";
+  const selectedClass = isCellSelected ? "selected" : "";
 
   if (item?.hidden) {
     return null;
   }
 
-  // Tooltip style
   const tooltipStyle = {
     backgroundColor: "rgb(255, 255, 255)",
     color: "black",
@@ -254,7 +264,6 @@ const GridCell = ({
     fontSize: "14px",
   };
 
-  // Tooltip Props
   const tooltipProps = {
     className: "custom-tooltip",
     style: tooltipStyle,
@@ -265,13 +274,7 @@ const GridCell = ({
   return (
     <div
       ref={drop}
-      className={`grid-cell relative box-border flex flex-col gap-2 border border-gray-400 bg-white p-2 transition-transform duration-200 ease-in-out hover:bg-orange-50 hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-orange-300 ${
-        isOver ? "bg-orange-50 outline-orange-300" : ""
-      } ${mergedClass} ${selectionClass} ${selectedClass} ${
-        item?.isHidden ? "hidden" : ""
-      } ${item?.isEmpty ? "invisible" : ""} ${
-        item?.isSelectable ? "cursor-pointer transition-all" : ""
-      }`}
+      className={`grid-cell relative box-border flex flex-col gap-2 border border-gray-400 bg-white p-2 transition-transform duration-200 ease-in-out hover:bg-orange-50 hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-orange-300 ${isOver ? "bg-orange-50 outline-orange-300" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
       style={{
         gridRow: item?.rowSpan ? `span ${item.rowSpan}` : "auto",
         gridColumn: item?.colSpan ? `span ${item.colSpan}` : "auto",
@@ -280,7 +283,7 @@ const GridCell = ({
       {item && !item.hidden && (
         <div className="absolute left-3 top-3 z-10">
           <Checkbox
-            checked={isSelected}
+            checked={isCellSelected}
             onChange={handleCheckboxChange}
             className="transition-colors duration-200 ease-in-out"
             showHelp={showHelp}
