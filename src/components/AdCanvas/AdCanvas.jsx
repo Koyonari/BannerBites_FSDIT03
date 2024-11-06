@@ -43,11 +43,10 @@ const AdCanvas = () => {
     setIsNamingLayout(true);
   };
 
-  // Resizes the grid based on new dimensions
   const resizeGrid = (newRows, newColumns) => {
     const newTotalCells = newRows * newColumns;
     const updatedGrid = Array.from({ length: newTotalCells }, () => ({
-      scheduledAds: [], // Changed from ad: null
+      scheduledAds: [],
       isMerged: false,
       hidden: false,
       rowSpan: 1,
@@ -61,7 +60,6 @@ const AdCanvas = () => {
     setGridItems(updatedGrid);
   };
 
-  // Functions to increase or decrease grid rows and columns
   const increaseRows = () => {
     const newRows = rows + 1;
     setRows(newRows);
@@ -90,25 +88,101 @@ const AdCanvas = () => {
     }
   };
 
-  // Handle merging of cells, including direction and selection
+  const validateMerge = (selectedCells) => {
+    if (selectedCells.length <= 1) {
+      return false;
+    }
+
+    const rows = selectedCells.map((index) => Math.floor(index / columns));
+    const cols = selectedCells.map((index) => index % columns);
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+    const minCol = Math.min(...cols);
+    const maxCol = Math.max(...cols);
+
+    // Check for merged cells in selection
+    const containsMergedCells = selectedCells.some(
+      (index) => gridItems[index].isMerged && !gridItems[index].hidden,
+    );
+
+    // If trying to merge with an existing merged cell
+    if (containsMergedCells) {
+      // Get all merged cells involved
+      const mergedCellsInSelection = selectedCells.filter(
+        (index) => gridItems[index].isMerged && !gridItems[index].hidden,
+      );
+
+      // For each merged cell, get its dimensions
+      for (const mergedIndex of mergedCellsInSelection) {
+        const mergedCell = gridItems[mergedIndex];
+        const mergedMinRow = Math.floor(mergedIndex / columns);
+        const mergedMaxRow = mergedMinRow + (mergedCell.rowSpan - 1);
+        const mergedMinCol = mergedIndex % columns;
+        const mergedMaxCol = mergedMinCol + (mergedCell.colSpan - 1);
+
+        // Check if the merged cell aligns with the selection
+        if (
+          (mergedMinRow === minRow && mergedMaxRow === maxRow) || // Vertical alignment
+          (mergedMinCol === minCol && mergedMaxCol === maxCol) // Horizontal alignment
+        ) {
+          continue;
+        } else {
+          return false;
+        }
+      }
+    }
+
+    // Check if selection forms a valid rectangle
+    const width = maxCol - minCol + 1;
+    const height = maxRow - minRow + 1;
+
+    // For selections that include merged cells, we need to account for their spans
+    const expectedCellCount = width * height;
+    const actualCellCount = selectedCells.length;
+
+    // The actual cell count might be less than expected due to hidden cells
+    if (actualCellCount > expectedCellCount) {
+      return false;
+    }
+
+    // Validate that all visible cells in the rectangle are selected
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let col = minCol; col <= maxCol; col++) {
+        const index = row * columns + col;
+        const cell = gridItems[index];
+
+        if (cell.hidden) {
+          continue; // Skip hidden cells (part of existing merged cells)
+        }
+
+        if (!selectedCells.includes(index)) {
+          return false; // Missing a visible cell in the rectangle
+        }
+      }
+    }
+
+    return true;
+  };
+
   const handleMerge = (index, direction, selectedCells = []) => {
     const updatedGrid = [...gridItems];
 
-    if (!updatedGrid[index] || updatedGrid[index]?.isMerged) {
-      alert("Cannot merge empty or already merged cells!");
+    if (!updatedGrid[index]) {
+      alert("Invalid cell selection!");
       return;
     }
 
-    const numColumns = columns;
     let indicesToMerge = [];
 
     if (selectedCells.length > 0) {
-      // Handle selection-based merging
+      if (!validateMerge(selectedCells)) {
+        alert("Invalid merge selection. Please check your selection.");
+        return;
+      }
       indicesToMerge = selectedCells;
     } else if (direction === "horizontal" || direction === "vertical") {
-      // Handle directional merging
       if (direction === "horizontal") {
-        if ((index + 1) % numColumns === 0) {
+        if ((index + 1) % columns === 0) {
           alert("Cannot merge horizontally. No adjacent cell to the right.");
           return;
         }
@@ -124,19 +198,9 @@ const AdCanvas = () => {
           return;
         }
       } else if (direction === "vertical") {
-        const bottomIndex = index + numColumns;
+        const bottomIndex = index + columns;
         if (bottomIndex >= totalCells) {
           alert("Cannot merge vertically. No adjacent cell below.");
-          return;
-        }
-        if (
-          updatedGrid[bottomIndex] &&
-          !updatedGrid[bottomIndex].isMerged &&
-          !updatedGrid[bottomIndex].hidden
-        ) {
-          indicesToMerge = [index, bottomIndex];
-        } else {
-          alert("Cannot merge vertically. Adjacent cell is invalid.");
           return;
         }
         if (
@@ -153,6 +217,14 @@ const AdCanvas = () => {
     }
 
     if (indicesToMerge.length > 0) {
+      // Calculate the dimensions of the merged cell
+      const rows = indicesToMerge.map((idx) => Math.floor(idx / columns));
+      const cols = indicesToMerge.map((idx) => idx % columns);
+      const minRow = Math.min(...rows);
+      const maxRow = Math.max(...rows);
+      const minCol = Math.min(...cols);
+      const maxCol = Math.max(...cols);
+
       const mergedScheduledAds = indicesToMerge.reduce((ads, idx) => {
         return ads.concat(updatedGrid[idx].scheduledAds || []);
       }, []);
@@ -161,33 +233,16 @@ const AdCanvas = () => {
         scheduledAds: mergedScheduledAds,
         isMerged: true,
         hidden: false,
-        rowSpan:
-          selectedCells.length > 0
-            ? Math.max(
-                ...selectedCells.map((idx) => Math.floor(idx / columns)),
-              ) -
-              Math.min(
-                ...selectedCells.map((idx) => Math.floor(idx / columns)),
-              ) +
-              1
-            : direction === "vertical"
-              ? 2
-              : 1,
-        colSpan:
-          selectedCells.length > 0
-            ? Math.max(...selectedCells.map((idx) => idx % columns)) -
-              Math.min(...selectedCells.map((idx) => idx % columns)) +
-              1
-            : direction === "horizontal"
-              ? 2
-              : 1,
+        rowSpan: maxRow - minRow + 1,
+        colSpan: maxCol - minCol + 1,
         mergeDirection: direction || "selection",
-        selectedCells:
-          selectedCells.length > 0 ? selectedCells : indicesToMerge,
+        selectedCells: indicesToMerge,
       };
 
+      // Update the first cell with merged properties
       updatedGrid[indicesToMerge[0]] = mergedItem;
 
+      // Hide other cells involved in the merge
       indicesToMerge.slice(1).forEach((cellIndex) => {
         updatedGrid[cellIndex] = {
           scheduledAds: [],
@@ -197,15 +252,13 @@ const AdCanvas = () => {
           colSpan: 1,
         };
       });
+
+      setGridItems(updatedGrid);
     } else {
       alert("Cannot merge the selected cells.");
-      return;
     }
-
-    setGridItems(updatedGrid);
   };
 
-  // Handles selecting cells for merging
   const handleCellSelection = (index) => {
     const cell = gridItems[index];
 
@@ -243,29 +296,6 @@ const AdCanvas = () => {
     }
   };
 
-  // Helper function to check if selected cells form a rectangle
-  const isRectangleShape = (selectedCells) => {
-    const rows = selectedCells.map((index) => Math.floor(index / columns));
-    const cols = selectedCells.map((index) => index % columns);
-
-    const minRow = Math.min(...rows);
-    const maxRow = Math.max(...rows);
-    const minCol = Math.min(...cols);
-    const maxCol = Math.max(...cols);
-
-    // Check if cells fill the rectangle area completely
-    for (let row = minRow; row <= maxRow; row++) {
-      for (let col = minCol; col <= maxCol; col++) {
-        const index = row * columns + col;
-        if (!selectedCells.includes(index)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  };
-
-  // Update handleMergeSelected to validate rectangle shape
   const handleMergeSelected = () => {
     // Case 1: Single merged cell selected - unmerge it
     if (selectedMergedCells.length === 1 && selectedCells.length === 0) {
@@ -277,7 +307,6 @@ const AdCanvas = () => {
 
     // Case 2: Multiple cells selected including merged cells
     if (selectedMergedCells.length > 0) {
-      // First validate if the merge would be valid
       const unmergedCells = selectedMergedCells.reduce((acc, index) => {
         const cell = gridItems[index];
         if (cell.selectedCells) {
@@ -286,14 +315,11 @@ const AdCanvas = () => {
         return [...acc, index];
       }, []);
 
-      // Combine with regular selected cells
       const allCellsToMerge = [
         ...new Set([...unmergedCells, ...selectedCells]),
       ];
 
-      // Only proceed with unmerging if the new merge would be valid
-      if (isRectangleShape(allCellsToMerge) && validateMerge(allCellsToMerge)) {
-        // Now it's safe to unmerge existing cells
+      if (validateMerge(allCellsToMerge)) {
         selectedMergedCells.forEach((index) => {
           handleUnmerge(index);
         });
@@ -316,17 +342,10 @@ const AdCanvas = () => {
       return;
     }
 
-    if (!isRectangleShape(selectedCells)) {
-      alert("Selected cells must form a rectangle or square and be adjacent.");
+    if (!validateMerge(selectedCells)) {
+      alert("Selected cells must form a valid rectangle or square.");
       setSelectedCells([]);
       setIsSelectionMode(false);
-      return;
-    }
-
-    if (!validateMerge(selectedCells)) {
-      alert(
-        "Invalid merge. Please select contiguous cells in a row, column, or valid rectangular block.",
-      );
       return;
     }
 
@@ -334,60 +353,6 @@ const AdCanvas = () => {
     handleMerge(sortedCells[0], "selection", sortedCells);
     setSelectedCells([]);
     setIsSelectionMode(false);
-  };
-
-  // New function to validate selected cells for merging
-  const validateMerge = (selectedCells) => {
-    if (selectedCells.length <= 1) {
-      return false; // Cannot merge a single cell
-    }
-
-    const rows = selectedCells.map((index) => Math.floor(index / columns));
-    const cols = selectedCells.map((index) => index % columns);
-
-    // Check if all cells are in the same row
-    const allInSameRow = rows.every((row) => row === rows[0]);
-    if (allInSameRow) {
-      // Ensure they are adjacent in the row
-      const sortedCols = [...cols].sort((a, b) => a - b);
-      for (let i = 1; i < sortedCols.length; i++) {
-        if (sortedCols[i] !== sortedCols[i - 1] + 1) {
-          return false; // There is a gap in the selected cells
-        }
-      }
-      return true;
-    }
-
-    // Check if all cells are in the same column
-    const allInSameColumn = cols.every((col) => col === cols[0]);
-    if (allInSameColumn) {
-      // Ensure they are adjacent in the column
-      const sortedRows = [...rows].sort((a, b) => a - b);
-      for (let i = 1; i < sortedRows.length; i++) {
-        if (sortedRows[i] !== sortedRows[i - 1] + 1) {
-          return false; // There is a gap in the selected cells
-        }
-      }
-      return true;
-    }
-
-    // Check if cells form a valid rectangular block
-    const minRow = Math.min(...rows);
-    const maxRow = Math.max(...rows);
-    const minCol = Math.min(...cols);
-    const maxCol = Math.max(...cols);
-
-    // Validate that all cells within this rectangle are selected
-    for (let row = minRow; row <= maxRow; row++) {
-      for (let col = minCol; col <= maxCol; col++) {
-        const index = row * columns + col;
-        if (!selectedCells.includes(index)) {
-          return false; // Missing cell within the rectangular block
-        }
-      }
-    }
-
-    return true; // The cells form a valid rectangular block
   };
 
   const handleUnmerge = (index) => {
@@ -400,12 +365,11 @@ const AdCanvas = () => {
           ? cell.selectedCells
           : [index];
 
-      // Distribute scheduledAds equally among unmerged cells or keep them in the first cell
       const scheduledAds = cell.scheduledAds;
 
       cellsToUnmerge.forEach((idx, idxIndex) => {
         updatedGrid[idx] = {
-          scheduledAds: idxIndex === 0 ? scheduledAds : [], // Keep ads in the first cell
+          scheduledAds: idxIndex === 0 ? scheduledAds : [],
           isMerged: false,
           hidden: false,
           rowSpan: 1,
@@ -418,11 +382,10 @@ const AdCanvas = () => {
   };
 
   const handleDrop = (item, index, rowIndex, colIndex) => {
-    // Ensure the item has the required structure
     const normalizedItem = {
       id: item.id || uuidv4(),
       type: item.type || "default",
-      content: item.content || item, // If content doesn't exist, use the entire item as content
+      content: item.content || item,
       styles: item.styles || {},
     };
 
@@ -433,7 +396,6 @@ const AdCanvas = () => {
   const handleScheduleSave = (adItem, scheduledTime, index) => {
     const updatedGrid = [...gridItems];
 
-    // Create a properly structured scheduled ad
     const scheduledAd = {
       id: uuidv4(),
       ad: {
@@ -445,7 +407,6 @@ const AdCanvas = () => {
       scheduledTime,
     };
 
-    // Ensure the scheduledAds array exists
     if (!updatedGrid[index].scheduledAds) {
       updatedGrid[index].scheduledAds = [];
     }
