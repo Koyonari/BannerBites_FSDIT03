@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useDrop } from "react-dnd";
 import { Tooltip } from "react-tooltip";
 import AdListPopup from "./AdListPopup";
+import { CircleMinus } from "lucide-react";
 
 const Checkbox = ({ checked, onChange, className, showHelp }) => (
   <div
@@ -50,7 +51,6 @@ const GridCell = ({
   showHelp,
   selectedMergedCells = [],
   onSelectMerged,
-  onMergeFailure,
 }) => {
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -70,10 +70,10 @@ const GridCell = ({
     setIsPopupOpen(!isPopupOpen);
   };
 
-  // Determine if this cell is selected (either as a regular cell or as part of a merged group)
+  // Check if this cell is selected
   const isCellSelected = item?.isMerged
-    ? selectedMergedCells.includes(index) // If it's merged, check if it's in selectedMergedCells
-    : isSelected; // If not merged, use regular isSelected prop
+    ? selectedMergedCells.includes(index)
+    : isSelected;
 
   const handleCheckboxChange = (checked) => {
     if (item && !item.hidden) {
@@ -88,11 +88,6 @@ const GridCell = ({
         onSelect(index);
       }
     }
-  };
-
-  const handleUnmerge = (e) => {
-    e.stopPropagation();
-    onUnmerge(index);
   };
 
   const handleRemove = (e) => {
@@ -295,7 +290,7 @@ const GridCell = ({
       <div className="flex-1 overflow-hidden">{renderAdContent()}</div>
 
       {adToDisplay && (
-        <div className="actions mt-auto flex flex-wrap gap-2">
+        <div className="actions mt-auto flex flex-wrap items-center gap-2">
           <button
             onClick={handleEdit}
             className="rounded bg-blue-500 px-2 py-1 text-sm text-white hover:bg-blue-600"
@@ -308,20 +303,12 @@ const GridCell = ({
           >
             View List
           </button>
-          <button
+          <CircleMinus
+            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            fill="#D9D9D9"
+            strokeWidth={2}
             onClick={handleRemove}
-            className="rounded bg-red-500 px-2 py-1 text-sm text-white hover:bg-red-600"
-          >
-            Remove
-          </button>
-          {item.isMerged && (
-            <button
-              className="rounded bg-yellow-500 px-2 py-1 text-sm text-white hover:bg-yellow-600"
-              onClick={handleUnmerge}
-            >
-              Unmerge
-            </button>
-          )}
+          />
         </div>
       )}
 

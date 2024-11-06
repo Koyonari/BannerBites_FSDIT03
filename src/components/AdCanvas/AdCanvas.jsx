@@ -266,7 +266,6 @@ const AdCanvas = () => {
   };
 
   // Update handleMergeSelected to validate rectangle shape
-  // Update handleMergeSelected to preserve merged cells on invalid merges
   const handleMergeSelected = () => {
     // Case 1: Single merged cell selected - unmerge it
     if (selectedMergedCells.length === 1 && selectedCells.length === 0) {
