@@ -1,5 +1,5 @@
-const express = require("express");
 const cors = require("cors");
+const { dynamoDbClient, listenToDynamoDbStreams } = require("./middleware/awsMiddleware");
 const dotenv = require("dotenv");
 const layoutRoutes = require("./routes/layoutRoutes");
 const locationRoutes = require("./routes/locationRoutes");
@@ -11,7 +11,11 @@ const WebSocket = require("ws");
 // Load environment variables
 dotenv.config();
 
+// Set up Express and the WebSocket server
+const express = require("express");
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -32,63 +36,39 @@ app.use("/api/tvs", tvRoutes);
 // Generate presigned URL route
 app.post("/generate-presigned-url", generatePresignedUrlController);
 
-// Create an HTTP server and WebSocket server
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-
-// Handle WebSocket connections
+// WebSocket server to manage clients
 wss.on("connection", (ws) => {
-  console.log("New WebSocket connection established");
+  console.log("New WebSocket client connected");
 
-  // Listen for messages from the client
   ws.on("message", async (message) => {
     try {
       const parsedMessage = JSON.parse(message);
-
-      // Handle the "getLayout" message type
       if (parsedMessage.type === "getLayout" && parsedMessage.layoutId) {
-        const layout = await getLayoutByIdFromController(parsedMessage.layoutId);
+        // Fetch data from DynamoDB and send to client
+        const layoutId = parsedMessage.layoutId;
+        // You can implement direct DynamoDB fetch here based on `layoutId`
+        console.log(`Fetching data for layoutId: ${layoutId}`);
+        const layout = await getLayoutById(layoutId);
         ws.send(JSON.stringify({ type: "layoutData", data: layout }));
       }
-
-      // Add other message types as needed
     } catch (error) {
-      console.error("Error processing WebSocket message:", error);
-      ws.send(JSON.stringify({ type: "error", message: "Invalid request format" }));
+      console.error("Error processing message:", error);
     }
   });
 
   ws.on("close", () => {
-    console.log("WebSocket connection closed");
+    console.log("WebSocket client disconnected");
+  });
+
+  ws.on("error", (error) => {
+    console.error("WebSocket error:", error);
   });
 });
 
-// Helper function to get layout by ID
-const getLayoutByIdFromController = async (layoutId) => {
-  try {
-    const layout = await LayoutModel.getLayoutById(layoutId);
-    if (!layout) {
-      return { error: "Layout not found" };
-    }
-    // Get grid items and associated ads
-    const gridItems = await GridItemModel.getGridItemsByLayoutId(layoutId);
-    for (const item of gridItems) {
-      const scheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemId(`${layoutId}#${item.index}`);
-      for (const scheduledAd of scheduledAds) {
-        const ad = await AdModel.getAdById(scheduledAd.adId);
-        scheduledAd.ad = ad;
-      }
-      item.scheduledAds = scheduledAds;
-    }
-    layout.gridItems = gridItems;
-    return layout;
-  } catch (error) {
-    console.error("Error fetching layout data:", error);
-    return { error: "Internal server error" };
-  }
-};
+// Start listening to DynamoDB Streams
+listenToDynamoDbStreams(wss); // Make sure to pass WebSocket Server instance
 
 // Start the server
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

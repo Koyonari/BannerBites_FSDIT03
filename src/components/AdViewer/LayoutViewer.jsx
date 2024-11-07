@@ -7,14 +7,14 @@ const LayoutViewer = ({ layoutId }) => {
   useEffect(() => {
     let socket;
 
-    const connectWebSocket = () => {
-      // Set up WebSocket connection
-      socket = new WebSocket("ws://localhost:5000"); // Update the WebSocket URL to match your backend's
+     // Function to connect WebSocket and manage reconnects
+     const connectWebSocket = () => {
+      socket = new WebSocket("ws://localhost:5000"); // Update the WebSocket URL to match your backend
 
       socket.onopen = () => {
         console.log("WebSocket connection opened");
-        // Request the specific layout once connected
         if (layoutId) {
+          // Request the layout by ID once connected
           socket.send(JSON.stringify({ type: "getLayout", layoutId }));
         }
       };
@@ -34,8 +34,8 @@ const LayoutViewer = ({ layoutId }) => {
       };
 
       socket.onclose = () => {
-        console.log("WebSocket connection closed");
-        // Optionally try reconnecting
+        console.log("WebSocket connection closed. Attempting to reconnect...");
+        // Reconnect after a delay
         setTimeout(connectWebSocket, 5000);
       };
 
@@ -46,13 +46,13 @@ const LayoutViewer = ({ layoutId }) => {
 
     connectWebSocket();
 
+    // Clean up WebSocket connection on unmount
     return () => {
       if (socket) {
-        socket.close(); // Clean up WebSocket connection on unmount
+        socket.close();
       }
     };
   }, [layoutId]);
-
 
   if (!layout) {
     return <div>Loading layout...</div>;
