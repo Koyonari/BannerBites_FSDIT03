@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import { useDrop } from "react-dnd";
-import AdComponent from "./AdComponent";
+import { Tooltip } from "react-tooltip";
 import AdListPopup from "./AdListPopup";
+import { CircleMinus, View, Pencil } from "lucide-react";
 
-const Checkbox = ({ checked, onChange, className }) => (
+const Checkbox = ({ checked, onChange, className, showHelp }) => (
   <div
-    className={`w-4 h-4 border-2 rounded cursor-pointer flex items-center justify-center bg-white hover:bg-gray-50 ${
-      checked ? "border-blue-500" : "border-gray-300"
+    id="cellCheckbox"
+    data-tooltip-id="checkbox-tooltip"
+    data-tooltip-content="Click to multi-select cells"
+    className={`flex h-4 w-4 cursor-pointer items-center justify-center border-2 bg-white hover:bg-gray-50 ${
+      checked ? "border-orange-500" : "border-gray-300"
     } ${className}`}
     onClick={(e) => {
       e.stopPropagation();
@@ -15,7 +19,7 @@ const Checkbox = ({ checked, onChange, className }) => (
   >
     {checked && (
       <svg
-        className="w-3 h-3 text-blue-500"
+        className="h-3 w-3 text-orange-500"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -38,15 +42,15 @@ const GridCell = ({
   onDrop,
   onRemove,
   onEdit,
-  onMerge,
   onUnmerge,
   item,
   isSelected,
   onSelect,
   isSelectionMode,
   setIsSelectionMode,
-  columns,
-  totalCells,
+  showHelp,
+  selectedMergedCells = [],
+  onSelectMerged,
 }) => {
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -56,7 +60,7 @@ const GridCell = ({
         isOver: monitor.isOver(),
       }),
     }),
-    [onDrop, index, rowIndex, colIndex]
+    [onDrop, index, rowIndex, colIndex],
   );
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -66,58 +70,50 @@ const GridCell = ({
     setIsPopupOpen(!isPopupOpen);
   };
 
-  const handleCellClick = (e) => {
-    e.stopPropagation();
-    if (item && !item.hidden && !item.isMerged) {
-      onSelect(index);
-    }
-  };
+  // Check if this cell is selected
+  const isCellSelected = item?.isMerged
+    ? selectedMergedCells.includes(index)
+    : isSelected;
 
   const handleCheckboxChange = (checked) => {
-    if (item && !item.hidden && !item.isMerged) {
+    if (item && !item.hidden) {
       if (!isSelectionMode) {
-        setIsSelectionMode(true); // Enter selection mode first
-        onSelect(index); // Then select the cell
-      } else {
+        setIsSelectionMode(true);
+      }
+
+      if (item.isMerged && typeof onSelectMerged === "function") {
+        // Always call onSelectMerged for merged cells, regardless of current selection state
+        onSelectMerged(index);
+      } else if (typeof onSelect === "function") {
         onSelect(index);
       }
     }
-  };
-
-  const handleMergeHorizontal = (e) => {
-    e.stopPropagation();
-    onMerge(index, "horizontal");
-  };
-
-  const handleMergeVertical = (e) => {
-    e.stopPropagation();
-    onMerge(index, "vertical");
-  };
-
-  const handleUnmerge = (e) => {
-    e.stopPropagation();
-    onUnmerge(index);
   };
 
   const handleRemove = (e) => {
     e.stopPropagation();
     if (adToDisplay) {
       onRemove(index, adToDisplay);
-    } else {
-      alert("No ad to remove");
     }
   };
 
   const handleEdit = (e) => {
     e.stopPropagation();
     if (adToDisplay) {
-      onEdit(index, adToDisplay);
-    } else {
-      alert("No ad to edit");
+      const adToEdit = {
+        ...adToDisplay,
+        ad: {
+          ...adToDisplay.ad,
+          type: adToDisplay.ad.type
+            ? adToDisplay.ad.type.charAt(0).toUpperCase() +
+              adToDisplay.ad.type.slice(1)
+            : adToDisplay.ad.type,
+        },
+      };
+      onEdit(index, adToEdit);
     }
   };
 
-  // Get current time in minutes since midnight
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -145,79 +141,175 @@ const GridCell = ({
     }
   }
 
+  const renderAdContent = () => {
+    if (!adToDisplay || !adToDisplay.ad)
+      return (
+        <div className="flex h-full w-full items-center justify-center">
+          <p className="text-center">Drop ad here</p>
+        </div>
+      );
+
+    const { type, content, styles } = adToDisplay.ad;
+    const contentStyle = {
+      fontFamily: styles?.font || "Arial",
+      fontSize: styles?.fontSize || "14px",
+      color: styles?.textColor || "#000000",
+      border: styles?.borderColor ? `1px solid ${styles.borderColor}` : "none",
+      padding: "8px",
+      borderRadius: "4px",
+      height: "100%",
+      width: "100%",
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
+    };
+
+    const hasNoContent =
+      type?.toLowerCase() === "text"
+        ? !content?.title && !content?.description
+        : !content?.src;
+
+    if (hasNoContent) {
+      return (
+        <div
+          className="flex h-full w-full items-center justify-center"
+          style={contentStyle}
+        >
+          <p className="text-center text-gray-500">{type} Ad</p>
+        </div>
+      );
+    }
+
+    switch (type?.toLowerCase()) {
+      case "text":
+        return (
+          <div style={contentStyle} className="overflow-hidden">
+            <h3 className="font-bold">{content.title}</h3>
+            <p>{content.description}</p>
+          </div>
+        );
+
+      case "image":
+        return (
+          <div style={contentStyle}>
+            <h3 className="mb-2 font-bold">{content.title}</h3>
+            {content.src && (
+              <div className="relative min-h-0 flex-1">
+                <img
+                  src={content.src}
+                  alt={content.title}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            )}
+            {content.description && (
+              <p className="mt-2 text-sm">{content.description}</p>
+            )}
+          </div>
+        );
+
+      case "video":
+        return (
+          <div style={contentStyle} className="overflow-hidden">
+            <h3 className="mb-2 font-bold">{content.title}</h3>
+            {content.src && (
+              <div className="relative min-h-0 flex-1">
+                <video
+                  controls
+                  className="h-full w-full object-contain"
+                  style={{ maxHeight: "150px" }}
+                >
+                  <source src={content.src} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            )}
+            {content.description && (
+              <p className="mt-2 text-sm">{content.description}</p>
+            )}
+          </div>
+        );
+
+      default:
+        return <p>Drop ad here</p>;
+    }
+  };
+
   const mergedClass = item?.isMerged
-    ? item.mergeDirection === "horizontal"
-      ? "merged-horizontal"
-      : "merged-vertical"
+    ? `${item.mergeDirection === "horizontal" ? "merged-horizontal" : "merged-vertical"}${
+        item.mergeError ? " merge-error" : ""
+      }`
     : "";
 
-  const selectionClass =
-    isSelectionMode && !item?.hidden && !item?.isMerged ? "selectable" : "";
-  const selectedClass = isSelected ? "selected" : "";
+  const selectionClass = isSelectionMode && !item?.hidden ? "selectable" : "";
+  const selectedClass = isCellSelected ? "selected" : "";
 
   if (item?.hidden) {
     return null;
   }
 
+  const tooltipStyle = {
+    backgroundColor: "rgb(255, 255, 255)",
+    color: "black",
+    boxShadow:
+      "0 4px 6px -1px rgba(0, 0, 0, 1), 0 2px 4px -1px rgba(0, 0, 0, 1)",
+    border: "none",
+    borderRadius: "6px",
+    padding: "8px 12px",
+    fontSize: "14px",
+  };
+
+  const tooltipProps = {
+    className: "custom-tooltip",
+    style: tooltipStyle,
+    isOpen: showHelp,
+    place: "right",
+  };
+
   return (
     <div
       ref={drop}
-      onClick={handleCellClick}
-      className={`grid-cell border border-gray-400 p-2 bg-white min-h-[150px] flex justify-center items-center box-border transition-transform duration-200 ease-in-out hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:bg-orange-50 relative hover:outline-orange-300 ${
-        isOver ? "bg-orange-50 outline-orange-300" : ""
-      } ${mergedClass} ${selectionClass} ${selectedClass} ${
-        item?.isHidden ? "hidden" : ""
-      } ${item?.isEmpty ? "invisible" : ""} ${
-        item?.isSelectable ? "cursor-pointer transition-all" : ""
-      }`}
+      className={`grid-cell relative box-border flex flex-col gap-2 border border-gray-400 bg-white p-2 transition-transform duration-200 ease-in-out hover:bg-orange-50 hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-orange-300 ${isOver ? "bg-orange-50 outline-orange-300" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
       style={{
         gridRow: item?.rowSpan ? `span ${item.rowSpan}` : "auto",
         gridColumn: item?.colSpan ? `span ${item.colSpan}` : "auto",
       }}
     >
-      {/* Show checkbox for all non-hidden cells */}
       {item && !item.hidden && (
-        <div className="absolute top-2 left-2 z-10">
+        <div className="absolute left-3 top-3 z-10">
           <Checkbox
-            checked={isSelected}
+            checked={isCellSelected}
             onChange={handleCheckboxChange}
             className="transition-colors duration-200 ease-in-out"
+            showHelp={showHelp}
           />
+          <Tooltip id="checkbox-tooltip" {...tooltipProps} />
         </div>
       )}
 
-      {adToDisplay ? (
-        <div className="cell-content">
-          <AdComponent
-            id={adToDisplay.ad.id}
-            type={adToDisplay.ad.type}
-            content={adToDisplay.ad.content}
-            styles={adToDisplay.ad.styles}
+      <div className="flex-1 overflow-hidden">{renderAdContent()}</div>
+
+      {adToDisplay && (
+        <div className="actions mb-4 mt-auto flex flex-wrap items-center justify-center gap-8">
+          <Pencil
+            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            fill="#D9D9D9"
+            strokeWidth={2}
+            onClick={handleEdit}
           />
-          <div className="actions mt-4 flex gap-5 flex-wrap">
-            <button onClick={handleEdit}>Edit</button>
-            <button onClick={togglePopup}>View List</button>
-            {!item.isMerged && !isSelectionMode && (
-              <>
-                <button onClick={handleMergeHorizontal}>
-                  Merge Horizontally
-                </button>
-                <button onClick={handleMergeVertical}>Merge Vertically</button>
-              </>
-            )}
-            <button onClick={handleRemove}>Remove</button>
-            {item.isMerged && (
-              <button
-                className="button button-secondary"
-                onClick={handleUnmerge}
-              >
-                Unmerge
-              </button>
-            )}
-          </div>
+          <View
+            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            fill="#D9D9D9"
+            strokeWidth={2}
+            onClick={togglePopup}
+          />
+          <CircleMinus
+            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            fill="#D9D9D9"
+            strokeWidth={2}
+            onClick={handleRemove}
+          />
         </div>
-      ) : (
-        <p>Drop ad here</p>
       )}
 
       {isPopupOpen && item.scheduledAds && item.scheduledAds.length > 0 && (

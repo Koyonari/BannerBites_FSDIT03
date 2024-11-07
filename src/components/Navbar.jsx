@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
-import { HomeIcon, CircleUserRound, LayoutList } from "lucide-react";
+import { HomeIcon, LayoutList } from "lucide-react";
 import Hamburger from "hamburger-react";
 import { useNavigate } from "react-router-dom";
 import React from "react";
@@ -52,20 +52,20 @@ function Navbar() {
 
   return (
     <section className="h-24">
-      <div className="bg-white dark:bg-black transition-colors duration-500 h-24 text-2xl fixed flex justify-between items-center w-full max-md:w-full px-6 font-extrabold border-b-black border-b-2 dark:border-b-white">
+      <div className="fixed !z-[999] flex h-24 w-full items-center justify-between border-b-2 border-b-black bg-white px-6 text-2xl font-extrabold transition-colors duration-500 dark:border-b-white dark:bg-black max-md:w-full">
         <div className="pt-4">
-          <h1 className="font-bold text-3xl mb-3 text-black dark:text-white items-center text-center justify-center left-0">
+          <h1 className="left-0 mb-3 items-center justify-center text-center text-3xl font-bold text-black dark:text-white">
             Banner
             <span className="text-orange-500 outline-1">Bites</span>
           </h1>
         </div>
-        <div className="nav-links hidden lg:flex items-center gap-12 mr-6">
+        <div className="nav-links mr-6 hidden items-center gap-12 lg:flex">
           <HomeIcon
-            className="w-6 h-6 text-black dark:text-white transition-colors duration-500 cursor-pointer"
+            className="h-6 w-6 cursor-pointer text-black transition-colors duration-500 dark:text-white"
             onClick={handleHome}
           />
           <LayoutList
-            className="w-6 h-6 text-black dark:text-white transition-colors duration-500 cursor-pointer"
+            className="h-6 w-6 cursor-pointer text-black transition-colors duration-500 dark:text-white"
             onClick={handleLayoutClick}
           />
           <DarkModeSwitch
@@ -75,13 +75,11 @@ function Navbar() {
             moonColor="white"
             sunColor="black"
           />
-          <p className="dark:text-white text-4xl font-normal pb-1">|</p>
-          <CircleUserRound className="w-6 h-6 text-black dark:text-white transition-colors duration-500" />
         </div>
       </div>
 
       {/* Hamburger Menu */}
-      <div className="fixed pt-6 right-4 z-[99999] lg:hidden">
+      <div className="fixed right-4 z-[99999] pt-6 lg:hidden">
         <Hamburger
           toggled={isOpen}
           toggle={toggleMenu}
@@ -91,23 +89,23 @@ function Navbar() {
 
       {/* Opened Hamburger Menu */}
       <div
-        className={`mobile-menu sticky top-0 left-0 w-screen bg-black border-b border-white z-[9999] flex flex-col font-general-sans opacity-85 transform transition-transform duration-500 ease-in-out ${
+        className={`mobile-menu font-general-sans sticky left-0 top-0 z-[9999] flex w-screen transform flex-col border-b border-white bg-black opacity-85 transition-transform duration-500 ease-in-out ${
           isOpen ? "translate-y-0" : "-translate-y-full"
         }`}
       >
-        <div className="flex items-center justify-center gap-4 py-8 border-white/20 border-b">
+        <div className="flex items-center justify-center gap-4 border-b border-white/20 py-8">
           <HomeIcon
-            className="w-6 h-6 text-white dark:text-white transition-colors duration-500 cursor-pointer"
+            className="h-6 w-6 cursor-pointer text-white transition-colors duration-500 dark:text-white"
             onClick={handleHome}
           />
         </div>
-        <div className="flex items-center justify-center gap-4 py-8 border-white/20 border-b">
+        <div className="flex items-center justify-center gap-4 border-b border-white/20 py-8">
           <LayoutList
-            className="w-6 h-6 text-white dark:text-white transition-colors duration-300 cursor-pointer"
+            className="h-6 w-6 cursor-pointer text-white transition-colors duration-300 dark:text-white"
             onClick={handleLayoutClick}
           />
         </div>
-        <div className="flex items-center justify-center gap-4 py-8 border-white/20 border-b">
+        <div className="flex items-center justify-center gap-4 border-b border-white/20 py-8">
           <DarkModeSwitch
             checked={isDarkMode}
             onChange={toggleDarkMode}
@@ -115,9 +113,6 @@ function Navbar() {
             moonColor="white"
             sunColor="white"
           />
-        </div>
-        <div className="flex items-center justify-center gap-4 py-8 border-white/20 border-b">
-          <CircleUserRound className="w-6 h-6 text-white dark:text-white transition-colors duration-300" />
         </div>
       </div>
     </section>

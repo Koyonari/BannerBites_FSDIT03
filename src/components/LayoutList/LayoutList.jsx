@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Navbar from "../Navbar";
 
 const LayoutList = () => {
   const [layouts, setLayouts] = useState([]);
@@ -21,7 +22,7 @@ const LayoutList = () => {
       const data = await response.json();
       const uniqueLayouts = data.filter(
         (layout, index, self) =>
-          index === self.findIndex((l) => l.layoutId === layout.layoutId)
+          index === self.findIndex((l) => l.layoutId === layout.layoutId),
       );
       setLayouts(uniqueLayouts);
     } catch (err) {
@@ -36,7 +37,7 @@ const LayoutList = () => {
       setLoading(true);
       setError(null);
       const response = await fetch(
-        `http://localhost:5000/api/layouts/${layoutId}`
+        `http://localhost:5000/api/layouts/${layoutId}`,
       );
       if (!response.ok) {
         throw new Error("Failed to fetch layout details");
@@ -67,7 +68,7 @@ const LayoutList = () => {
 
     return (
       <div
-        className="rounded-lg overflow-hidden shadow-sm h-full"
+        className="h-full overflow-hidden rounded-lg shadow-sm"
         style={styles}
       >
         {type === "text" && (
@@ -81,7 +82,7 @@ const LayoutList = () => {
             <img
               src={mediaUrl}
               alt={content.title}
-              className="w-full h-auto object-cover"
+              className="h-auto w-full object-cover"
             />
             <div className="p-4">
               <h3 className="text-lg font-semibold">{content.title}</h3>
@@ -114,7 +115,7 @@ const LayoutList = () => {
 
     return (
       <div
-        className="grid gap-4 w-full h-full"
+        className="grid h-full w-full gap-4"
         style={{
           gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
           gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
@@ -138,20 +139,20 @@ const LayoutList = () => {
               .padStart(2, "0")}`;
 
             const availableAds = scheduledAds.filter(
-              (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
+              (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
             );
 
             if (availableAds.length > 0) {
               adToDisplay = availableAds.reduce((latestAd, currentAd) =>
                 currentAd.scheduledTime > latestAd.scheduledTime
                   ? currentAd
-                  : latestAd
+                  : latestAd,
               );
             } else {
               adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
                 currentAd.scheduledTime < nextAd.scheduledTime
                   ? currentAd
-                  : nextAd
+                  : nextAd,
               );
             }
           }
@@ -169,7 +170,7 @@ const LayoutList = () => {
           return (
             <div
               key={index}
-              className="bg-white rounded-lg"
+              className="rounded-lg bg-white"
               style={{
                 gridRow: `${gridRowStart} / ${gridRowEnd}`,
                 gridColumn: `${gridColumnStart} / ${gridColumnEnd}`,
@@ -184,85 +185,94 @@ const LayoutList = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Available Layouts</h2>
-          {loading && !selectedLayout && (
-            <div className="flex items-center justify-center p-4 text-gray-600">
-              <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              Loading layouts...
+    <>
+      <Navbar />
+      <div className="container p-4">
+        <div className="grid md:flex md:grid-cols-2">
+          <div className="rounded-lg bg-white p-6 shadow md:w-[20vw]">
+            <h2 className="mb-4 text-xl font-bold">Available Layouts</h2>
+            {loading && !selectedLayout && (
+              <div className="flex items-center justify-center p-4 text-gray-600">
+                <svg className="mr-2 h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Loading layouts...
+              </div>
+            )}
+            {error && (
+              <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-600">
+                Error: {error}
+              </div>
+            )}
+            <div className="space-y-2">
+              {layouts.map((layout) => (
+                <button
+                  key={layout.layoutId}
+                  className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
+                    selectedLayout?.layoutId === layout.layoutId
+                      ? "bg-orange-600 text-white"
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                  }`}
+                  onClick={() => fetchLayoutDetails(layout.layoutId)}
+                >
+                  {layout.name || `Layout ${layout.layoutId}`}
+                </button>
+              ))}
             </div>
-          )}
-          {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-4">
-              Error: {error}
+          </div>
+
+          <div className="ml-[2vw] flex h-[80vh] w-[80vw] items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg">
+            <div className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg bg-white shadow-inner">
+              {loading && selectedLayout && (
+                <div className="flex items-center justify-center p-4 text-gray-600">
+                  <svg
+                    className="mr-2 h-5 w-5 animate-spin"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Loading layout preview...
+                </div>
+              )}
+              {selectedLayout && !loading && (
+                <AdViewer layout={selectedLayout} />
+              )}
+              {!selectedLayout && !loading && (
+                <div className="p-4 text-center text-gray-500">
+                  Select a layout to preview
+                </div>
+              )}
             </div>
-          )}
-          <div className="space-y-2">
-            {layouts.map((layout) => (
-              <button
-                key={layout.layoutId}
-                className={`w-full px-4 py-2 rounded-lg text-left transition-colors ${
-                  selectedLayout?.layoutId === layout.layoutId
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-50 hover:bg-gray-100 text-gray-700"
-                }`}
-                onClick={() => fetchLayoutDetails(layout.layoutId)}
-              >
-                {layout.name || `Layout ${layout.layoutId}`}
-              </button>
-            ))}
           </div>
         </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Layout Preview</h2>
-          {loading && selectedLayout && (
-            <div className="flex items-center justify-center p-4 text-gray-600">
-              <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              Loading layout preview...
-            </div>
-          )}
-          {selectedLayout && !loading && <AdViewer layout={selectedLayout} />}
-          {!selectedLayout && !loading && (
-            <div className="text-center text-gray-500 p-4">
-              Select a layout to preview
-            </div>
-          )}
-        </div>
       </div>
-    </div>
+    </>
   );
 };
 

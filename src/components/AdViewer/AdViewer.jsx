@@ -1,4 +1,5 @@
 import React from "react";
+import { useState, useEffect } from "react";
 
 // Component to represent an individual Ad
 const AdComponent = ({ type, content, styles }) => {
@@ -58,6 +59,15 @@ const AdComponent = ({ type, content, styles }) => {
 
 // Main AdViewer component to render the layout
 const AdViewer = ({ layout }) => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  // Set up a timer to update the current time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
+
   if (!layout) {
     return <div>No layout provided</div>;
   }
@@ -85,15 +95,17 @@ const AdViewer = ({ layout }) => {
         let adToDisplay = null;
 
         if (scheduledAds && scheduledAds.length > 0) {
-          const now = new Date();
-          const currentTimeString = `${now
+          const currentTimeString = `${currentTime
             .getHours()
             .toString()
-            .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`; // Format current time as "HH:mm"
+            .padStart(2, "0")}:${currentTime
+            .getMinutes()
+            .toString()
+            .padStart(2, "0")}`; // Format current time as "HH:mm"
 
           // Filter ads that should be displayed now
           const availableAds = scheduledAds.filter(
-            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
           );
 
           if (availableAds.length > 0) {
@@ -101,14 +113,14 @@ const AdViewer = ({ layout }) => {
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
               currentAd.scheduledTime > latestAd.scheduledTime
                 ? currentAd
-                : latestAd
+                : latestAd,
             );
           } else {
             // Get the next upcoming ad
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
               currentAd.scheduledTime < nextAd.scheduledTime
                 ? currentAd
-                : nextAd
+                : nextAd,
             );
           }
         }

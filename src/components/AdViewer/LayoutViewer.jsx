@@ -8,7 +8,7 @@ const LayoutViewer = ({ layoutId }) => {
     const fetchLayout = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/layouts/${layoutId}`
+          `http://localhost:5000/api/layouts/${layoutId}`,
         );
         if (!response.ok) {
           throw new Error("Failed to fetch layout");
