@@ -1,55 +1,44 @@
-// components/LayoutViewer.jsx
-
-import React, { useState, useEffect } from "react";
+// src/components/LayoutViewer/LayoutViewer.jsx
+import React, { useEffect, useState } from "react";
 import AdViewer from "./AdViewer";
-import { io } from "socket.io-client";
+import useWebSocket from "react-use-websocket";
 
 const LayoutViewer = ({ layoutId }) => {
   const [layout, setLayout] = useState(null);
-  const socketUrl = "http://localhost:5000"; // Socket.IO backend address
+  const socketUrl = "ws://localhost:6000"; // Correct WebSocket port (use wss if secure)
+
+  const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(socketUrl, {
+    onOpen: () => {
+      console.log("[FRONTEND] Connected to WebSocket server");
+      sendJsonMessage({ type: "getLayout", layoutId });
+      console.log("[FRONTEND] Requesting layout for layoutId:", layoutId);
+    },
+    onMessage: (event) => {
+      if (event.data) {
+        console.log("[FRONTEND] Received message from WebSocket server:", event.data);
+      }
+    },
+    onClose: () => {
+      console.log("[FRONTEND] Disconnected from WebSocket server");
+    },
+    onError: (error) => {
+      console.error("[FRONTEND] WebSocket error:", error);
+    },
+    shouldReconnect: () => true, // Reconnect on disconnection
+  });
 
   useEffect(() => {
-    // Initialize Socket.IO client
-    const socket = io(socketUrl);
-
-    // When the Socket.IO connection is established
-    socket.on("connect", () => {
-      console.log("Connected to Socket.IO server");
-
-      // Request layout data by sending a message to the server
-      socket.emit("getLayout", { layoutId });
-    });
-
-    // Handle incoming messages from the server
-    socket.on("layoutData", (data) => {
-      setLayout(data);
-      console.log("Received initial layout data:", data);
-    });
-
-    // Handle layout updates
-    socket.on("layoutUpdate", (data) => {
-      if (data.layoutId === layoutId) {
-        setLayout(data);
-        console.log("Received updated layout data:", data);
+    if (lastJsonMessage !== null) {
+      const response = lastJsonMessage;
+      if (response.type === "layoutUpdate" && response.data.layoutId === layoutId) {
+        setLayout(response.data);
+        console.log("[FRONTEND] Layout updated via WebSocket:", response.data);
+      } else if (response.type === "layoutData") {
+        setLayout(response.data);
+        console.log("[FRONTEND] Received initial layout data via WebSocket:", response.data);
       }
-    });
-
-    // Handle error messages
-    socket.on("error", (error) => {
-      console.error("Error received from Socket.IO:", error.message);
-    });
-
-    // Handle Socket.IO disconnection
-    socket.on("disconnect", () => {
-      console.log("Disconnected from Socket.IO server");
-    });
-
-    // Cleanup function to close Socket.IO connection when component unmounts
-    return () => {
-      socket.disconnect();
-      console.log("Socket.IO connection closed");
-    };
-  }, [layoutId]);
+    }
+  }, [lastJsonMessage, layoutId]);
 
   if (!layout) {
     return <div>Loading layout...</div>;
@@ -58,7 +47,7 @@ const LayoutViewer = ({ layoutId }) => {
   return (
     <div>
       <h2>Layout Viewer</h2>
-      <AdViewer layoutId={layoutId} />
+      <AdViewer layout={layout} />
     </div>
   );
 };

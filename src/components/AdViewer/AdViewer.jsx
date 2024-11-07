@@ -1,6 +1,5 @@
 // src/components/AdViewer/AdViewer.jsx
-import React, { useState, useEffect } from "react";
-import { io } from "socket.io-client";
+import React from "react";
 
 // Component to represent an individual Ad
 const AdComponent = ({ type, content, styles }) => {
@@ -44,49 +43,9 @@ const AdComponent = ({ type, content, styles }) => {
 };
 
 // Main AdViewer component to render the layout
-// Main AdViewer component to render the layout
-const AdViewer = ({ layoutId }) => {
-  const [layout, setLayout] = useState(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const socketUrl = "http://localhost:5000"; // Socket.IO backend address
-
-  useEffect(() => {
-    // Initialize Socket.IO client
-    const socket = io(socketUrl);
-
-    socket.on("connect", () => {
-      console.log("Connected to Socket.IO server");
-      socket.emit("getLayout", { layoutId });
-    });
-
-    // Handle receiving initial layout data
-    socket.on("layoutData", (data) => {
-      setLayout(data);
-      console.log("Received initial layout data:", data);
-    });
-
-    // Handle real-time updates
-    socket.on("layoutUpdate", (data) => {
-      if (data.layoutId === layoutId) {
-        setLayout(data);
-        console.log("Updated layout data:", data);
-      }
-    });
-
-    // Handle errors from server
-    socket.on("error", (error) => {
-      console.error("Socket.IO error:", error);
-    });
-
-    // Cleanup when component unmounts
-    return () => {
-      socket.disconnect();
-      console.log("Disconnected from Socket.IO server");
-    };
-  }, [layoutId]);
-
+const AdViewer = ({ layout }) => {
   if (!layout) {
-    return <div>Loading layout...</div>;
+    return <div>No layout provided</div>;
   }
 
   const { rows, columns, gridItems } = layout;
@@ -111,7 +70,7 @@ const AdViewer = ({ layoutId }) => {
         let adToDisplay = null;
 
         if (scheduledAds && scheduledAds.length > 0) {
-          const currentTimeString = `${currentTime.getHours().toString().padStart(2, "0")}:${currentTime.getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
+          const currentTimeString = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
 
           const availableAds = scheduledAds.filter(
             (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
@@ -135,7 +94,7 @@ const AdViewer = ({ layoutId }) => {
         const ad = adToDisplay.ad;
         const { type, content, styles } = ad;
 
-        const gridRowStart = row + 1;
+        const gridRowStart = row + 1; // Convert 0-based to 1-based
         const gridColumnStart = column + 1;
         const gridRowEnd = gridRowStart + (rowSpan || 1);
         const gridColumnEnd = gridColumnStart + (colSpan || 1);

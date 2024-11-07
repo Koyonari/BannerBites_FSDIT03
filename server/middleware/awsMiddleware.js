@@ -12,6 +12,7 @@ const {
 const { unmarshall } = require("@aws-sdk/util-dynamodb");
 const dotenv = require("dotenv");
 const WebSocket = require("ws");
+
 dotenv.config();
 
 // Initialize AWS Clients
@@ -41,10 +42,10 @@ const s3Client = new S3Client({
   },
 });
 
-console.log("AWS Clients initialized in awsMiddleware");
+console.log("[BACKEND] AWS Clients initialized in awsMiddleware");
 
 // Function to set up DynamoDB Stream listener
-const listenToDynamoDbStreams = async (wss) => {
+const listenToDynamoDbStreams = async (wsServer) => {
   const tableNames = [
     process.env.DYNAMODB_TABLE_LAYOUTS,
     process.env.DYNAMODB_TABLE_GRIDITEMS,
@@ -61,18 +62,18 @@ const listenToDynamoDbStreams = async (wss) => {
       const streamArn = data.Table.LatestStreamArn;
 
       if (!streamArn) {
-        console.error(`Stream is not enabled for table ${tableName}`);
+        console.error(`[BACKEND] Stream is not enabled for table ${tableName}`);
         continue;
       }
 
-      console.log(`Listening to DynamoDB Stream for table ${tableName}: ${streamArn}`);
+      console.log(`[BACKEND] Listening to DynamoDB Stream for table ${tableName}: ${streamArn}`);
 
       const describeStreamParams = { StreamArn: streamArn, Limit: 10 };
       const describeStreamCommand = new DescribeStreamCommand(describeStreamParams);
       const streamData = await dynamoDbStreamsClient.send(describeStreamCommand);
 
       if (!streamData.StreamDescription.Shards || streamData.StreamDescription.Shards.length === 0) {
-        console.warn(`No shards available in the stream for table ${tableName}.`);
+        console.warn(`[BACKEND] No shards available in the stream for table ${tableName}.`);
         continue;
       }
 
@@ -88,17 +89,17 @@ const listenToDynamoDbStreams = async (wss) => {
         let shardIterator = shardIteratorResponse.ShardIterator;
 
         if (shardIterator) {
-          pollStream(shardIterator, tableName, wss);
+          pollStream(shardIterator, tableName, wsServer);
         }
       }
     } catch (error) {
-      console.error(`Error setting up DynamoDB Streams listener for table ${tableName}:`, error);
+      console.error(`[BACKEND] Error setting up DynamoDB Streams listener for table ${tableName}:`, error);
     }
   }
 };
 
 // Function to poll a shard for records
-const pollStream = async (shardIterator, tableName, wss) => {
+const pollStream = async (shardIterator, tableName, wsServer) => {
   while (shardIterator) {
     try {
       const getRecordsCommand = new GetRecordsCommand({
@@ -137,18 +138,18 @@ const pollStream = async (shardIterator, tableName, wss) => {
                 itemId = updatedItem.id || updatedItem.layoutId;
             }
 
-            console.log(`Changed JSON Layout from ${tableName}:`, JSON.stringify(updatedItem, null, 2));
+            console.log(`[BACKEND] Changed JSON Layout from ${tableName}:`, JSON.stringify(updatedItem, null, 2));
 
             // Broadcast updated item to all WebSocket clients
-            if (wss && wss.clients) {
-              wss.clients.forEach((client) => {
+            if (wsServer && wsServer.clients) {
+              wsServer.clients.forEach((client) => {
                 if (client.readyState === WebSocket.OPEN) {
                   client.send(JSON.stringify({ type: updateType, data: updatedItem }));
-                  console.log(`Sent ${updateType} to client: ${itemId}`);
+                  console.log(`[BACKEND] Sent ${updateType} to client for item: ${itemId}`);
                 }
               });
             } else {
-              console.warn("WebSocket server is not defined or no clients connected.");
+              console.warn("[BACKEND] WebSocket server is not defined or no clients connected.");
             }
           }
         });
@@ -156,10 +157,11 @@ const pollStream = async (shardIterator, tableName, wss) => {
 
       shardIterator = recordsData.NextShardIterator;
     } catch (error) {
-      console.error(`Error polling DynamoDB Stream for table ${tableName}:`, error);
+      console.error(`[BACKEND] Error polling DynamoDB Stream for table ${tableName}:`, error);
       break;
     }
 
+    // Wait before polling again
     await new Promise((resolve) => setTimeout(resolve, 5000));
   }
 };

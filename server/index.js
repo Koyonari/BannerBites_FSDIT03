@@ -15,8 +15,8 @@ dotenv.config();
 const express = require("express");
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
 const PORT = process.env.PORT || 5000;
+const WS_PORT = process.env.WEBSOCKET_PORT || 6000;  // New WebSocket port
 
 // Middleware
 app.use(
@@ -32,48 +32,64 @@ app.use(express.json({ limit: "10mb" }));
 app.use("/api/layouts", layoutRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/tvs", tvRoutes);
+// Endpoint to get recent layout updates
+app.get("/api/layout-updates/:layoutId", (req, res) => {
+  const layoutId = req.params.layoutId;
+  const updatedLayout = layoutUpdatesCache[layoutId];
+  
+  if (updatedLayout) {
+    return res.json(updatedLayout);
+  } else {
+    return res.status(404).json({ message: "No updates available for the requested layout." });
+  }
+});
 
 // Generate presigned URL route
 app.post("/generate-presigned-url", generatePresignedUrlController);
 
-// WebSocket server to manage clients
-wss.on("connection", (ws) => {
-  console.log("New WebSocket client connected");
+// Start the HTTP server for REST API
+server.listen(PORT, () => {
+  console.log(`HTTP Server running on port ${PORT}`);
+});
 
-  ws.on("message", async (message) => {
-    try {
-      const parsedMessage = JSON.parse(message);
-      if (parsedMessage.type === "getLayout" && parsedMessage.layoutId) {
-        const layoutId = parsedMessage.layoutId;
-        const layout = await getLayoutById({ params: { layoutId: parsedMessage.layoutId } });
+// Create a new WebSocket server on a separate port
+const wss = new WebSocket.Server({ port: WS_PORT });
 
-        if (layout) {
-          ws.send(JSON.stringify({ type: "layoutData", data: layout }));
-          console.log(`Sent initial layout data for layoutId: ${layoutId}`);
-        } else {
-          ws.send(JSON.stringify({ type: "error", message: "Layout not found." }));
-          console.log(`Layout not found for layoutId: ${layoutId}`);
-        }
-      }
-    } catch (error) {
-      console.error("Error processing message:", error);
-      ws.send(JSON.stringify({ type: "error", message: "Invalid message format." }));
-    }
-  });
+wss.on("connection", (ws, req) => {
+  console.log("[BACKEND] New WebSocket client connected from:", req.socket.remoteAddress);
+
+  // Manage heartbeat to detect stale connections
+  ws.isAlive = true;
+  ws.on("pong", () => (ws.isAlive = true));
+
+  // Heartbeat interval to detect stale connections
+  const interval = setInterval(() => {
+    wss.clients.forEach((client) => {
+      if (client.isAlive === false) return client.terminate();
+      client.isAlive = false;
+      client.ping(() => {});
+    });
+  }, 30000); // Run every 30 seconds
 
   ws.on("close", () => {
-    console.log("WebSocket client disconnected");
+    console.log("[BACKEND] WebSocket client disconnected");
+    clearInterval(interval); // Clear interval on disconnect
   });
 
   ws.on("error", (error) => {
-    console.error("WebSocket error:", error);
+    console.error("[BACKEND] WebSocket error:", error);
   });
 });
 
-// Start listening to DynamoDB Streams and pass the `wss` instance
-listenToDynamoDbStreams(wss);
-
-// Start the server
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Modify listenToDynamoDbStreams to save updates to cache
+listenToDynamoDbStreams((update) => {
+  const { type, data } = update;
+  
+  // Only store layout updates in the cache
+  if (type === "layoutUpdate" || type === "layoutData") {
+    layoutUpdatesCache[data.layoutId] = data;
+    console.log(`[BACKEND] Cached updated layout for layoutId: ${data.layoutId}`);
+  }
 });
+
+console.log(`WebSocket server running on port ${WS_PORT}`);
