@@ -165,8 +165,8 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
   return (
     <Modal isOpen={!!ad} onClose={onClose}>
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="flex max-h-screen w-full max-w-2xl flex-col rounded-lg bg-white">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="!z-[9999] flex h-[80vh] w-full max-w-2xl flex-col rounded-lg bg-white">
           {/* Header */}
           <div className="border-b p-6">
             <h3 className="text-2xl font-semibold">

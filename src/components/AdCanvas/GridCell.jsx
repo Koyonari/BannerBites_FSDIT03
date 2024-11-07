@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useDrop } from "react-dnd";
 import { Tooltip } from "react-tooltip";
 import AdListPopup from "./AdListPopup";
-import { CircleMinus } from "lucide-react";
+import { CircleMinus, View, Pencil } from "lucide-react";
 
 const Checkbox = ({ checked, onChange, className, showHelp }) => (
   <div
@@ -290,19 +290,19 @@ const GridCell = ({
       <div className="flex-1 overflow-hidden">{renderAdContent()}</div>
 
       {adToDisplay && (
-        <div className="actions mt-auto flex flex-wrap items-center gap-2">
-          <button
+        <div className="actions mb-4 mt-auto flex flex-wrap items-center justify-center gap-8">
+          <Pencil
+            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            fill="#D9D9D9"
+            strokeWidth={2}
             onClick={handleEdit}
-            className="rounded bg-blue-500 px-2 py-1 text-sm text-white hover:bg-blue-600"
-          >
-            Edit
-          </button>
-          <button
+          />
+          <View
+            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            fill="#D9D9D9"
+            strokeWidth={2}
             onClick={togglePopup}
-            className="rounded bg-gray-500 px-2 py-1 text-sm text-white hover:bg-gray-600"
-          >
-            View List
-          </button>
+          />
           <CircleMinus
             className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
             fill="#D9D9D9"

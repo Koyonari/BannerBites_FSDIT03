@@ -394,18 +394,23 @@ const AdCanvas = () => {
   };
 
   const handleScheduleSave = (adItem, scheduledTime, index) => {
-    // Validate that adItem has a content property
-    if (!adItem.content) {
-      console.error("AdItem is missing the 'content' property:", adItem);
-      alert("Failed to schedule the ad. Missing content information.");
-      return;
-    }
     const updatedGrid = [...gridItems];
+
     const scheduledAd = {
       id: uuidv4(),
-      ad: { ...adItem, id: uuidv4() },
+      ad: {
+        id: adItem.id || uuidv4(),
+        type: adItem.type || "default",
+        content: adItem.content || adItem,
+        styles: adItem.styles || {},
+      },
       scheduledTime,
     };
+
+    if (!updatedGrid[index].scheduledAds) {
+      updatedGrid[index].scheduledAds = [];
+    }
+
     updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
     setIsScheduling(false);
@@ -458,8 +463,8 @@ const AdCanvas = () => {
       );
 
       console.log("Layout saved successfully:", response.data);
-      alert("Layout saved successfully!");
       setIsNamingLayout(false);
+      navigate("/ad-viewer");
     } catch (error) {
       console.error("Error saving layout:", error);
       alert("Failed to save layout. Please try again.");
@@ -484,7 +489,7 @@ const AdCanvas = () => {
             const ad = scheduledAd.ad;
             const adData = {
               id: ad.id,
-              type: ad.type.toLowerCase(),
+              type: ad.type,
               content: { ...ad.content },
               styles: { ...ad.styles },
             };
@@ -582,8 +587,8 @@ const AdCanvas = () => {
     selectedCells.length >= 2 || selectedMergedCells.length >= 1;
   const mergeButtonTooltip =
     selectedMergedCells.length === 1
-      ? "Click to unmerge selected cell"
-      : "Click to merge selected cells";
+      ? "Click to merge/unmerge selected cells"
+      : "Click to merge/unmerge selected cells";
 
   return (
     <div className="ad-canvas flex w-full flex-col items-center justify-center text-center">
