@@ -11,7 +11,6 @@ const {
 } = require("@aws-sdk/client-dynamodb-streams");
 const { unmarshall } = require("@aws-sdk/util-dynamodb");
 const dotenv = require("dotenv");
-const WebSocket = require("ws");
 dotenv.config();
 
 // Initialize AWS Clients
@@ -44,7 +43,7 @@ const s3Client = new S3Client({
 console.log("AWS Clients initialized in awsMiddleware");
 
 // Function to set up DynamoDB Stream listener
-const listenToDynamoDbStreams = async (wss) => {
+const listenToDynamoDbStreams = async (io) => {
   const tableNames = [
     process.env.DYNAMODB_TABLE_LAYOUTS,
     process.env.DYNAMODB_TABLE_GRIDITEMS,
@@ -53,21 +52,30 @@ const listenToDynamoDbStreams = async (wss) => {
   ];
 
   for (const tableName of tableNames) {
-    const params = { TableName: tableName };
+    // Define the table and obtain its Stream ARN
+    const params = {
+      TableName: tableName,
+    };
 
     try {
+      // Get the latest stream ARN of the table
       const describeTableCommand = new DescribeTableCommand(params);
       const data = await dynamoDbClient.send(describeTableCommand);
       const streamArn = data.Table.LatestStreamArn;
 
       if (!streamArn) {
         console.error(`Stream is not enabled for table ${tableName}`);
-        continue;
+        continue; // Skip tables without stream enabled
       }
 
       console.log(`Listening to DynamoDB Stream for table ${tableName}: ${streamArn}`);
 
-      const describeStreamParams = { StreamArn: streamArn, Limit: 10 };
+      // Describe the stream to get the shards
+      const describeStreamParams = {
+        StreamArn: streamArn,
+        Limit: 10,
+      };
+
       const describeStreamCommand = new DescribeStreamCommand(describeStreamParams);
       const streamData = await dynamoDbStreamsClient.send(describeStreamCommand);
 
@@ -80,7 +88,7 @@ const listenToDynamoDbStreams = async (wss) => {
         const getShardIteratorParams = {
           StreamArn: streamArn,
           ShardId: shard.ShardId,
-          ShardIteratorType: "LATEST",
+          ShardIteratorType: "LATEST", // Start from the latest records
         };
 
         const shardIteratorCommand = new GetShardIteratorCommand(getShardIteratorParams);
@@ -88,7 +96,8 @@ const listenToDynamoDbStreams = async (wss) => {
         let shardIterator = shardIteratorResponse.ShardIterator;
 
         if (shardIterator) {
-          pollStream(shardIterator, tableName, wss);
+          // Start polling for records
+          pollStream(shardIterator, tableName, io);
         }
       }
     } catch (error) {
@@ -98,12 +107,13 @@ const listenToDynamoDbStreams = async (wss) => {
 };
 
 // Function to poll a shard for records
-const pollStream = async (shardIterator, tableName, wss) => {
+// Function to poll a shard for records
+const pollStream = async (shardIterator, tableName, io) => {
   while (shardIterator) {
     try {
       const getRecordsCommand = new GetRecordsCommand({
         ShardIterator: shardIterator,
-        Limit: 100,
+        Limit: 100, // Adjust as needed
       });
 
       const recordsData = await dynamoDbStreamsClient.send(getRecordsCommand);
@@ -112,9 +122,12 @@ const pollStream = async (shardIterator, tableName, wss) => {
       if (records && records.length > 0) {
         records.forEach((record) => {
           if (record.eventName === "INSERT" || record.eventName === "MODIFY") {
+            // Unmarshall the DynamoDB item to a normal JS object
             const updatedItem = unmarshall(record.dynamodb.NewImage);
-            let updateType, itemId;
 
+            // Determine the type of update based on the table
+            let updateType;
+            let itemId;
             switch (tableName) {
               case process.env.DYNAMODB_TABLE_LAYOUTS:
                 updateType = "layoutUpdate";
@@ -130,37 +143,37 @@ const pollStream = async (shardIterator, tableName, wss) => {
                 break;
               case process.env.DYNAMODB_TABLE_ADS:
                 updateType = "adUpdate";
-                itemId = updatedItem.adId;
+                itemId = updatedItem.adId || updatedItem.id; // Double check for correct key
                 break;
               default:
                 updateType = "unknownUpdate";
                 itemId = updatedItem.id || updatedItem.layoutId;
             }
 
+            // Log the changed JSON layout
             console.log(`Changed JSON Layout from ${tableName}:`, JSON.stringify(updatedItem, null, 2));
 
-            // Broadcast updated item to all WebSocket clients
-            if (wss && wss.clients) {
-              wss.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                  client.send(JSON.stringify({ type: updateType, data: updatedItem }));
-                  console.log(`Sent ${updateType} to client: ${itemId}`);
-                }
-              });
+            // Broadcast updated item to all Socket.IO clients
+            if (io) {
+              io.emit(updateType, updatedItem);
+              console.log(`Broadcasted ${updateType} for item: ${itemId}`);
             } else {
-              console.warn("WebSocket server is not defined or no clients connected.");
+              console.error("Socket.IO server is not defined or no clients connected.");
             }
           }
         });
       }
 
+      // Update the shard iterator
       shardIterator = recordsData.NextShardIterator;
     } catch (error) {
       console.error(`Error polling DynamoDB Stream for table ${tableName}:`, error);
+      // Optionally implement retry logic or break
       break;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    // Wait before polling again
+    await new Promise((resolve) => setTimeout(resolve, 5000)); // Poll every 5 seconds
   }
 };
 

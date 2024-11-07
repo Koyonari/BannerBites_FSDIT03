@@ -1,5 +1,4 @@
 // index.js
-
 const cors = require("cors");
 const { listenToDynamoDbStreams } = require("./middleware/awsMiddleware");
 const dotenv = require("dotenv");
@@ -8,15 +7,22 @@ const locationRoutes = require("./routes/locationRoutes");
 const tvRoutes = require("./routes/tvRoutes");
 const { generatePresignedUrlController, getLayoutById } = require("./controllers/layoutController");
 const http = require("http");
-const WebSocket = require("ws");
+const { Server } = require("socket.io");
 
 dotenv.config();
 
 const express = require("express");
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
 const PORT = process.env.PORT || 5000;
+
+// Set up Socket.io server
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000", // Adjust for production
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
+});
 
 // Middleware
 app.use(
@@ -37,41 +43,38 @@ app.use("/api/tvs", tvRoutes);
 app.post("/generate-presigned-url", generatePresignedUrlController);
 
 // WebSocket server to manage clients
-wss.on("connection", (ws) => {
-  console.log("New WebSocket client connected");
+// Socket.io event handlers
+io.on("connection", (socket) => {
+  console.log("New client connected");
 
-  ws.on("message", async (message) => {
+  socket.on("getLayout", async ({ layoutId }) => {
     try {
-      const parsedMessage = JSON.parse(message);
-      if (parsedMessage.type === "getLayout" && parsedMessage.layoutId) {
-        const layoutId = parsedMessage.layoutId;
-        const layout = await getLayoutById({ params: { layoutId: parsedMessage.layoutId } });
+      const layout = await getLayoutById({ params: { layoutId } });
 
-        if (layout) {
-          ws.send(JSON.stringify({ type: "layoutData", data: layout }));
-          console.log(`Sent initial layout data for layoutId: ${layoutId}`);
-        } else {
-          ws.send(JSON.stringify({ type: "error", message: "Layout not found." }));
-          console.log(`Layout not found for layoutId: ${layoutId}`);
-        }
+      if (layout) {
+        socket.emit("layoutData", layout);
+        console.log(`Sent initial layout data for layoutId: ${layoutId}`);
+      } else {
+        socket.emit("error", { message: "Layout not found." });
+        console.log(`Layout not found for layoutId: ${layoutId}`);
       }
     } catch (error) {
       console.error("Error processing message:", error);
-      ws.send(JSON.stringify({ type: "error", message: "Invalid message format." }));
+      socket.emit("error", { message: "Invalid message format." });
     }
   });
 
-  ws.on("close", () => {
-    console.log("WebSocket client disconnected");
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
   });
 
-  ws.on("error", (error) => {
-    console.error("WebSocket error:", error);
+  socket.on("error", (error) => {
+    console.error("Socket error:", error);
   });
 });
 
-// Start listening to DynamoDB Streams and pass the `wss` instance
-listenToDynamoDbStreams(wss);
+// Start listening to DynamoDB Streams and pass the `io` instance
+listenToDynamoDbStreams(io);
 
 // Start the server
 server.listen(PORT, () => {

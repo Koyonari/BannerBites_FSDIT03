@@ -9,7 +9,10 @@ const AdComponent = ({ type, content, styles }) => {
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
     const s3Region = content.s3Region || "ap-southeast-1";
     const encodeS3Key = (key) =>
-      key.split("/").map((segment) => encodeURIComponent(segment)).join("/");
+      key
+        .split("/")
+        .map((segment) => encodeURIComponent(segment))
+        .join("/");
     const encodedS3Key = encodeS3Key(content.s3Key);
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
@@ -24,7 +27,11 @@ const AdComponent = ({ type, content, styles }) => {
       )}
       {type === "image" && (
         <div>
-          <img src={mediaUrl} alt={content.title} style={{ maxWidth: "100%" }} />
+          <img
+            src={mediaUrl}
+            alt={content.title}
+            style={{ maxWidth: "100%" }}
+          />
           <h3>{content.title}</h3>
           <p>{content.description}</p>
         </div>
@@ -44,11 +51,16 @@ const AdComponent = ({ type, content, styles }) => {
 };
 
 // Main AdViewer component to render the layout
-// Main AdViewer component to render the layout
 const AdViewer = ({ layoutId }) => {
   const [layout, setLayout] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const socketUrl = "http://localhost:5000"; // Socket.IO backend address
+
+  // Update current time every minute
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     // Initialize Socket.IO client
@@ -114,16 +126,20 @@ const AdViewer = ({ layoutId }) => {
           const currentTimeString = `${currentTime.getHours().toString().padStart(2, "0")}:${currentTime.getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
 
           const availableAds = scheduledAds.filter(
-            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
           );
 
           if (availableAds.length > 0) {
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
-              currentAd.scheduledTime > latestAd.scheduledTime ? currentAd : latestAd
+              currentAd.scheduledTime > latestAd.scheduledTime
+                ? currentAd
+                : latestAd,
             );
           } else {
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
-              currentAd.scheduledTime < nextAd.scheduledTime ? currentAd : nextAd
+              currentAd.scheduledTime < nextAd.scheduledTime
+                ? currentAd
+                : nextAd,
             );
           }
         }
