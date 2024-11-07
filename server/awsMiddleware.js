@@ -54,12 +54,20 @@ const getUserByUsername = async (username) => {
 // Function to authenticate user and generate JWT
 const authenticateUser = async (username, password) => {
   const user = await getUserByUsername(username);
+  /*
   if (user && await bcrypt.compare(password, user.password)) {//TODO: change Password in database to bycrypt
       const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
       return token;
   } else {
       throw new Error('Invalid credentials');
   }
+  */
+  if (user && user.password === password) {  // Direct password comparison
+    const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    return token;
+  } else {
+    throw new Error('Invalid credentials');
+}
 };
 
 // Export the initialized clients
