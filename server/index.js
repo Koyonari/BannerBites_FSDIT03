@@ -12,6 +12,7 @@ const {
   DynamoDBClient,
   ScanCommand,
   UpdateCommand,
+  DeleteCommand
 } = require("@aws-sdk/lib-dynamodb");
 const { DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
 
@@ -190,11 +191,8 @@ app.post("/api/saveLayout", async (req, res) => {
 });
 
 // Endpoint to update a prexisiting layout
-app.put("/api/layouts/:layoutId", async (req, res) => {
-  console.log(
-    "Request to /api/layouts/:layoutId:",
-    JSON.stringify(req.body, null, 2),
-  );
+app.put('/api/layouts/:layoutId', async (req, res) => {
+  console.log('Request to /api/layouts/:layoutId:', JSON.stringify(req.body, null, 2));
 
   try {
     const { layoutId } = req.params;
@@ -202,16 +200,74 @@ app.put("/api/layouts/:layoutId", async (req, res) => {
 
     // Validate layout data
     if (!layout || !layout.layoutId || layout.layoutId !== layoutId) {
-      console.error("Invalid layout data received:", layout);
-      return res.status(400).json({ message: "Invalid layout data." });
+      console.error('Invalid layout data received:', layout);
+      return res.status(400).json({ message: 'Invalid layout data.' });
     }
 
-    // Step 1: Save (Upsert) layout details to the Layouts table
+    // Step 1: Fetch existing scheduled ads for this layout
+    const existingScheduledAds = [];
+    const gridItemsParams = {
+      TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+      KeyConditionExpression: 'layoutId = :layoutId',
+      ExpressionAttributeValues: {
+        ':layoutId': layoutId,
+      },
+    };
+    const gridItemsCommand = new QueryCommand(gridItemsParams);
+    const gridItemsData = await dynamoDb.send(gridItemsCommand);
+    const gridItems = gridItemsData.Items;
+
+    for (const item of gridItems) {
+      const scheduledAdsParams = {
+        TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+        KeyConditionExpression: 'gridItemId = :gridItemId',
+        ExpressionAttributeValues: {
+          ':gridItemId': `${layoutId}#${item.index}`,
+        },
+      };
+
+      const scheduledAdsCommand = new QueryCommand(scheduledAdsParams);
+      const scheduledAdsData = await dynamoDb.send(scheduledAdsCommand);
+      existingScheduledAds.push(...scheduledAdsData.Items);
+    }
+
+    // Step 2: Find out which scheduled ads need to be deleted
+    const updatedScheduledAds = layout.gridItems.flatMap((item) =>
+      item.scheduledAds.map((scheduledAd) => ({
+        gridItemId: `${layoutId}#${item.index}`,
+        scheduledTime: scheduledAd.scheduledTime,
+        adId: scheduledAd.ad?.id, // Ensure adId is available
+      }))
+    );
+
+    const adsToDelete = existingScheduledAds.filter((existingAd) => {
+      return !updatedScheduledAds.some(
+        (updatedAd) =>
+          updatedAd.gridItemId === existingAd.gridItemId &&
+          updatedAd.scheduledTime === existingAd.scheduledTime
+      );
+    });
+
+    // Step 3: Delete the old scheduled ads that are no longer in the updated layout
+    for (const adToDelete of adsToDelete) {
+      const deleteParams = {
+        TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+        Key: {
+          gridItemId: adToDelete.gridItemId,
+          scheduledTime: adToDelete.scheduledTime,
+        },
+      };
+      const deleteCommand = new DeleteCommand(deleteParams);
+      await dynamoDb.send(deleteCommand);
+      console.log(`Scheduled ad with ID ${adToDelete.adId} deleted successfully.`);
+    }
+
+    // Step 4: Save (Upsert) layout details to the Layouts table
     const layoutParams = {
       TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
       Item: {
         layoutId: layout.layoutId,
-        name: layout.name || "Unnamed Layout",
+        name: layout.name || 'Unnamed Layout',
         rows: layout.rows,
         columns: layout.columns,
         createdAt: layout.createdAt || new Date().toISOString(),
@@ -224,7 +280,7 @@ app.put("/api/layouts/:layoutId", async (req, res) => {
     // Track unique ads to avoid duplicate entries in the Ads table
     const uniqueAds = new Set();
 
-    // Step 2: Save each grid item and its associated scheduled ads
+    // Step 5: Save (Upsert) each grid item and its associated scheduled ads
     for (const item of layout.gridItems) {
       // Save (Upsert) each grid item in the GridItems table
       const gridItemParams = {
@@ -241,39 +297,35 @@ app.put("/api/layouts/:layoutId", async (req, res) => {
       };
       const gridItemCommand = new PutCommand(gridItemParams);
       await dynamoDb.send(gridItemCommand);
-      console.log(
-        `Grid item at index ${item.index} for layout ${layout.layoutId} saved successfully.`,
-      );
+      console.log(`Grid item at index ${item.index} for layout ${layout.layoutId} saved successfully.`);
 
-      // Step 3: Save each scheduled ad for the grid item
+      // Step 6: Save (Upsert) each scheduled ad for the grid item
       for (const scheduledAd of item.scheduledAds) {
-        // Ensure the ad has an adId
-        if (!scheduledAd.ad.id) {
-          scheduledAd.ad.id = uuidv4(); // Generate a new unique adId if not present
+        if (!scheduledAd.ad || !scheduledAd.ad.id) {
+          console.error(`Missing adId for scheduled ad at grid item index ${item.index}`);
+          continue; // Skip this scheduled ad if adId is missing
         }
 
         const scheduledAdParams = {
           TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
           Item: {
             gridItemId: `${layout.layoutId}#${item.index}`, // Partition key
-            scheduledTime: scheduledAd.scheduledTime, // Sort key
-            adId: scheduledAd.ad.id, // Ensure adId is included
+            scheduledTime: scheduledAd.scheduledTime,       // Sort key
+            adId: scheduledAd.ad.id,
             index: item.index,
             layoutId: layout.layoutId,
           },
         };
         const scheduledAdCommand = new PutCommand(scheduledAdParams);
         await dynamoDb.send(scheduledAdCommand);
-        console.log(
-          `Scheduled ad ${scheduledAd.ad.id} for grid item ${item.index} saved successfully.`,
-        );
+        console.log(`Scheduled ad ${scheduledAd.ad.id} for grid item ${item.index} saved successfully.`);
 
-        // Step 4: Save unique ad details in the Ads table if not already saved
+        // Step 7: Save unique ad details in the Ads table if not already saved
         if (!uniqueAds.has(scheduledAd.ad.id)) {
           const adParams = {
             TableName: process.env.DYNAMODB_TABLE_ADS,
             Item: {
-              adId: scheduledAd.ad.id, // Ad identifier
+              adId: scheduledAd.ad.id,
               type: scheduledAd.ad.type,
               content: scheduledAd.ad.content,
               styles: scheduledAd.ad.styles,
@@ -288,12 +340,10 @@ app.put("/api/layouts/:layoutId", async (req, res) => {
     }
 
     // Return success response after all operations are complete
-    return res
-      .status(200)
-      .json({ message: "Layout and related items updated successfully." });
+    return res.status(200).json({ message: 'Layout and related items updated successfully.' });
   } catch (error) {
-    console.error("Error updating layout and related items:", error);
-    return res.status(500).json({ message: "Internal server error." });
+    console.error('Error updating layout and related items:', error);
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 });
 
@@ -314,6 +364,7 @@ app.get("/api/layouts", async (req, res) => {
   }
 });
 
+// Endpoint to get a specific layout by ID
 app.get("/api/layouts/:layoutId", async (req, res) => {
   const { layoutId } = req.params;
 
@@ -380,7 +431,8 @@ app.get("/api/layouts/:layoutId", async (req, res) => {
 
     // Attach the grid items to the layout
     layout.gridItems = gridItems;
-
+    // Log the complete layout JSON
+    console.log("Retrieved Layout JSON:", JSON.stringify(layout, null, 2));
     // Return the complete layout data
     res.json(layout);
   } catch (error) {

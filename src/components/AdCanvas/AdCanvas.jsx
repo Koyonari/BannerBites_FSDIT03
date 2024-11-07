@@ -41,9 +41,23 @@ const AdCanvas = () => {
 
   useEffect(() => {
     if (selectedLayout) {
+      console.log('Retrieved Layout:', selectedLayout); // Log retrieved layout
+      const properlyInitializedGridItems = selectedLayout.gridItems.map((item) => ({
+        ...item,
+        scheduledAds: item.scheduledAds.map((scheduledAd) => ({
+          ...scheduledAd,
+          id: scheduledAd.id || uuidv4(), // Ensure each scheduledAd has an ID
+        })),
+        isMerged: item.isMerged || false,
+        hidden: item.hidden || false,
+        rowSpan: item.rowSpan || 1,
+        colSpan: item.colSpan || 1,
+      }));
+  
       setRows(selectedLayout.rows);
       setColumns(selectedLayout.columns);
-      setGridItems(selectedLayout.gridItems);
+      setGridItems(properlyInitializedGridItems);
+      console.log('Updated Grid Items State:', properlyInitializedGridItems); // Log updated state
       setIsSelectingLayout(false);
     }
   }, [selectedLayout]);
@@ -444,32 +458,43 @@ const AdCanvas = () => {
   };
 
   // Handles removing ads from a grid cell
-  const handleRemove = (index, scheduledAd) => {
-    const updatedGrid = [...gridItems];
-    const cell = updatedGrid[index];
-    // Remove the scheduled ad
-    if (cell.scheduledAds && cell.scheduledAds.length > 0) {
-      updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
-        (ad) => ad.id !== scheduledAd.id,
-      );
-    }
-    if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
-      const cellsToUnmerge =
-        cell.selectedCells && cell.selectedCells.length > 0
-          ? cell.selectedCells
-          : [index];
-      cellsToUnmerge.forEach((idx) => {
-        updatedGrid[idx] = {
-          scheduledAds: [],
-          isMerged: false,
-          hidden: false,
-          rowSpan: 1,
-          colSpan: 1,
-        };
-      });
-    }
-    setGridItems(updatedGrid);
-  };
+// Handles removing ads from a grid cell
+const handleRemove = (index, scheduledAd) => {
+  // Create a deep copy of the gridItems state to prevent accidental state mutation
+  const updatedGrid = gridItems.map((item) => ({
+    ...item,
+    scheduledAds: item.scheduledAds ? [...item.scheduledAds] : [], // Ensure each scheduledAds is properly cloned
+  }));
+
+  const cell = updatedGrid[index];
+  
+  // Check if the scheduledAd has a unique identifier to remove the specific one
+  if (cell.scheduledAds && cell.scheduledAds.length > 0) {
+    updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
+      (ad) => ad.id !== scheduledAd.id
+    );
+  }
+
+  // Ensure that the removal logic properly considers the updated state of scheduledAds
+  if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
+    const cellsToUnmerge = cell.selectedCells && cell.selectedCells.length > 0
+      ? cell.selectedCells
+      : [index];
+
+    cellsToUnmerge.forEach((idx) => {
+      updatedGrid[idx] = {
+        scheduledAds: [],
+        isMerged: false,
+        hidden: false,
+        rowSpan: 1,
+        colSpan: 1,
+      };
+    });
+  }
+
+  // Update the state with the new grid configuration
+  setGridItems(updatedGrid);
+};
 
  // Function to save editing or saving
 const handleLayoutNameSave = async (name) => {
