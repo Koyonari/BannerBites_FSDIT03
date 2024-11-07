@@ -5,6 +5,10 @@
   "dependencies": {
     "@aws-amplify/storage": "^6.6.11",
     "@aws-amplify/ui-react": "^6.5.5",
+    "@aws-sdk/client-dynamodb": "^3.686.0",
+    "@aws-sdk/client-s3": "^3.686.0",
+    "@aws-sdk/lib-dynamodb": "^3.686.0",
+    "@aws-sdk/s3-request-presigner": "^3.686.0",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^6.1.5",
@@ -16,7 +20,9 @@
     "aws-amplify": "^6.6.7",
     "aws-sdk": "^2.1691.0",
     "axios": "^1.7.7",
+    "cors": "^2.8.5",
     "hamburger-react": "^2.5.1",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.453.0",
     "react": "^18.3.1",
     "react-color": "^2.19.3",
@@ -38,7 +44,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "server": "node server/index.js",  
+    "dev": "concurrently \"npm run server\" \"react-scripts start\""  
   },
   "eslintConfig": {
     "extends": [
@@ -62,5 +70,9 @@
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.8",
     "tailwindcss": "^3.4.14"
-  }
+  },
+  "description": "- Yeo Jin Rong\r - An Yong Shyan\r - Ng Kai Huat Jason\r - Liang Ding Xuan\r - Tan Guo Zhi Kelvin",
+  "main": "tailwind.config.js",
+  "author": "",
+  "license": "ISC"
 }
