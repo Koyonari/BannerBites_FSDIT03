@@ -506,7 +506,7 @@ const handleLayoutNameSave = async (name) => {
       if (selectedLayout) {
         // Update an existing layout
         await axios.put(
-          `http://localhost:5000/api/layouts/${layoutId}`, // This should match the server route
+          `http://localhost:5000/api/layouts/${layoutId}`, 
           cleanedLayout,
           {
             headers: {
@@ -518,7 +518,7 @@ const handleLayoutNameSave = async (name) => {
       } else {
         // Save a new layout
         await axios.post(
-          "http://localhost:5000/api/saveLayout",
+          "http://localhost:5000/api/layouts/save",
           cleanedLayout,
           {
             headers: {
