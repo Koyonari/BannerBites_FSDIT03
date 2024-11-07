@@ -582,8 +582,8 @@ const AdCanvas = () => {
     selectedCells.length >= 2 || selectedMergedCells.length >= 1;
   const mergeButtonTooltip =
     selectedMergedCells.length === 1
-      ? "Click to unmerge selected cell"
-      : "Click to merge selected cells";
+      ? "Click to merge/unmerge selected cells"
+      : "Click to merge/unmerge selected cells";
 
   return (
     <div className="ad-canvas flex w-full flex-col items-center justify-center text-center">

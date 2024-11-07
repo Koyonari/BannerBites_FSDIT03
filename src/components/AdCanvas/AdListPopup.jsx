@@ -3,7 +3,7 @@ import { X, Edit2, Trash2, Clock } from "lucide-react";
 
 const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
@@ -50,7 +50,9 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
 
                     <div className="flex gap-2">
                       <button
-                        onClick={() => onEdit(scheduledAd)}
+                        onClick={() => {
+                          onEdit(scheduledAd);
+                        }}
                         className="rounded-md p-2 text-gray-500 hover:bg-gray-100"
                         title="Edit"
                       >
@@ -69,16 +71,6 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
               ))}
             </ul>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t p-4">
-          <button
-            onClick={onClose}
-            className="ml-auto block rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>
