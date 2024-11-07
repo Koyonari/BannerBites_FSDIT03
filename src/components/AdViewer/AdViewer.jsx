@@ -1,6 +1,6 @@
 // src/components/AdViewer/AdViewer.jsx
-
 import React, { useState, useEffect } from "react";
+import { io } from "socket.io-client";
 
 // Component to represent an individual Ad
 const AdComponent = ({ type, content, styles }) => {
@@ -44,74 +44,44 @@ const AdComponent = ({ type, content, styles }) => {
 };
 
 // Main AdViewer component to render the layout
+// Main AdViewer component to render the layout
 const AdViewer = ({ layoutId }) => {
   const [layout, setLayout] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const socketUrl = "http://localhost:5000"; // Socket.IO backend address
 
-  // Update current time every minute
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
+    // Initialize Socket.IO client
+    const socket = io(socketUrl);
 
-  // Set up WebSocket connection
-  useEffect(() => {
-    const socket = new WebSocket("ws://localhost:5000"); // Adjust as needed
+    socket.on("connect", () => {
+      console.log("Connected to Socket.IO server");
+      socket.emit("getLayout", { layoutId });
+    });
 
-    // Function to handle updates from other tables
-    const handleOtherUpdates = (updateType, updatedData) => {
-      console.log(`Handling ${updateType} for data:`, updatedData);
-      // Re-fetch the entire layout to ensure consistency
-      fetch(`/api/layouts/${layoutId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setLayout(data);
-          console.log("Re-fetched layout data after other update");
-        })
-        .catch((err) => {
-          console.error("Error fetching layout after other update:", err);
-        });
-    };
+    // Handle receiving initial layout data
+    socket.on("layoutData", (data) => {
+      setLayout(data);
+      console.log("Received initial layout data:", data);
+    });
 
-    socket.onopen = () => {
-      console.log("Connected to WebSocket server");
-      // Request the initial layout data
-      socket.send(JSON.stringify({ type: "getLayout", layoutId }));
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const response = JSON.parse(event.data);
-        console.log("Received WebSocket message:", response);
-
-        if (response.type === "layoutUpdate" && response.data.layoutId === layoutId) {
-          console.log("Received real-time layout update:", response.data);
-          setLayout(response.data);
-        } else if (response.type === "layoutData" && response.data.layoutId === layoutId) {
-          console.log("Received initial layout data:", response.data);
-          setLayout(response.data);
-        } else if (response.type.endsWith("Update")) {
-          console.log(`Received ${response.type}:`, response.data);
-          handleOtherUpdates(response.type, response.data);
-        } else if (response.type === "error") {
-          console.error("WebSocket error message:", response.message);
-        }
-      } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
+    // Handle real-time updates
+    socket.on("layoutUpdate", (data) => {
+      if (data.layoutId === layoutId) {
+        setLayout(data);
+        console.log("Updated layout data:", data);
       }
-    };
+    });
 
-    socket.onclose = () => {
-      console.log("Disconnected from WebSocket server");
-    };
+    // Handle errors from server
+    socket.on("error", (error) => {
+      console.error("Socket.IO error:", error);
+    });
 
-    socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    // Cleanup on unmount
+    // Cleanup when component unmounts
     return () => {
-      socket.close();
+      socket.disconnect();
+      console.log("Disconnected from Socket.IO server");
     };
   }, [layoutId]);
 
@@ -138,30 +108,20 @@ const AdViewer = ({ layoutId }) => {
 
         const { index, row, column, scheduledAds, rowSpan, colSpan } = item;
 
-        // Determine which ad to display based on the current time
         let adToDisplay = null;
 
         if (scheduledAds && scheduledAds.length > 0) {
-          const currentTimeString = `${currentTime
-            .getHours()
-            .toString()
-            .padStart(2, "0")}:${currentTime
-            .getMinutes()
-            .toString()
-            .padStart(2, "0")}`; // Format as "HH:mm"
+          const currentTimeString = `${currentTime.getHours().toString().padStart(2, "0")}:${currentTime.getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
 
-          // Filter ads that should be displayed now
           const availableAds = scheduledAds.filter(
             (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
           );
 
           if (availableAds.length > 0) {
-            // Get the latest ad scheduled before or at the current time
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
               currentAd.scheduledTime > latestAd.scheduledTime ? currentAd : latestAd
             );
           } else {
-            // Get the next upcoming ad
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
               currentAd.scheduledTime < nextAd.scheduledTime ? currentAd : nextAd
             );
@@ -175,8 +135,7 @@ const AdViewer = ({ layoutId }) => {
         const ad = adToDisplay.ad;
         const { type, content, styles } = ad;
 
-        // Compute grid positions
-        const gridRowStart = row + 1; // Convert 0-based to 1-based
+        const gridRowStart = row + 1;
         const gridColumnStart = column + 1;
         const gridRowEnd = gridRowStart + (rowSpan || 1);
         const gridColumnEnd = gridColumnStart + (colSpan || 1);

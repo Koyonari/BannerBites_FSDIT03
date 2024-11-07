@@ -70,7 +70,7 @@ wss.on("connection", (ws) => {
   });
 });
 
-// Start listening to DynamoDB Streams
+// Start listening to DynamoDB Streams and pass the `wss` instance
 listenToDynamoDbStreams(wss);
 
 // Start the server

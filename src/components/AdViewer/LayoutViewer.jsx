@@ -1,52 +1,53 @@
 // components/LayoutViewer.jsx
 
-import React from "react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import AdViewer from "./AdViewer";
+import { io } from "socket.io-client";
 
 const LayoutViewer = ({ layoutId }) => {
   const [layout, setLayout] = useState(null);
-  const socketUrl = 'ws://localhost:5000';
+  const socketUrl = "http://localhost:5000"; // Socket.IO backend address
 
   useEffect(() => {
-    // Create WebSocket connection
-    const socket = new WebSocket(socketUrl);
+    // Initialize Socket.IO client
+    const socket = io(socketUrl);
 
-    // When the WebSocket connection is established
-    socket.onopen = () => {
-      console.log('Connected to WebSocket server');
+    // When the Socket.IO connection is established
+    socket.on("connect", () => {
+      console.log("Connected to Socket.IO server");
 
       // Request layout data by sending a message to the server
-      socket.send(JSON.stringify({ type: 'getLayout', layoutId }));
-    };
+      socket.emit("getLayout", { layoutId });
+    });
 
     // Handle incoming messages from the server
-    socket.onmessage = (event) => {
-      const response = JSON.parse(event.data);
+    socket.on("layoutData", (data) => {
+      setLayout(data);
+      console.log("Received initial layout data:", data);
+    });
 
-      if (response.type === 'layoutData') {
-        setLayout(response.data);
-      } else if (response.type === 'layoutUpdate') {
-        // Update layout data if there are any changes
-        setLayout(response.data);
-      } else if (response.type === 'error') {
-        console.error('Error received from WebSocket:', response.message);
+    // Handle layout updates
+    socket.on("layoutUpdate", (data) => {
+      if (data.layoutId === layoutId) {
+        setLayout(data);
+        console.log("Received updated layout data:", data);
       }
-    };
+    });
 
-    // Handle WebSocket closure
-    socket.onclose = () => {
-      console.log('Disconnected from WebSocket server');
-    };
+    // Handle error messages
+    socket.on("error", (error) => {
+      console.error("Error received from Socket.IO:", error.message);
+    });
 
-    // Handle WebSocket errors
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+    // Handle Socket.IO disconnection
+    socket.on("disconnect", () => {
+      console.log("Disconnected from Socket.IO server");
+    });
 
-    // Cleanup function to close WebSocket connection when component unmounts
+    // Cleanup function to close Socket.IO connection when component unmounts
     return () => {
-      socket.close();
+      socket.disconnect();
+      console.log("Socket.IO connection closed");
     };
   }, [layoutId]);
 
