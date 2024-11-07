@@ -1,56 +1,52 @@
-import React, { useEffect, useState } from "react";
+// components/LayoutViewer.jsx
+
+import React from "react";
+import { useState, useEffect } from "react";
 import AdViewer from "./AdViewer";
 
 const LayoutViewer = ({ layoutId }) => {
   const [layout, setLayout] = useState(null);
+  const socketUrl = 'ws://localhost:5000';
 
   useEffect(() => {
-    let socket;
+    // Create WebSocket connection
+    const socket = new WebSocket(socketUrl);
 
-     // Function to connect WebSocket and manage reconnects
-     const connectWebSocket = () => {
-      socket = new WebSocket("ws://localhost:5000"); // Update the WebSocket URL to match your backend
+    // When the WebSocket connection is established
+    socket.onopen = () => {
+      console.log('Connected to WebSocket server');
 
-      socket.onopen = () => {
-        console.log("WebSocket connection opened");
-        if (layoutId) {
-          // Request the layout by ID once connected
-          socket.send(JSON.stringify({ type: "getLayout", layoutId }));
-        }
-      };
-
-      socket.onmessage = (event) => {
-        // Handle incoming layout data
-        try {
-          const message = JSON.parse(event.data);
-          if (message.type === "layoutData") {
-            setLayout(message.data);
-          } else if (message.type === "error") {
-            console.error("Error from server:", message.message);
-          }
-        } catch (error) {
-          console.error("Error parsing message from WebSocket:", error);
-        }
-      };
-
-      socket.onclose = () => {
-        console.log("WebSocket connection closed. Attempting to reconnect...");
-        // Reconnect after a delay
-        setTimeout(connectWebSocket, 5000);
-      };
-
-      socket.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
+      // Request layout data by sending a message to the server
+      socket.send(JSON.stringify({ type: 'getLayout', layoutId }));
     };
 
-    connectWebSocket();
+    // Handle incoming messages from the server
+    socket.onmessage = (event) => {
+      const response = JSON.parse(event.data);
 
-    // Clean up WebSocket connection on unmount
-    return () => {
-      if (socket) {
-        socket.close();
+      if (response.type === 'layoutData') {
+        setLayout(response.data);
+      } else if (response.type === 'layoutUpdate') {
+        // Update layout data if there are any changes
+        setLayout(response.data);
+      } else if (response.type === 'error') {
+        console.error('Error received from WebSocket:', response.message);
       }
+    };
+
+    // Handle WebSocket closure
+    socket.onclose = () => {
+      console.log('Disconnected from WebSocket server');
+    };
+
+    // Handle WebSocket errors
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    // Cleanup function to close WebSocket connection when component unmounts
+    return () => {
+      socket.close();
     };
   }, [layoutId]);
 
@@ -61,7 +57,7 @@ const LayoutViewer = ({ layoutId }) => {
   return (
     <div>
       <h2>Layout Viewer</h2>
-      <AdViewer layout={layout} />
+      <AdViewer layoutId={layoutId} />
     </div>
   );
 };

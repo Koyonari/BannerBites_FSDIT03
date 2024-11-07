@@ -1,26 +1,16 @@
-import React from "react";
-import { useState, useEffect } from "react";
+// src/components/AdViewer/AdViewer.jsx
+
+import React, { useState, useEffect } from "react";
 
 // Component to represent an individual Ad
 const AdComponent = ({ type, content, styles }) => {
-  // Use the mediaUrl or src directly from the content
   let mediaUrl = content.mediaUrl || content.src;
 
-  // If mediaUrl is not provided, construct it using s3Bucket and s3Key
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
-    // Optionally, include s3Region if needed
-    const s3Region = content.s3Region || "ap-southeast-1"; // Replace with your region if different
-
-    // Encode the s3Key properly to handle spaces and special characters
-    const encodeS3Key = (key) => {
-      return key
-        .split("/")
-        .map((segment) => encodeURIComponent(segment))
-        .join("/");
-    };
-
+    const s3Region = content.s3Region || "ap-southeast-1";
+    const encodeS3Key = (key) =>
+      key.split("/").map((segment) => encodeURIComponent(segment)).join("/");
     const encodedS3Key = encodeS3Key(content.s3Key);
-
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
 
@@ -34,11 +24,7 @@ const AdComponent = ({ type, content, styles }) => {
       )}
       {type === "image" && (
         <div>
-          <img
-            src={mediaUrl}
-            alt={content.title}
-            style={{ maxWidth: "100%" }}
-          />
+          <img src={mediaUrl} alt={content.title} style={{ maxWidth: "100%" }} />
           <h3>{content.title}</h3>
           <p>{content.description}</p>
         </div>
@@ -58,18 +44,79 @@ const AdComponent = ({ type, content, styles }) => {
 };
 
 // Main AdViewer component to render the layout
-const AdViewer = ({ layout }) => {
+const AdViewer = ({ layoutId }) => {
+  const [layout, setLayout] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  // Set up a timer to update the current time every minute
+
+  // Update current time every minute
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); // Update every minute
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
+  // Set up WebSocket connection
+  useEffect(() => {
+    const socket = new WebSocket("ws://localhost:5000"); // Adjust as needed
+
+    // Function to handle updates from other tables
+    const handleOtherUpdates = (updateType, updatedData) => {
+      console.log(`Handling ${updateType} for data:`, updatedData);
+      // Re-fetch the entire layout to ensure consistency
+      fetch(`/api/layouts/${layoutId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setLayout(data);
+          console.log("Re-fetched layout data after other update");
+        })
+        .catch((err) => {
+          console.error("Error fetching layout after other update:", err);
+        });
+    };
+
+    socket.onopen = () => {
+      console.log("Connected to WebSocket server");
+      // Request the initial layout data
+      socket.send(JSON.stringify({ type: "getLayout", layoutId }));
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const response = JSON.parse(event.data);
+        console.log("Received WebSocket message:", response);
+
+        if (response.type === "layoutUpdate" && response.data.layoutId === layoutId) {
+          console.log("Received real-time layout update:", response.data);
+          setLayout(response.data);
+        } else if (response.type === "layoutData" && response.data.layoutId === layoutId) {
+          console.log("Received initial layout data:", response.data);
+          setLayout(response.data);
+        } else if (response.type.endsWith("Update")) {
+          console.log(`Received ${response.type}:`, response.data);
+          handleOtherUpdates(response.type, response.data);
+        } else if (response.type === "error") {
+          console.error("WebSocket error message:", response.message);
+        }
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
+    };
+
+    socket.onclose = () => {
+      console.log("Disconnected from WebSocket server");
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    // Cleanup on unmount
+    return () => {
+      socket.close();
+    };
+  }, [layoutId]);
+
   if (!layout) {
-    return <div>No layout provided</div>;
+    return <div>Loading layout...</div>;
   }
 
   const { rows, columns, gridItems } = layout;
@@ -101,26 +148,22 @@ const AdViewer = ({ layout }) => {
             .padStart(2, "0")}:${currentTime
             .getMinutes()
             .toString()
-            .padStart(2, "0")}`; // Format current time as "HH:mm"
+            .padStart(2, "0")}`; // Format as "HH:mm"
 
           // Filter ads that should be displayed now
           const availableAds = scheduledAds.filter(
-            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
           );
 
           if (availableAds.length > 0) {
             // Get the latest ad scheduled before or at the current time
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
-              currentAd.scheduledTime > latestAd.scheduledTime
-                ? currentAd
-                : latestAd,
+              currentAd.scheduledTime > latestAd.scheduledTime ? currentAd : latestAd
             );
           } else {
             // Get the next upcoming ad
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
-              currentAd.scheduledTime < nextAd.scheduledTime
-                ? currentAd
-                : nextAd,
+              currentAd.scheduledTime < nextAd.scheduledTime ? currentAd : nextAd
             );
           }
         }
@@ -128,11 +171,12 @@ const AdViewer = ({ layout }) => {
         if (!adToDisplay) {
           return null; // No ad to display in this cell
         }
+
         const ad = adToDisplay.ad;
         const { type, content, styles } = ad;
 
         // Compute grid positions
-        const gridRowStart = row + 1; // Convert 0-based to 1-based index
+        const gridRowStart = row + 1; // Convert 0-based to 1-based
         const gridColumnStart = column + 1;
         const gridRowEnd = gridRowStart + (rowSpan || 1);
         const gridColumnEnd = gridColumnStart + (colSpan || 1);

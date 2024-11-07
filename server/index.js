@@ -1,17 +1,17 @@
+// index.js
+
 const cors = require("cors");
-const { dynamoDbClient, listenToDynamoDbStreams } = require("./middleware/awsMiddleware");
+const { listenToDynamoDbStreams } = require("./middleware/awsMiddleware");
 const dotenv = require("dotenv");
 const layoutRoutes = require("./routes/layoutRoutes");
 const locationRoutes = require("./routes/locationRoutes");
 const tvRoutes = require("./routes/tvRoutes");
-const { generatePresignedUrlController, getLayoutById  } = require("./controllers/layoutController");
+const { generatePresignedUrlController, getLayoutById } = require("./controllers/layoutController");
 const http = require("http");
 const WebSocket = require("ws");
 
-// Load environment variables
 dotenv.config();
 
-// Set up Express and the WebSocket server
 const express = require("express");
 const app = express();
 const server = http.createServer(app);
@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:3000", // Replace with frontend's URL in production
+    origin: "http://localhost:3000", // Adjust for production
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -44,15 +44,20 @@ wss.on("connection", (ws) => {
     try {
       const parsedMessage = JSON.parse(message);
       if (parsedMessage.type === "getLayout" && parsedMessage.layoutId) {
-        // Fetch data from DynamoDB and send to client
         const layoutId = parsedMessage.layoutId;
-        // You can implement direct DynamoDB fetch here based on `layoutId`
-        console.log(`Fetching data for layoutId: ${layoutId}`);
-        const layout = await getLayoutById(layoutId);
-        ws.send(JSON.stringify({ type: "layoutData", data: layout }));
+        const layout = await getLayoutById({ params: { layoutId: parsedMessage.layoutId } });
+
+        if (layout) {
+          ws.send(JSON.stringify({ type: "layoutData", data: layout }));
+          console.log(`Sent initial layout data for layoutId: ${layoutId}`);
+        } else {
+          ws.send(JSON.stringify({ type: "error", message: "Layout not found." }));
+          console.log(`Layout not found for layoutId: ${layoutId}`);
+        }
       }
     } catch (error) {
       console.error("Error processing message:", error);
+      ws.send(JSON.stringify({ type: "error", message: "Invalid message format." }));
     }
   });
 
@@ -66,7 +71,7 @@ wss.on("connection", (ws) => {
 });
 
 // Start listening to DynamoDB Streams
-listenToDynamoDbStreams(wss); // Make sure to pass WebSocket Server instance
+listenToDynamoDbStreams(wss);
 
 // Start the server
 server.listen(PORT, () => {
