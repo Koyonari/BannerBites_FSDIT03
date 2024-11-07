@@ -1,42 +1,94 @@
-import layout from "../../layout";
+import React, { useState } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { Routes, Route, Link, useNavigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import AdCanvas from "../AdCanvas/AdCanvas";
 import AdViewer from "../AdViewer/AdViewer";
+import LayoutViewer from "../AdViewer/LayoutViewer";
+import LocationSelector from "../LocationSelector";
+import TVSelector from "../TVSelector";
+import AssignLayoutTab from "../AssignLayoutTab";
+import LayoutSelector from "../AdViewer/LayoutSelector";
+import ErrorBoundary from "../ErrorBoundary";
 import Navbar from "../Navbar";
-import { Check, MoveLeft, Merge } from "lucide-react";
 
 const Ad = () => {
-  const navigate = useNavigate();
+  const [selectedLayoutId, setSelectedLayoutId] = useState(null);
+  const [selectedLocationId, setSelectedLocationId] = useState(null);
+  const [selectedTVId, setSelectedTVId] = useState(null);
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
-  const handleMoveLeft = () => {
-    navigate(-1);
+  // Handle selecting a location
+  const handleSelectLocation = (locationId) => {
+    setSelectedLocationId(locationId);
+    setSelectedTVId(null);
+  };
+
+  // Handle selecting a TV
+  const handleSelectTV = (tvId) => {
+    setSelectedTVId(tvId);
+  };
+
+  // Handle selecting a layout
+  const handleSelectLayout = (layoutId) => {
+    setSelectedLayoutId(layoutId);
+    setIsSelectorOpen(false);
   };
 
   return (
     <div>
       <Navbar />
-      <div className="px-8 pt-8">
-        <DndProvider backend={HTML5Backend}>
-          <div className="App">
-            <Routes>
-              <Route path="/" element={<AdCanvas />} />
-              <Route path="ad-canvas" element={<AdCanvas />} />
-              <Route path="ad-viewer" element={<AdViewer layout={layout} />} />
-            </Routes>
-          </div>
-        </DndProvider>
-        <div className="flex flex-row justify-between py-4 lg:py-8 w-4/5 mx-auto">
-          <MoveLeft
-            onClick={handleMoveLeft}
-            className="h-8 text-white bg-orange-500 rounded-lg py-1 w-24 hover:cursor-pointer"
-          />
-          <Merge className="h-8 text-white bg-orange-500 rounded-lg py-2 w-24 hover:cursor-pointer" />
-          <Link to="ad-viewer">
-            <Check className="h-8 text-white bg-orange-500 rounded-lg py-1.5 w-24" />
-          </Link>
-        </div>
+      <div className="px-8 pt-8 dark:bg-black">
+        <ErrorBoundary>
+          <DndProvider backend={HTML5Backend}>
+            <div>
+              <Routes>
+                <Route path="/" element={<AdCanvas />} />
+                <Route path="ad-canvas" element={<AdCanvas />} />
+                <Route path="ad-viewer" element={<AdViewer />} />
+                <Route
+                  path="/locations"
+                  element={
+                    <LocationSelector onSelectLocation={handleSelectLocation} />
+                  }
+                />
+                <Route
+                  path="/tvs"
+                  element={
+                    selectedLocationId ? (
+                      <TVSelector
+                        locationId={selectedLocationId}
+                        onSelectTV={handleSelectTV}
+                      />
+                    ) : (
+                      <h2>Please select a location first</h2>
+                    )
+                  }
+                />
+                <Route
+                  path="/assign-layout"
+                  element={
+                    selectedTVId ? (
+                      <AssignLayoutTab tvId={selectedTVId} />
+                    ) : (
+                      <h2>Please select a TV first</h2>
+                    )
+                  }
+                />
+                <Route
+                  path="/layout-viewer"
+                  element={<LayoutViewer layoutId={selectedLayoutId} />}
+                />
+              </Routes>
+            </div>
+            {isSelectorOpen && (
+              <LayoutSelector
+                onSelect={handleSelectLayout}
+                onClose={() => setIsSelectorOpen(false)}
+              />
+            )}
+          </DndProvider>
+        </ErrorBoundary>
       </div>
     </div>
   );

@@ -10,17 +10,13 @@ const AdComponent = ({ id, type }) => {
         isDragging: monitor.isDragging(),
       }),
     }),
-    [id, type]
+    [id, type],
   );
 
   return (
     <div
       ref={drag}
-      className={`
-        ad-item cursor-move p-2
-        bg-transparent !shadow-none !border-none !outline-none font-bold
-        ${isDragging ? "opacity-50" : "opacity-100"}
-      `}
+      className={`cursor-move !border-none bg-transparent p-2 font-bold !shadow-none !outline-none transition-transform duration-200 ease-in-out hover:scale-105 ${isDragging ? "opacity-50" : "opacity-100"} `}
     >
       {type}
     </div>

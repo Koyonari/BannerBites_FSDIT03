@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import Navbar from "../Navbar";
 import MenuItem from "@mui/material/MenuItem";
 import EditIcon from "@mui/icons-material/Edit";
 import TextField from "@mui/material/TextField";
+import TVSelector from "../TVSelector";
+import AssignLayoutToTV from "../AssignLayoutToTV";
 
 const currencies = [
   {
@@ -16,28 +19,132 @@ const currencies = [
   },
 ];
 
-const Card = ({ title, date }) => {
+const Card = ({ title, date, onClick }) => {
   return (
-    <div className="card max-w-96 sm:h-full w-4/5 h-40 bg-black dark:bg-white dark:text-black text-white rounded-xl relative flex flex-col justify-center items-center">
-      <EditIcon className="absolute top-4 right-4 text-white dark:text-black" />
+    <div
+      onClick={onClick}
+      className="card relative flex w-4/5 max-w-96 cursor-pointer flex-col items-center justify-center rounded-xl bg-black text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-black sm:h-full lg:h-[35vh] lg:w-[28vw]"
+    >
+      <EditIcon className="absolute right-4 top-4 text-white dark:text-black" />
       <div>
-        <h1 className="text-md font-bold px-6 py-4 md:px-2">{title}</h1>
-        <p className="text-xs px-6 py-4 md:px-2">Date Created: {date}</p>
+        <h1 className="px-6 py-4 text-xl font-bold md:px-2">{title}</h1>
+        <p className="text-md px-6 py-4 md:px-2">Date Created: {date}</p>
       </div>
     </div>
   );
 };
 
-const UserHome = () => {
+const UserHome = ({ onSelectLocation, onSelectTV }) => {
+  const [locations, setLocations] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("date");
+  const [selectedLocationId, setSelectedLocationId] = useState(null);
+  const [showTVSelector, setShowTVSelector] = useState(false);
+  const [selectedTVId, setSelectedTVId] = useState(null);
+  const [showLayoutAssignment, setShowLayoutAssignment] = useState(false);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:5000/api/locations")
+      .then((response) => setLocations(response.data))
+      .catch((error) => console.error("Error fetching locations:", error));
+  }, []);
+
+  const handleLocationSelect = (locationId) => {
+    setSelectedLocationId(locationId);
+    setShowTVSelector(true);
+    if (onSelectLocation) {
+      onSelectLocation(locationId);
+    }
+  };
+
+  const handleTVSelect = (tvId) => {
+    setSelectedTVId(tvId);
+    setShowLayoutAssignment(true);
+    if (onSelectTV) {
+      onSelectTV(tvId);
+    }
+  };
+
+  const handleBack = () => {
+    if (showLayoutAssignment) {
+      setShowLayoutAssignment(false);
+      setSelectedTVId(null);
+    } else {
+      setShowTVSelector(false);
+      setSelectedLocationId(null);
+    }
+  };
+
+  const handleLayoutAssigned = () => {
+    setShowLayoutAssignment(false);
+    setShowTVSelector(false);
+    setSelectedTVId(null);
+    setSelectedLocationId(null);
+  };
+
+  const filteredLocations = locations.filter((location) =>
+    location.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const sortedLocations = [...filteredLocations].sort((a, b) => {
+    if (sortBy === "alpha") {
+      return a.name.localeCompare(b.name);
+    } else {
+      return new Date(b.dateCreated) - new Date(a.dateCreated);
+    }
+  });
+
+  if (showLayoutAssignment) {
+    return (
+      <section className="min-h-screen bg-white dark:bg-black">
+        <Navbar />
+        <div className="p-4">
+          <button
+            onClick={handleBack}
+            className="mb-4 rounded-md bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
+          >
+            ← Back to TV Selection
+          </button>
+          <AssignLayoutToTV
+            tvId={selectedTVId}
+            onLayoutAssigned={handleLayoutAssigned}
+          />
+        </div>
+      </section>
+    );
+  }
+
+  if (showTVSelector) {
+    return (
+      <section className="min-h-screen bg-white dark:bg-black">
+        <Navbar />
+        <div className="p-4">
+          <button
+            onClick={handleBack}
+            className="mb-4 rounded-md bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
+          >
+            ← Back to Locations
+          </button>
+          <TVSelector
+            locationId={selectedLocationId}
+            onSelectTV={handleTVSelect}
+          />
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="bg-white dark:bg-black h-screen">
+    <section className="h-screen bg-white dark:bg-black">
       <Navbar />
-      <div className="flex gap-4 justify-center pt-4 md:px-4">
-        <div className="flex py-2 px-4 items-center rounded-md w-1/6 border-black dark:border-white border h-12 sm:h-14">
+      <div className="flex justify-center gap-4 pt-4 md:px-4">
+        <div className="flex h-12 w-1/6 items-center rounded-md border border-[#0000003a] px-4 py-2 dark:border-white sm:h-14">
           <TextField
             className="w-full dark:text-white"
             select
-            defaultValue="date"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
             variant="standard"
           >
             {currencies.map((option) => (
@@ -47,29 +154,32 @@ const UserHome = () => {
             ))}
           </TextField>
         </div>
-
-        <div className="w-1/2 rounded-xl z-[-10]">
+        <div className="flex h-12 w-1/2 items-center rounded-md px-4 py-2 sm:h-14">
           <TextField
-            className="dark:border-white"
             id="outlined-basic"
             variant="outlined"
             fullWidth
             label="Search location"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-
-        <Link key="home" to={"/ad"} className="bg-orange-500 rounded-md">
-          <button className="text-xs md:text-base text-white font-bold py-2 px-4 w-1/6 h-12">
+        <Link key="home" to={"/ad"} className="w-1/6 rounded-md bg-orange-500">
+          <button className="h-full w-full px-4 py-2 text-center text-xs font-bold text-white md:text-base">
             Create New
           </button>
         </Link>
       </div>
 
-      {/* Cards */}
-      <div className="w-full py-12 px-4 grid gap-4 lg:gap-6 justify-items-center grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        <Card title="Clementi" date="28 October 2024" />
-        <Card title="Orchard" date="15 October 2024" />
-        <Card title="Bugis" date="5 October 2024" />
+      <div className="grid w-full grid-cols-1 justify-items-center gap-4 px-16 py-16 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+        {sortedLocations.map((location) => (
+          <Card
+            key={location.locationId}
+            title={location.name}
+            date={new Date(location.dateCreated).toLocaleDateString()}
+            onClick={() => handleLocationSelect(location.locationId)}
+          />
+        ))}
       </div>
     </section>
   );
