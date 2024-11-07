@@ -449,7 +449,7 @@ const AdCanvas = () => {
     const updatedGrid = [...gridItems];
     const scheduledAd = {
       id: uuidv4(),
-      ad: { ...adItem, id: uuidv4() },
+      ad: { ...adItem, id: adItem.id || uuidv4() },
       scheduledTime,
     };
     updatedGrid[index].scheduledAds.push(scheduledAd);
@@ -600,10 +600,9 @@ const handleLayoutNameSave = async (name) => {
         ...scheduledAds[adIndex],
         ad: {
           ...scheduledAds[adIndex].ad,
-          content: updatedAdData.content,
-          styles: updatedAdData.styles,
+          ...updatedAdData, 
         },
-        scheduledDateTime: updatedScheduledTime,
+        scheduledTime: updatedScheduledTime,
       };
       updatedGrid[currentAd.index].scheduledAds = scheduledAds;
       setGridItems(updatedGrid);

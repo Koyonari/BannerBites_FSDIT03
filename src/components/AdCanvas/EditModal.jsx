@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { SketchPicker } from "react-color";
 import Modal from "../Modal/Modal";
+import { v4 as uuidv4 } from "uuid";
 
 const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({
@@ -154,8 +155,9 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
       ...ad,
       content: formData.content,
       styles: formData.styles,
+      id: ad.id || uuidv4(), // Ensure ad.id is present
     };
-
+  
     onSave(updatedAd, scheduledTimeState);
     onClose();
   };
