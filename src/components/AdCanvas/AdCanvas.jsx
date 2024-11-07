@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import Sidebar from "./Sidebar";
@@ -10,8 +10,12 @@ import SelectionModePopup from "./SelectionModePopup";
 import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
+import LayoutSelector from "../AdViewer/LayoutSelector";
 
 const AdCanvas = () => {
+  // Layout Selection State
+  const [isSelectingLayout, setIsSelectingLayout] = useState(true);
+  const [selectedLayout, setSelectedLayout] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
   const [rows, setRows] = useState(2);
   const [columns, setColumns] = useState(3);
@@ -34,6 +38,33 @@ const AdCanvas = () => {
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
   const [isNamingLayout, setIsNamingLayout] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (selectedLayout) {
+      setRows(selectedLayout.rows);
+      setColumns(selectedLayout.columns);
+      setGridItems(selectedLayout.gridItems);
+      setIsSelectingLayout(false);
+    }
+  }, [selectedLayout]);
+
+  // Function to handle the selection of a layout
+  const handleSelectLayout = async (layoutId) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/layouts/${layoutId}`);
+      if (response.status === 200) {
+        setSelectedLayout(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching layout details:", error);
+      alert("Failed to load the layout. Please try again.");
+    }
+  };
+
+  // Function to close the selector
+  const handleCloseSelector = () => {
+    setIsSelectingLayout(false);
+  };
 
   const handleMoveLeft = () => {
     navigate(-1);
@@ -440,25 +471,38 @@ const AdCanvas = () => {
     setGridItems(updatedGrid);
   };
 
-  // New function to handle the actual save after name is entered
-  const handleLayoutNameSave = async (name) => {
+ // Function to save editing or saving
+const handleLayoutNameSave = async (name) => {
     try {
-      const layoutId = uuidv4();
+      const layoutId = selectedLayout ? selectedLayout.layoutId : uuidv4();
       const layout = { rows, columns, gridItems, layoutId, name };
       const cleanedLayout = cleanLayoutJSON(layout);
-
-      const response = await axios.post(
-        "http://localhost:5000/api/saveLayout",
-        cleanedLayout,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      console.log("Layout saved successfully:", response.data);
-      alert("Layout saved successfully!");
+  
+      if (selectedLayout) {
+        // Update an existing layout
+        await axios.put(
+          `http://localhost:5000/api/layouts/${layoutId}`, // This should match the server route
+          cleanedLayout,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        alert("Layout updated successfully!");
+      } else {
+        // Save a new layout
+        await axios.post(
+          "http://localhost:5000/api/saveLayout",
+          cleanedLayout,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        alert("Layout saved successfully!");
+      }
       setIsNamingLayout(false);
     } catch (error) {
       console.error("Error saving layout:", error);
@@ -587,6 +631,12 @@ const AdCanvas = () => {
 
   return (
     <div className="ad-canvas flex w-full flex-col items-center justify-center text-center">
+      {isSelectingLayout ? (
+        // Layout Selector Popup
+        <LayoutSelector onSelect={handleSelectLayout} onClose={handleCloseSelector} />
+      ) : (
+        <></>
+      )}
       <div className="absolute right-4 top-[calc(6rem+1rem)] z-10">
         <CircleHelp
           className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 ${
