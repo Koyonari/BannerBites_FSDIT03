@@ -65,7 +65,7 @@ const AdCanvas = () => {
   // Function to handle the selection of a layout
   const handleSelectLayout = async (layoutId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/layouts/${layoutId}`);
+      const response = await axios.get(`window.location.origin/api/layouts/${layoutId}`);
       if (response.status === 200) {
         setSelectedLayout(response.data);
       }
@@ -506,7 +506,7 @@ const handleLayoutNameSave = async (name) => {
       if (selectedLayout) {
         // Update an existing layout
         await axios.put(
-          `http://localhost:5000/api/layouts/${layoutId}`, 
+          `window.location.origin/api/layouts/${layoutId}`, 
           cleanedLayout,
           {
             headers: {
@@ -518,7 +518,7 @@ const handleLayoutNameSave = async (name) => {
       } else {
         // Save a new layout
         await axios.post(
-          "http://localhost:5000/api/layouts/save",
+          "window.location.origin/api/layouts/save",
           cleanedLayout,
           {
             headers: {
