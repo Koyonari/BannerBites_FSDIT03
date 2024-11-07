@@ -8,6 +8,9 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { PutCommand, GetCommand, QueryCommand, DynamoDBClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const { DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
 
+const { authenticateUser } = require('./awsMiddleware'); // Import authenticateUser function
+
+
 // Load environment variables
 dotenv.config();
 const app = express();
@@ -30,6 +33,17 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
+// Login endpoint
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+      const token = await authenticateUser(username, password);
+      res.status(200).json({ token });
+  } catch (error) {
+      res.status(401).json({ message: 'Invalid username or password' });
+  }
+});
 // Debugging: Log the dynamoDb object to verify initialization
 console.log('DynamoDB Document Client:', dynamoDb);
 console.log('Has send method:', typeof dynamoDb.send === 'function');
@@ -70,6 +84,8 @@ app.post('/generate-presigned-url', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 // Endpoint to save layout along with related grid items and scheduled ads
 app.post('/api/saveLayout', async (req, res) => {

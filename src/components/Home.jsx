@@ -62,21 +62,18 @@ const Hero = () => {
 
 
       <div className="relative flex w-96 justify-center space-x-16 rounded-lg border-2 border-orange-500 bg-white p-6 text-center dark:bg-black">
-        <Link
-          key="home"
-          to={icons.navbar[0].href}
-          className="flex flex-col items-center"
-        >
-          <HomeIconComponent className="h-6 w-6 text-black dark:text-white" />
-        </Link>
 
+      {icons.navbar.map((item) => (
         <Link
-          key="home"
-          to={icons.navbar[2].href}
+          key={item.label} // Using label as a unique key here
+          to={item.href}
           className="flex flex-col items-center"
         >
-          <LayoutList className="h-6 w-6 text-black dark:text-white" />
+          <item.icon className="h-6 w-6 text-black dark:text-white" />
         </Link>
+))}
+
+        
 
         <DarkModeSwitch
           checked={isDarkMode}

@@ -1,7 +1,6 @@
 import React, { useState } from "react"; // Add useState here
 import { HomeIcon} from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect } from "react";
 
 const homeIcon = {
     navbar: [
@@ -15,18 +14,39 @@ const HomeIconComponent = homeIcon.navbar[0].icon;
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
 
     
   
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
       e.preventDefault();
   
       if (!username || !password) {
         alert('Please enter both username and password');
         return;
       }
+
+      try {
+        const response = await fetch("http://localhost:5000/api/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Invalid username or password');
+        }
+
+        const data = await response.json();
+        localStorage.setItem("authToken", data.token); // Store the token
+
+        alert(`Logged in successfully as ${username}`);
+    } catch (err) {
+        setError(err.message);
+    }
   
-      alert(`Logged in as ${username}`);
     };
   
     return (
