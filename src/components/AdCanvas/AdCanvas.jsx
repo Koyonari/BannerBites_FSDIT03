@@ -48,11 +48,17 @@ const AdCanvas = () => {
         scheduledAds: item.scheduledAds.map((scheduledAd) => ({
           ...scheduledAd,
           id: scheduledAd.id || uuidv4(), // Ensure each scheduledAd has an ID
+          ad: {
+            ...scheduledAd.ad,
+            id: scheduledAd.ad.id || uuidv4(), // Ensure ad has an id
+          },
         })),
         isMerged: item.isMerged || false,
         hidden: item.hidden || false,
         rowSpan: item.rowSpan || 1,
         colSpan: item.colSpan || 1,
+        mergeDirection: item.mergeDirection || null,
+        selectedCells: item.selectedCells || [],
       }));
   
       setRows(selectedLayout.rows);
@@ -447,9 +453,14 @@ const AdCanvas = () => {
       return;
     }
     const updatedGrid = [...gridItems];
+
+    // Check if the adItem is from the sidebar (i.e., has a placeholder ID)
+    const isNewAd = adItem.id && adItem.id.startsWith('sidebar-');
+
+    // Assign a new UUID if it's a new ad from the sidebar
     const scheduledAd = {
       id: uuidv4(),
-      ad: { ...adItem, id: adItem.id || uuidv4() },
+      ad: { ...adItem, id: isNewAd ? uuidv4() : adItem.id },
       scheduledTime,
     };
     updatedGrid[index].scheduledAds.push(scheduledAd);
@@ -552,8 +563,9 @@ const handleLayoutNameSave = async (name) => {
           column,
           scheduledAds: item.scheduledAds.map((scheduledAd) => {
             const ad = scheduledAd.ad;
+            const isNewAd = ad.id && ad.id.startsWith('sidebar-');
             const adData = {
-              id: ad.id,
+              id: isNewAd ? uuidv4() : ad.id, // Ensure adId is a UUID
               type: ad.type.toLowerCase(),
               content: { ...ad.content },
               styles: { ...ad.styles },
@@ -569,6 +581,7 @@ const handleLayoutNameSave = async (name) => {
           colSpan: item.colSpan,
           mergeDirection: item.mergeDirection,
           selectedCells: item.selectedCells,
+          hidden: item.hidden,     
         };
       })
       .filter((item) => item !== null); // Remove null entries
@@ -596,11 +609,13 @@ const handleLayoutNameSave = async (name) => {
       (ad) => ad.id === currentAd.scheduledAd.id,
     );
     if (adIndex !== -1) {
+      const existingAdId = scheduledAds[adIndex].ad.id;
       scheduledAds[adIndex] = {
         ...scheduledAds[adIndex],
         ad: {
           ...scheduledAds[adIndex].ad,
           ...updatedAdData, 
+          id: existingAdId || uuidv4(),
         },
         scheduledTime: updatedScheduledTime,
       };

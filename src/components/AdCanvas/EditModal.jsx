@@ -151,11 +151,12 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   };
 
   const handleSave = () => {
+    const isNewAd = ad.id && ad.id.startsWith('sidebar-');
     const updatedAd = {
       ...ad,
       content: formData.content,
       styles: formData.styles,
-      id: ad.id || uuidv4(), // Ensure ad.id is present
+      id: isNewAd ? uuidv4() : ad.id, // Assign new UUID if ad.id is a placeholder
     };
   
     onSave(updatedAd, scheduledTimeState);

@@ -14,6 +14,9 @@ const GridItemModel = {
         isMerged: item.isMerged,
         rowSpan: item.rowSpan,
         colSpan: item.colSpan,
+        ...(item.mergeDirection && { mergeDirection: item.mergeDirection }),
+        ...(item.selectedCells && item.selectedCells.length > 0 && { selectedCells: item.selectedCells }),
+        ...(item.hidden && { hidden: item.hidden }),
       },
     };
     const command = new PutCommand(params);
