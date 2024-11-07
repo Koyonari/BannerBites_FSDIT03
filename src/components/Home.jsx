@@ -12,6 +12,12 @@ const icons = {
   ],
 };
 
+const loginIcon = {
+  navbar: [
+    { href: "/login", icon: CircleUserRound, label: "Login" },
+  ],
+};
+
 const Hero = () => {
   // Initialize state from localStorage or default to false
   const [isDarkMode, setDarkMode] = React.useState(() => {
@@ -40,9 +46,21 @@ const Hero = () => {
   return (
     <div className="align-center flex h-screen flex-col items-center justify-center bg-white transition-colors duration-200 dark:bg-black">
       <h1 className="mb-3 text-7xl font-bold text-black dark:text-white">
+
         Banner
         <span className="text-orange-500 outline-3">Bites</span>
       </h1>
+
+      {/* Link to Login */}
+      <Link
+          key="home"
+          to={loginIcon.navbar[0].href}
+          className="flex flex-col items-center"
+        >
+          <HomeIconComponent className="h-6 w-6 text-black dark:text-white" />
+        </Link>
+
+
       <div className="relative flex w-96 justify-center space-x-16 rounded-lg border-2 border-orange-500 bg-white p-6 text-center dark:bg-black">
         <Link
           key="home"
