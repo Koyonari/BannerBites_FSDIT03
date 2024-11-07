@@ -4,6 +4,8 @@
 const { S3Client } = require('@aws-sdk/client-s3');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
+const { ScanCommand } = require('@aws-sdk/lib-dynamodb');
+
 const dotenv = require('dotenv');
 
 //Login utilities
@@ -37,38 +39,58 @@ const dynamoDb = DynamoDBDocumentClient.from(dynamoDbClient);
 
 //Login---------------------------------------------------------------------------------------------(Not sure if right place)
 // Function to get user by username
+// awsMiddleware.js
+
 const getUserByUsername = async (username) => {
+  if (!username) {
+      throw new Error("Username is required");
+  }
   try {
       const params = {
-          TableName: process.env.DYNAMODB_TABLE_USERS, // DynamoDB Users table
-          Key: { username },
+          TableName: process.env.DYNAMODB_TABLE_USERS,
+          FilterExpression: "username = :username",
+          ExpressionAttributeValues: {
+              ":username": username,
+          },
       };
-      const { Item } = await dynamoDb.send(new GetCommand(params));
-      return Item;
+      const data = await dynamoDb.send(new ScanCommand(params));
+      
+      console.log("DynamoDB scan result:", data); // Debug: Check DynamoDB response
+
+      // Assuming `username` is unique, return the first matching item
+      if (data.Items && data.Items.length > 0) {
+          return data.Items[0];
+      } else {
+          console.log("User not found"); // Debug: No user matched
+          throw new Error("User not found");
+      }
   } catch (error) {
-      console.error('Error retrieving user:', error);
-      throw new Error('Error retrieving user');
+      console.error("Error retrieving user:", error);
+      throw new Error("Error retrieving user");
   }
 };
 
-// Function to authenticate user and generate JWT
+
+
+
 const authenticateUser = async (username, password) => {
   const user = await getUserByUsername(username);
-  /*
-  if (user && await bcrypt.compare(password, user.password)) {//TODO: change Password in database to bycrypt
+  console.log("User found:", user); // Debug: Check retrieved user details
+  console.log("Entered password:", password); // Debug: Log entered password
+  console.log("Stored password:", user.password); // Debug: Log stored password in DynamoDB
+
+  if (user && user.password.trim() === password.trim()) {  // Direct password comparison
       const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      console.log("Authentication successful, token generated:", token); // Debug
       return token;
   } else {
-      throw new Error('Invalid credentials');
+      console.log("Password did not match"); // Debug
+      throw new Error("Invalid credentials");
   }
-  */
-  if (user && user.password === password) {  // Direct password comparison
-    const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    return token;
-  } else {
-    throw new Error('Invalid credentials');
-}
 };
+
+
+
 
 // Export the initialized clients
 module.exports = { dynamoDb, s3, authenticateUser };
