@@ -5,14 +5,12 @@ const { dynamoDb } = require("../middleware/awsClients");
 const AdModel = {
   // Retrieve an ad by adId
   getAdById: async (adId) => {
-    console.log(`Fetching Ad with adId: ${adId}`);
     const params = {
       TableName: process.env.DYNAMODB_TABLE_ADS,
-      Key: { adId }, // Ensure 'adId' is used as the primary key
+      Key: { adId },
     };
     const command = new GetCommand(params);
     const data = await dynamoDb.send(command);
-    console.log(`Ad fetched: ${JSON.stringify(data.Item)}`);
     return data.Item;
   },
 

@@ -41,17 +41,16 @@ const AdCanvas = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-  if (selectedLayout) {
-    console.log("Retrieved Layout:", selectedLayout); // Log retrieved layout
-    const properlyInitializedGridItems = selectedLayout.gridItems.map(
-      (item) => ({
+    if (selectedLayout) {
+      console.log('Retrieved Layout:', selectedLayout); // Log retrieved layout
+      const properlyInitializedGridItems = selectedLayout.gridItems.map((item) => ({
         ...item,
         scheduledAds: item.scheduledAds.map((scheduledAd) => ({
           ...scheduledAd,
           id: scheduledAd.id || uuidv4(), // Ensure each scheduledAd has an ID
           ad: {
             ...scheduledAd.ad,
-            adId: scheduledAd.ad.adId || uuidv4(), // Ensure ad has an adId
+            id: scheduledAd.ad.id || uuidv4(), // Ensure ad has an id
           },
         })),
         isMerged: item.isMerged || false,
@@ -60,16 +59,15 @@ const AdCanvas = () => {
         colSpan: item.colSpan || 1,
         mergeDirection: item.mergeDirection || null,
         selectedCells: item.selectedCells || [],
-      }),
-    );
-
-    setRows(selectedLayout.rows);
-    setColumns(selectedLayout.columns);
-    setGridItems(properlyInitializedGridItems);
-    console.log("Updated Grid Items State:", properlyInitializedGridItems); // Log updated state
-    setIsSelectingLayout(false);
-  }
-}, [selectedLayout]);
+      }));
+  
+      setRows(selectedLayout.rows);
+      setColumns(selectedLayout.columns);
+      setGridItems(properlyInitializedGridItems);
+      console.log('Updated Grid Items State:', properlyInitializedGridItems); // Log updated state
+      setIsSelectingLayout(false);
+    }
+  }, [selectedLayout]);
 
   // Function to handle the selection of a layout
   const handleSelectLayout = async (layoutId) => {
@@ -438,6 +436,7 @@ const AdCanvas = () => {
   const handleDrop = (item, index, rowIndex, colIndex) => {
     const normalizedItem = {
       id: item.id || uuidv4(),
+      adId: item.adId || uuidv4(), // Ensure `adId` is set
       type: item.type || "default",
       content: item.content || item,
       styles: item.styles || {},
@@ -454,21 +453,20 @@ const AdCanvas = () => {
       alert("Failed to schedule the ad. Missing content information.");
       return;
     }
-  
     const updatedGrid = [...gridItems];
-  
+
     // Check if the adItem is from the sidebar (i.e., has a placeholder ID)
-    const isNewAd = adItem.adId && adItem.adId.startsWith('sidebar-'); // Use adId
-  
+    const isNewAd = adItem.id && adItem.id.startsWith('sidebar-');
+
     // Assign a new UUID if it's a new ad from the sidebar
-    const adId = isNewAd ? uuidv4() : adItem.adId; // Use adId
-  
     const scheduledAd = {
-      id: uuidv4(), // Unique ID for the scheduled ad
-      ad: { ...adItem, adId: adId }, // Ensure the ad has the correct adId
+      id: uuidv4(),
+      ad: { 
+        ...adItem, 
+        adId: isNewAd ? uuidv4() : adItem.adId || uuidv4() // Ensure `adId` is assigned for new ads
+      },
       scheduledTime,
     };
-  
     updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
     setIsScheduling(false);
@@ -476,111 +474,102 @@ const AdCanvas = () => {
   };
 
   // Handles removing ads from a grid cell
-  const handleRemove = (index, scheduledAd) => {
-    // Create a deep copy of the gridItems state to prevent accidental state mutation
-    const updatedGrid = gridItems.map((item) => ({
-      ...item,
-      scheduledAds: item.scheduledAds ? [...item.scheduledAds] : [], // Ensure each scheduledAds is properly cloned
-    }));
+// Handles removing ads from a grid cell
+const handleRemove = (index, scheduledAd) => {
+  // Create a deep copy of the gridItems state to prevent accidental state mutation
+  const updatedGrid = gridItems.map((item) => ({
+    ...item,
+    scheduledAds: item.scheduledAds ? [...item.scheduledAds] : [], // Ensure each scheduledAds is properly cloned
+  }));
 
-    const cell = updatedGrid[index];
+  const cell = updatedGrid[index];
+  
+  // Check if the scheduledAd has a unique identifier to remove the specific one
+  if (cell.scheduledAds && cell.scheduledAds.length > 0) {
+    updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
+      (ad) => ad.id !== scheduledAd.id
+    );
+  }
 
-    // Check if the scheduledAd has a unique identifier to remove the specific one
-    if (cell.scheduledAds && cell.scheduledAds.length > 0) {
-      updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
-        (ad) => ad.id !== scheduledAd.id,
-      );
-    }
+  // Ensure that the removal logic properly considers the updated state of scheduledAds
+  if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
+    const cellsToUnmerge = cell.selectedCells && cell.selectedCells.length > 0
+      ? cell.selectedCells
+      : [index];
 
-    // Ensure that the removal logic properly considers the updated state of scheduledAds
-    if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
-      const cellsToUnmerge =
-        cell.selectedCells && cell.selectedCells.length > 0
-          ? cell.selectedCells
-          : [index];
+    cellsToUnmerge.forEach((idx) => {
+      updatedGrid[idx] = {
+        scheduledAds: [],
+        isMerged: false,
+        hidden: false,
+        rowSpan: 1,
+        colSpan: 1,
+      };
+    });
+  }
 
-      cellsToUnmerge.forEach((idx) => {
-        updatedGrid[idx] = {
-          scheduledAds: [],
-          isMerged: false,
-          hidden: false,
-          rowSpan: 1,
-          colSpan: 1,
-        };
-      });
-    }
+  // Update the state with the new grid configuration
+  setGridItems(updatedGrid);
+};
 
-    // Update the state with the new grid configuration
-    setGridItems(updatedGrid);
-  };
-
-  // Function to save editing or saving
-  const handleLayoutSave = async (name) => {
+ // Function to save editing or saving
+const handleLayoutNameSave = async (name) => {
     try {
       const layoutId = selectedLayout ? selectedLayout.layoutId : uuidv4();
       const layout = { rows, columns, gridItems, layoutId, name };
       const cleanedLayout = cleanLayoutJSON(layout);
-
-      if (selectedLayout && selectedLayout.layoutId) {
-        // Update existing layout
-        const response = await axios.put(
-          `${apiUrl}/api/layouts/${layoutId}`,
+  
+      if (selectedLayout) {
+        // Update an existing layout
+        await axios.put(
+          `${apiUrl}/api/layouts/${layoutId}`, 
           cleanedLayout,
           {
             headers: {
               "Content-Type": "application/json",
             },
-          },
+          }
         );
-        if (response.status === 200) {
-          alert("Layout updated successfully!");
-        } else {
-          throw new Error("Failed to update layout.");
-        }
+        alert("Layout updated successfully!");
       } else {
-        // Save new layout
-        const response = await axios.post(
+        // Save a new layout
+        await axios.post(
           `${apiUrl}/api/layouts/save`,
           cleanedLayout,
           {
             headers: {
               "Content-Type": "application/json",
             },
-          },
+          }
         );
-        if (response.status === 201) {
-          alert("Layout saved successfully!");
-        } else {
-          throw new Error("Failed to save layout.");
-        }
+        alert("Layout saved successfully!");
       }
-
       setIsNamingLayout(false);
     } catch (error) {
-      console.error("Error saving/updating layout:", error);
-      alert("Failed to save or update layout. Please try again.");
+      console.error("Error saving layout:", error);
+      alert("Failed to save layout. Please try again.");
     }
   };
 
   const cleanLayoutJSON = (layout) => {
     const { rows, columns, gridItems } = layout;
-  
+
     const filteredItems = gridItems
       .map((item, index) => {
         if (!item || item.hidden) return null;
-  
+
         const row = Math.floor(index / columns);
         const column = index % columns;
-  
+
         return {
           index,
           row,
           column,
           scheduledAds: item.scheduledAds.map((scheduledAd) => {
             const ad = scheduledAd.ad;
-            const isNewAd = ad.adId && ad.adId.startsWith("sidebar-"); // Use adId
+            const isNewAd = ad.id && ad.id.startsWith('sidebar-');
             const adData = {
-              adId: isNewAd ? uuidv4() : ad.adId, // Use adId
+              adId: isNewAd ? uuidv4() : ad.adId, // Ensure `adId` is a UUID
               type: ad.type.toLowerCase(),
               content: { ...ad.content },
               styles: { ...ad.styles },
@@ -596,11 +585,11 @@ const AdCanvas = () => {
           colSpan: item.colSpan,
           mergeDirection: item.mergeDirection,
           selectedCells: item.selectedCells,
-          hidden: item.hidden,
+          hidden: item.hidden,     
         };
       })
       .filter((item) => item !== null); // Remove null entries
-  
+
     return {
       layoutId: layout.layoutId, // Ensure layoutId is included
       name: layout.name, // Include name if necessary
@@ -624,12 +613,12 @@ const AdCanvas = () => {
       (ad) => ad.id === currentAd.scheduledAd.id,
     );
     if (adIndex !== -1) {
-      const existingAdId = scheduledAds[adIndex].ad.adId;
+      const existingAdId = scheduledAds[adIndex].ad.id;
       scheduledAds[adIndex] = {
         ...scheduledAds[adIndex],
         ad: {
           ...scheduledAds[adIndex].ad,
-          ...updatedAdData,
+          ...updatedAdData, 
           id: existingAdId || uuidv4(),
         },
         scheduledTime: updatedScheduledTime,
@@ -688,10 +677,7 @@ const AdCanvas = () => {
     <div className="ad-canvas flex w-full flex-col items-center justify-center text-center">
       {isSelectingLayout ? (
         // Layout Selector Popup
-        <LayoutSelector
-          onSelect={handleSelectLayout}
-          onClose={handleCloseSelector}
-        />
+        <LayoutSelector onSelect={handleSelectLayout} onClose={handleCloseSelector} />
       ) : (
         <></>
       )}
@@ -857,7 +843,7 @@ const AdCanvas = () => {
       {/* Modals */}
       {isNamingLayout && (
         <SaveLayoutModal
-          onSave={handleLayoutSave}
+          onSave={handleLayoutNameSave}
           onClose={() => setIsNamingLayout(false)}
         />
       )}
@@ -874,10 +860,10 @@ const AdCanvas = () => {
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
           ad={currentScheduleAd.item}
-          onSave={(scheduledTime) =>
+          onSave={(scheduledDateTime) =>
             handleScheduleSave(
               currentScheduleAd.item,
-              scheduledTime,
+              scheduledDateTime,
               currentScheduleAd.index,
             )
           }

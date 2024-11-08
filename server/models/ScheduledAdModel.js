@@ -9,7 +9,7 @@ const ScheduledAdModel = {
       Item: {
         gridItemId: `${layoutId}#${gridIndex}`,
         scheduledTime: scheduledAd.scheduledTime,
-        adId: scheduledAd.ad.id,
+        adId: scheduledAd.ad.adId,
         index: gridIndex,
         layoutId: layoutId,
       },
