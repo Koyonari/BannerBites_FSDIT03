@@ -1,5 +1,3 @@
-// middleware/awsMiddleware.js
-
 const { S3Client } = require("@aws-sdk/client-s3");
 const { DynamoDBClient, DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient } = require("@aws-sdk/lib-dynamodb");
@@ -11,7 +9,7 @@ const {
 } = require("@aws-sdk/client-dynamodb-streams");
 const { unmarshall } = require("@aws-sdk/util-dynamodb");
 const dotenv = require("dotenv");
-const WebSocket = require("ws");
+const { clients, layoutUpdatesCache } = require("../state");
 
 dotenv.config();
 
@@ -45,7 +43,7 @@ const s3Client = new S3Client({
 console.log("[BACKEND] AWS Clients initialized in awsMiddleware");
 
 // Function to set up DynamoDB Stream listener
-const listenToDynamoDbStreams = async (wsServer) => {
+const listenToDynamoDbStreams = async (clients, layoutUpdatesCache) => {
   const tableNames = [
     process.env.DYNAMODB_TABLE_LAYOUTS,
     process.env.DYNAMODB_TABLE_GRIDITEMS,
@@ -89,7 +87,7 @@ const listenToDynamoDbStreams = async (wsServer) => {
         let shardIterator = shardIteratorResponse.ShardIterator;
 
         if (shardIterator) {
-          pollStream(shardIterator, tableName, wsServer);
+          pollStream(shardIterator, tableName);
         }
       }
     } catch (error) {
@@ -99,7 +97,7 @@ const listenToDynamoDbStreams = async (wsServer) => {
 };
 
 // Function to poll a shard for records
-const pollStream = async (shardIterator, tableName, wsServer) => {
+const pollStream = async (shardIterator, tableName) => {
   while (shardIterator) {
     try {
       const getRecordsCommand = new GetRecordsCommand({
@@ -140,16 +138,23 @@ const pollStream = async (shardIterator, tableName, wsServer) => {
 
             console.log(`[BACKEND] Changed JSON Layout from ${tableName}:`, JSON.stringify(updatedItem, null, 2));
 
-            // Broadcast updated item to all WebSocket clients
-            if (wsServer && wsServer.clients) {
-              wsServer.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                  client.send(JSON.stringify({ type: updateType, data: updatedItem }));
-                  console.log(`[BACKEND] Sent ${updateType} to client for item: ${itemId}`);
+            // Update cache
+            if (updateType === "layoutUpdate" || updateType === "layoutData") {
+              layoutUpdatesCache[itemId] = updatedItem;
+              console.log(`[BACKEND] Cached updated layout for layoutId: ${itemId}`);
+            }
+
+            // Send update to clients interested in this layoutId
+            // When sending updates to clients
+            if (clients && clients.length > 0) {
+              clients.forEach((client) => {
+                if (client.layoutId === itemId) {
+                  client.res.write(`data: ${JSON.stringify({ type: updateType, data: updatedItem })}\n\n`);
+                  console.log(`[BACKEND] Sent ${updateType} to client ${client.id} for layoutId: ${itemId}`);
                 }
               });
             } else {
-              console.warn("[BACKEND] WebSocket server is not defined or no clients connected.");
+              console.warn("[BACKEND] No SSE clients connected.");
             }
           }
         });

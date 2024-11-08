@@ -1,44 +1,36 @@
-// src/components/LayoutViewer/LayoutViewer.jsx
 import React, { useEffect, useState } from "react";
-import AdViewer from "./AdViewer";
-import useWebSocket from "react-use-websocket";
+import AdViewer from "../AdViewer/AdViewer"; // Adjust import path as necessary
 
 const LayoutViewer = ({ layoutId }) => {
   const [layout, setLayout] = useState(null);
-  const socketUrl = "ws://localhost:6000"; // Correct WebSocket port (use wss if secure)
-
-  const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(socketUrl, {
-    onOpen: () => {
-      console.log("[FRONTEND] Connected to WebSocket server");
-      sendJsonMessage({ type: "getLayout", layoutId });
-      console.log("[FRONTEND] Requesting layout for layoutId:", layoutId);
-    },
-    onMessage: (event) => {
-      if (event.data) {
-        console.log("[FRONTEND] Received message from WebSocket server:", event.data);
-      }
-    },
-    onClose: () => {
-      console.log("[FRONTEND] Disconnected from WebSocket server");
-    },
-    onError: (error) => {
-      console.error("[FRONTEND] WebSocket error:", error);
-    },
-    shouldReconnect: () => true, // Reconnect on disconnection
-  });
 
   useEffect(() => {
-    if (lastJsonMessage !== null) {
-      const response = lastJsonMessage;
-      if (response.type === "layoutUpdate" && response.data.layoutId === layoutId) {
-        setLayout(response.data);
-        console.log("[FRONTEND] Layout updated via WebSocket:", response.data);
-      } else if (response.type === "layoutData") {
-        setLayout(response.data);
-        console.log("[FRONTEND] Received initial layout data via WebSocket:", response.data);
+    // Ensure the backend server URL and layoutId are correct here
+    const eventSource = new EventSource(`http://localhost:5000/events?layoutId=${layoutId}`);
+
+    eventSource.onopen = () => {
+      console.log('[FRONTEND] Connected to SSE server');
+    };
+
+    eventSource.onmessage = (event) => {
+      const parsedData = JSON.parse(event.data);
+      console.log('[FRONTEND] Received SSE message:', parsedData);
+      if ((parsedData.type === 'layoutUpdate' || parsedData.type === 'layoutData') && parsedData.data.layoutId === layoutId) {
+        setLayout(parsedData.data);
+        console.log('[FRONTEND] Layout updated via SSE:', parsedData.data);
       }
-    }
-  }, [lastJsonMessage, layoutId]);
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('[FRONTEND] SSE error:', error);
+      eventSource.close();
+    };
+
+    // Cleanup on component unmount
+    return () => {
+      eventSource.close();
+    };
+  }, [layoutId]);
 
   if (!layout) {
     return <div>Loading layout...</div>;
