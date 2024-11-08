@@ -44,6 +44,21 @@ const ScheduledAdModel = {
     return data.Items;
   },
 
+  getScheduledAdsByAdId: async (adId) => {
+    const params = {
+      TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+      IndexName: "AdIdIndex", // Name of the GSI
+      KeyConditionExpression: "adId = :adId",
+      ExpressionAttributeValues: {
+        ":adId": { S: adId },
+      },
+      ProjectionExpression: "layoutId",
+    };
+    const command = new QueryCommand(params);
+    const data = await dynamoDb.send(command);
+    return data.Items.map((item) => item.layoutId.S);
+  },
+
   deleteScheduledAd: async (gridItemId, scheduledTime) => {
     const params = {
       TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,

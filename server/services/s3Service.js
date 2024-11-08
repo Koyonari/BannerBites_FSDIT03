@@ -1,7 +1,7 @@
 // services/s3Service.js
 const { PutObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { s3Client } = require("../middleware/awsMiddleware");
+const { s3Client } = require("../middleware/awsClients");
 
 const generatePresignedUrl = async (bucketName, key, contentType, expiresIn = 300) => {
   const params = {
