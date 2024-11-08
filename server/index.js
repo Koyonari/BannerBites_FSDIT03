@@ -27,23 +27,37 @@ const s3Client = new S3Client({
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5000',
+  origin: 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // Enable credentials (cookies) in CORS
 }));
 app.use(express.json({ limit: '10mb' }));
 
 // Login endpoint
+// Login endpoint with token as an HTTP-only cookie
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-      const token = await authenticateUser(username, password);
-      res.status(200).json({ token });
+    const token = await authenticateUser(username, password);
+    console.log("Authentication successful, token:", token);
+
+    // Set the token in an HTTP-only cookie
+    res.cookie('authToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 1000 // 1 hour
+    });
+
+    res.status(200).json({ message: "Login successful" });
   } catch (error) {
-      res.status(401).json({ message: 'Invalid username or password' });
+    res.status(401).json({ message: 'Invalid username or password' });
   }
 });
+
+
+
 // Debugging: Log the dynamoDb object to verify initialization
 console.log('DynamoDB Document Client:', dynamoDb);
 console.log('Has send method:', typeof dynamoDb.send === 'function');

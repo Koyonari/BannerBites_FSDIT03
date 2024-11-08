@@ -7,16 +7,12 @@ import { useEffect } from "react";
 const icons = {
   navbar: [
     { href: "/userhome", icon: HomeIcon, label: "Home" },
-    { href: "#", icon: CircleUserRound, label: "Profile" },
+    { href: "/login", icon: CircleUserRound, label: "Profile" },
     { href: "/layouts", icon: LayoutList, label: "LayoutList" },
   ],
 };
 
-const loginIcon = {
-  navbar: [
-    { href: "/login", icon: CircleUserRound, label: "Login" },
-  ],
-};
+
 
 const Hero = () => {
   // Initialize state from localStorage or default to false
@@ -41,7 +37,6 @@ const Hero = () => {
     setDarkMode(checked);
   };
 
-  const HomeIconComponent = icons.navbar[0].icon;
 
   return (
     <div className="align-center flex h-screen flex-col items-center justify-center bg-white transition-colors duration-200 dark:bg-black">
@@ -51,14 +46,6 @@ const Hero = () => {
         <span className="text-orange-500 outline-3">Bites</span>
       </h1>
 
-      {/* Link to Login */}
-      <Link
-          key="home"
-          to={loginIcon.navbar[0].href}
-          className="flex flex-col items-center"
-        >
-          <HomeIconComponent className="h-6 w-6 text-black dark:text-white" />
-        </Link>
 
 
       <div className="relative flex w-96 justify-center space-x-16 rounded-lg border-2 border-orange-500 bg-white p-6 text-center dark:bg-black">
