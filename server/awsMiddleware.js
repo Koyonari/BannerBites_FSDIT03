@@ -76,16 +76,20 @@ const getUserByUsername = async (username) => {
 const authenticateUser = async (username, password) => {
   const user = await getUserByUsername(username);
   console.log("User found:", user); // Debug: Check retrieved user details
-  console.log("Entered password:", password); // Debug: Log entered password
-  console.log("Stored password:", user.password); // Debug: Log stored password in DynamoDB
 
-  if (user && user.password.trim() === password.trim()) {  // Direct password comparison
-      const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-      console.log("Authentication successful, token generated:", token); // Debug
-      return token;
+  if (!user) {
+    console.log("User not found"); // Debug
+    throw new Error("Invalid credentials");
+  }
+
+  // Check passwords
+  if (user.password.trim() === password.trim()) {
+    const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    console.log("Authentication successful, token generated:", token); // Debug
+    return token;
   } else {
-      console.log("Password did not match"); // Debug
-      throw new Error("Invalid credentials");
+    console.log("Password mismatch"); // Debug
+    throw new Error("Invalid credentials");
   }
 };
 const verifyToken = (req, res, next) => {
@@ -103,11 +107,11 @@ const verifyToken = (req, res, next) => {
     res.status(401).json({ message: "Invalid token" });
   }
 };
-
+/*
 app.get('/api/protected', verifyToken, (req, res) => {
   res.json({ message: "This is a protected route", user: req.user });
 });
-
+*/
 
 
 // Export the initialized clients

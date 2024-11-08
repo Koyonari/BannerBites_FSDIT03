@@ -28,7 +28,7 @@ const s3Client = new S3Client({
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5000',
+  origin: 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -49,7 +49,7 @@ app.post('/api/login', async (req, res) => {
 
       // Debug: Log the token if authentication is successful
       console.log("Authentication successful, token:", token);
-      
+
       res.cookie('authToken', token, {
         httpOnly: true,          // Prevent JavaScript access to cookies
         secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
