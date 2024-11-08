@@ -1,5 +1,5 @@
 // models/AdModel.js
-const { GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
 const { dynamoDb } = require("../middleware/awsClients");
 
 const AdModel = {
@@ -79,6 +79,21 @@ const AdModel = {
     const result = await dynamoDb.send(command);
     console.log(`Ad ${ad.adId} explicitly updated successfully.`);
     return result;
+  },
+  
+  deleteAdById: async (adId) => {
+    const params = {
+      TableName: process.env.DYNAMODB_TABLE_ADS,
+      Key: { adId },
+    };
+    const command = new DeleteCommand(params);
+    try {
+      await dynamoDb.send(command);
+      console.log(`Ad with adId ${adId} deleted successfully.`);
+    } catch (error) {
+      console.error(`Error deleting ad with adId ${adId}:`, error);
+      throw error;
+    }
   },
 };
 

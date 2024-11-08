@@ -1,5 +1,11 @@
 // models/GridItemModel.js
-const { PutCommand, GetCommand, QueryCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
+const {
+  PutCommand,
+  GetCommand,
+  QueryCommand,
+  UpdateCommand,
+  DeleteCommand,
+} = require("@aws-sdk/lib-dynamodb");
 const { dynamoDb } = require("../middleware/awsClients");
 
 const GridItemModel = {
@@ -27,7 +33,8 @@ const GridItemModel = {
     const params = {
       TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
       Key: { layoutId, index },
-      UpdateExpression: "set #row = :row, #column = :column, #scheduledAds = :scheduledAds, #isMerged = :isMerged, #rowSpan = :rowSpan, #colSpan = :colSpan, #hidden = :hidden",
+      UpdateExpression:
+        "set #row = :row, #column = :column, #scheduledAds = :scheduledAds, #isMerged = :isMerged, #rowSpan = :rowSpan, #colSpan = :colSpan, #hidden = :hidden",
       ExpressionAttributeNames: {
         "#row": "row",
         "#column": "column",
@@ -72,6 +79,15 @@ const GridItemModel = {
     const command = new QueryCommand(params);
     const data = await dynamoDb.send(command);
     return data.Items;
+  },
+
+  deleteGridItem: async (layoutId, index) => {
+    const params = {
+      TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+      Key: { layoutId, index },
+    };
+    const command = new DeleteCommand(params);
+    return await dynamoDb.send(command);
   },
 };
 

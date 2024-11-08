@@ -15,4 +15,7 @@ router.get("/", layoutController.getAllLayouts);
 // GET /api/layouts/:layoutId
 router.get("/:layoutId", layoutController.getLayoutById);
 
+// DELETE /api/layouts/:layoutId - New route to delete a layout
+router.delete("/:layoutId", layoutController.deleteLayout);
+
 module.exports = router;

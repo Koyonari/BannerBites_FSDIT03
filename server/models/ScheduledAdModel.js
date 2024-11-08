@@ -44,20 +44,22 @@ const ScheduledAdModel = {
     return data.Items;
   },
 
-  getScheduledAdsByAdId: async (adId) => {
+  etScheduledAdsByAdId: async (adId) => {
     const params = {
       TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
-      IndexName: "AdIdIndex", // Name of the GSI
+      IndexName: "AdIdIndex",  // Ensure this matches the index name created in the table
       KeyConditionExpression: "adId = :adId",
       ExpressionAttributeValues: {
-        ":adId": { S: adId },
+        ":adId": adId,
       },
-      ProjectionExpression: "layoutId",
+      ProjectionExpression: "layoutId, gridItemId, scheduledTime",
     };
+    
     const command = new QueryCommand(params);
     const data = await dynamoDb.send(command);
-    return data.Items.map((item) => item.layoutId.S);
+    return data.Items;
   },
+
 
   deleteScheduledAd: async (gridItemId, scheduledTime) => {
     const params = {
@@ -68,8 +70,53 @@ const ScheduledAdModel = {
       },
     };
     const command = new DeleteCommand(params);
-    return await dynamoDb.send(command);
+    try {
+      await dynamoDb.send(command);
+      console.log(`Scheduled ad with gridItemId ${gridItemId} and scheduledTime ${scheduledTime} deleted successfully.`);
+    } catch (error) {
+      console.error(`Error deleting scheduled ad with gridItemId ${gridItemId} and scheduledTime ${scheduledTime}:`, error);
+      throw error;
+    }
+  },
+
+  deleteScheduledAdsByLayoutId: async (layoutId) => {
+    const scheduledAds = await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);
+    for (const ad of scheduledAds) {
+      await ScheduledAdModel.deleteScheduledAd(ad.gridItemId, ad.scheduledTime);
+    }
+  },
+
+  deleteOldScheduledAds: async (layoutId, layout) => {
+    try {
+      const existingScheduledAds = await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);
+
+      const updatedScheduledAds = layout.gridItems.flatMap((item) =>
+        item.scheduledAds.map((scheduledAd) => ({
+          gridItemId: `${layoutId}#${item.index}`,
+          scheduledTime: scheduledAd.scheduledTime,
+          adId: scheduledAd.ad?.adId, // Use ad.adId
+        }))
+      );
+
+      const adsToDelete = existingScheduledAds.filter((existingAd) => {
+        return !updatedScheduledAds.some(
+          (updatedAd) =>
+            updatedAd.gridItemId === existingAd.gridItemId &&
+            updatedAd.scheduledTime === existingAd.scheduledTime
+        );
+      });
+
+      for (const adToDelete of adsToDelete) {
+        console.log(`Deleting Scheduled Ad with gridItemId ${adToDelete.gridItemId} and scheduledTime ${adToDelete.scheduledTime}`);
+        await ScheduledAdModel.deleteScheduledAd(adToDelete.gridItemId, adToDelete.scheduledTime);
+        console.log(`Scheduled ad with ID ${adToDelete.adId} deleted successfully.`);
+      }
+    } catch (error) {
+      console.error("Error deleting old scheduled ads:", error);
+      throw error;
+    }
   },
 };
 
 module.exports = ScheduledAdModel;
+

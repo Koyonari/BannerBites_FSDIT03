@@ -1,5 +1,5 @@
 // models/LayoutModel.js
-const { PutCommand, GetCommand, ScanCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, GetCommand, ScanCommand, UpdateCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
 const { dynamoDb } = require("../middleware/awsClients");
 
 const LayoutModel = {
@@ -58,6 +58,21 @@ const LayoutModel = {
     const command = new ScanCommand(params);
     const data = await dynamoDb.send(command);
     return data.Items;
+  },
+
+  deleteLayout: async (layoutId) => {
+    const params = {
+      TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
+      Key: { layoutId },
+    };
+    const command = new DeleteCommand(params);
+    try {
+      await dynamoDb.send(command);
+      console.log(`Layout with layoutId ${layoutId} deleted successfully.`);
+    } catch (error) {
+      console.error(`Error deleting layout with layoutId ${layoutId}:`, error);
+      throw error;
+    }
   },
 };
 

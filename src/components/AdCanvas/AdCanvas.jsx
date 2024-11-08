@@ -630,6 +630,32 @@ const handleLayoutNameSave = async (name) => {
     setCurrentAd(null);
   };
 
+  const handleDeleteLayout = async () => {
+    if (!selectedLayout) {
+      alert("No layout is selected for deletion.");
+      return;
+    }
+  
+    const confirmDelete = window.confirm("Are you sure you want to delete this layout?");
+    if (!confirmDelete) return;
+  
+    try {
+      const response = await axios.delete(`${apiUrl}/api/layouts/${selectedLayout.layoutId}`);
+  
+      if (response.status === 200) {
+        alert("Layout deleted successfully!");
+        // Reset state after successful deletion
+        setSelectedLayout(null);
+        setIsSelectingLayout(true); // Go back to layout selection mode
+      } else {
+        throw new Error(`Failed to delete layout: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error deleting layout:", error);
+      alert("Failed to delete layout. Please try again.");
+    }
+  };
+
   // Tooltip styles
   const tooltipStyle = {
     backgroundColor: "rgb(255, 255, 255)",
@@ -830,6 +856,13 @@ const handleLayoutNameSave = async (name) => {
           onClick={handleOpenSelector}
           className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
         />
+        {/* Delete Button */}
+      <button
+        onClick={handleDeleteLayout}
+        className="h-8 w-16 rounded-lg bg-red-500 py-1.5 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
+      >
+        Delete Layout
+      </button>
       </div>
 
       {/* Hint/tooltip components */}
