@@ -104,10 +104,11 @@ const verifyToken = (req, res, next) => {
   }
 };
 
+/*
 app.get('/api/protected', verifyToken, (req, res) => {
   res.json({ message: "This is a protected route", user: req.user });
 });
-
+*/
 
 
 // Export the initialized clients
