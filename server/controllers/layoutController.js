@@ -173,11 +173,27 @@ const getLayoutById = async (req, res) => {
   const { layoutId } = req.params;
 
   try {
+    const layout = await fetchLayoutById(layoutId);
+
+    if (!layout) {
+      return res.status(404).json({ message: "Layout not found." });
+    }
+
+    res.json(layout);
+  } catch (error) {
+    console.error("Error fetching layout data:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+
+const fetchLayoutById = async (layoutId) => {
+  try {
     // Step 1: Get layout details
     const layout = await LayoutModel.getLayoutById(layoutId);
 
     if (!layout) {
-      return res.status(404).json({ message: "Layout not found." });
+      return null; // Layout not found
     }
 
     // Step 2: Get grid items
@@ -198,10 +214,10 @@ const getLayoutById = async (req, res) => {
     }
 
     layout.gridItems = gridItems;
-    res.json(layout);
+    return layout; // Return the layout object
   } catch (error) {
     console.error("Error fetching layout data:", error);
-    res.status(500).json({ message: "Internal server error." });
+    throw error; // Rethrow the error to be handled by the caller
   }
 };
 
@@ -211,4 +227,5 @@ module.exports = {
   updateLayout,
   getAllLayouts,
   getLayoutById,
+  fetchLayoutById,
 };

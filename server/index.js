@@ -4,8 +4,9 @@ const dotenv = require("dotenv");
 const layoutRoutes = require("./routes/layoutRoutes");
 const locationRoutes = require("./routes/locationRoutes");
 const tvRoutes = require("./routes/tvRoutes");
-const { generatePresignedUrlController, getLayoutById } = require("./controllers/layoutController");
-const { clients, layoutUpdatesCache } = require("./state"); // Import shared state
+const state = require("./state");
+const { generatePresignedUrlController, getLayoutById, fetchLayoutById } = require("./controllers/layoutController");
+
 
 dotenv.config();
 
@@ -32,7 +33,8 @@ app.use("/api/tvs", tvRoutes);
 app.post("/generate-presigned-url", generatePresignedUrlController);
 
 // SSE Endpoint
-app.get('/events', (req, res) => {
+// SSE Endpoint
+app.get('/events', async (req, res) => {
   const layoutId = req.query.layoutId;
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -46,39 +48,40 @@ app.get('/events', (req, res) => {
     res,
     layoutId,
   };
-  clients.push(newClient);
+  state.clients.push(newClient);
 
   console.log(`[BACKEND] SSE client connected: ${clientId} for layoutId: ${layoutId}`);
 
-  // Send initial layout data if available
-  if (layoutUpdatesCache[layoutId]) {
-    const initialData = layoutUpdatesCache[layoutId];
-    res.write(`data: ${JSON.stringify({ type: "layoutData", data: initialData })}\n\n`);
+  // Initialize cache if not already done
+  if (!state.layoutUpdatesCache[layoutId]) {
+    try {
+      const initialData = await fetchLayoutById(layoutId); // Use fetchLayoutById instead of getLayoutById
+      if (initialData) {
+        state.layoutUpdatesCache[layoutId] = initialData;
+        console.log(`[BACKEND] Cached initial layout for layoutId: ${layoutId}`);
+      } else {
+        console.warn(`[BACKEND] No layout data found for layoutId: ${layoutId}`);
+      }
+    } catch (error) {
+      console.error(`[BACKEND] Error fetching layout data for layoutId: ${layoutId}`, error);
+    }
+  }
+
+  // Send initial layout data from cache
+  const cachedLayout = state.layoutUpdatesCache[layoutId];
+  if (cachedLayout) {
+    res.write(`data: ${JSON.stringify({ type: "layoutData", data: cachedLayout })}\n\n`);
     console.log(`[BACKEND] Sent initial layout data to client ${clientId} for layoutId: ${layoutId}`);
   } else {
-    // Fetch layout from database and send it
-    getLayoutById(layoutId)
-      .then((initialData) => {
-        if (initialData) {
-          res.write(`data: ${JSON.stringify({ type: "layoutData", data: initialData })}\n\n`);
-          console.log(`[BACKEND] Sent initial layout data to client ${clientId} for layoutId: ${layoutId}`);
-          layoutUpdatesCache[layoutId] = initialData; // Update cache
-        } else {
-          console.warn(`[BACKEND] No layout data found for layoutId: ${layoutId}`);
-        }
-      })
-      .catch((error) => {
-        console.error(`[BACKEND] Error fetching layout data for layoutId: ${layoutId}`, error);
-      });
+    res.write(`data: ${JSON.stringify({ type: "error", message: "Layout not found" })}\n\n`);
   }
 
   // Remove client when connection closes
   req.on('close', () => {
     console.log(`[BACKEND] SSE client disconnected: ${clientId}`);
-    // Modify the clients array in place
-    const index = clients.findIndex((client) => client.id === clientId);
+    const index = state.clients.findIndex((client) => client.id === clientId);
     if (index !== -1) {
-      clients.splice(index, 1);
+      state.clients.splice(index, 1);
     }
   });
 });
