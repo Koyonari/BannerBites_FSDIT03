@@ -11,6 +11,8 @@ const { GetCommand } = require('@aws-sdk/lib-dynamodb');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt'); // Ensure password hashing and verification
 
+
+
 // Load environment variables from .env file
 dotenv.config();
 
@@ -78,6 +80,15 @@ const getUserByUsername = async (username) => {
   }
 };
 
+// Function to compare a password with a hashed password
+const verifyPassword = async (password, hashedPassword) => {
+  try {
+    const match = await bcrypt.compare(password, hashedPassword);
+    return match;
+  } catch (error) {
+    throw new Error('Error verifying password');
+  }
+};
 
 
 // Function to authenticate user and generate JWT
@@ -98,12 +109,21 @@ const authenticateUser = async (username, password) => {
       throw new Error("Invalid credentials");
   }
   */
+ /*
   if (user && user.password === password) {  // Direct password comparison
     const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
     return token;
   } else {
     throw new Error('Invalid credentials');
-}
+  }
+  */
+  
+  if (user && await verifyPassword(password, user.password)) { // Compare password securely
+    const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    return token;
+  } else {
+    throw new Error('Invalid credentials');
+  }
 };
 const verifyToken = (req, res, next) => {
   const token = req.cookies.authToken; // Get token from cookies
