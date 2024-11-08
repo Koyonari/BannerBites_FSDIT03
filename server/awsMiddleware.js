@@ -4,8 +4,6 @@
 const { S3Client } = require('@aws-sdk/client-s3');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
-const { ScanCommand } = require('@aws-sdk/lib-dynamodb');
-
 const dotenv = require('dotenv');
 
 //Login utilities
@@ -39,40 +37,21 @@ const dynamoDb = DynamoDBDocumentClient.from(dynamoDbClient);
 
 //Login---------------------------------------------------------------------------------------------(Not sure if right place)
 // Function to get user by username
-// awsMiddleware.js
-
 const getUserByUsername = async (username) => {
-  if (!username) {
-      throw new Error("Username is required");
-  }
   try {
       const params = {
-          TableName: process.env.DYNAMODB_TABLE_USERS,
-          FilterExpression: "username = :username",
-          ExpressionAttributeValues: {
-              ":username": username,
-          },
+          TableName: process.env.DYNAMODB_TABLE_USERS, // DynamoDB Users table
+          Key: { username },
       };
-      const data = await dynamoDb.send(new ScanCommand(params));
-      
-      console.log("DynamoDB scan result:", data); // Debug: Check DynamoDB response
-
-      // Assuming `username` is unique, return the first matching item
-      if (data.Items && data.Items.length > 0) {
-          return data.Items[0];
-      } else {
-          console.log("User not found"); // Debug: No user matched
-          throw new Error("User not found");
-      }
+      const { Item } = await dynamoDb.send(new GetCommand(params));
+      return Item;
   } catch (error) {
-      console.error("Error retrieving user:", error);
-      throw new Error("Error retrieving user");
+      console.error('Error retrieving user:', error);
+      throw new Error('Error retrieving user');
   }
 };
 
-
-
-
+// Function to authenticate user and generate JWT
 const authenticateUser = async (username, password) => {
   const user = await getUserByUsername(username);
   console.log("User found:", user); // Debug: Check retrieved user details
@@ -107,6 +86,7 @@ const verifyToken = (req, res, next) => {
     res.status(401).json({ message: "Invalid token" });
   }
 };
+
 /*
 app.get('/api/protected', verifyToken, (req, res) => {
   res.json({ message: "This is a protected route", user: req.user });
