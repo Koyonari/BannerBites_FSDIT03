@@ -1,16 +1,15 @@
-// server.js (Your main server file)
-
+// index.js
 const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
 const cors = require("cors");
-const { listenToDynamoDbStreams, broadcastLayoutUpdate } = require("./middleware/awsMiddleware");
 const dotenv = require("dotenv");
 const layoutRoutes = require("./routes/layoutRoutes");
 const locationRoutes = require("./routes/locationRoutes");
 const tvRoutes = require("./routes/tvRoutes");
-const state = require("./state");
+const { layoutUpdatesCache, addClient, removeClient, broadcastToClients } = require("./state");
 const { generatePresignedUrlController, fetchLayoutById } = require("./controllers/layoutController");
+const { listenToDynamoDbStreams } = require("./middleware/awsMiddleware");
 
 dotenv.config();
 
@@ -42,11 +41,12 @@ wss.on("connection", (ws) => {
     try {
       const parsedMessage = JSON.parse(message);
       if (parsedMessage.type === "subscribe" && parsedMessage.layoutId) {
-        ws.layoutId = parsedMessage.layoutId;
-        state.clients.push(ws);
+        const layoutId = parsedMessage.layoutId;
+
+        // Add client to the state
+        addClient(ws, layoutId);
 
         // Send cached data if available
-        const layoutId = parsedMessage.layoutId;
         const cachedData = layoutUpdatesCache[layoutId];
         if (cachedData) {
           ws.send(JSON.stringify({ type: "layoutData", data: cachedData }));
@@ -59,7 +59,9 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     console.log("[BACKEND] WebSocket client disconnected");
-    state.clients = state.clients.filter(client => client !== ws);
+
+    // Remove the disconnected client from the clients list
+    removeClient(ws);
   });
 });
 
@@ -67,6 +69,7 @@ wss.on("connection", (ws) => {
 server.listen(PORT, () => {
   console.log(`HTTP/WebSocket Server running on port ${PORT}`);
 });
+
 
 // Listen to DynamoDB streams
 listenToDynamoDbStreams();

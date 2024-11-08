@@ -8,9 +8,18 @@ const LayoutList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const websocketRef = useRef(null);
+  const pendingLayoutIdRef = useRef(null); // Helps debounce clicks and avoid multiple unnecessary WebSocket creations.
+  const reconnectAttemptsRef = useRef(0); // Keeps track of reconnection attempts.
 
   useEffect(() => {
     fetchLayouts();
+
+    return () => {
+      // Cleanup WebSocket when component unmounts
+      if (websocketRef.current) {
+        websocketRef.current.close();
+      }
+    };
   }, []);
 
   const fetchLayouts = async () => {
@@ -31,15 +40,26 @@ const LayoutList = () => {
   };
 
   const handleLayoutSelect = async (layoutId) => {
+    if (pendingLayoutIdRef.current === layoutId) {
+      // If this layout is already pending, ignore the repeated request.
+      return;
+    }
+    pendingLayoutIdRef.current = layoutId;
+    reconnectAttemptsRef.current = 0; // Reset reconnect attempts for new selection
+
     try {
       setLoading(true);
       setError(null);
       setSelectedLayout(null);
 
+      // Close the previous WebSocket connection if one exists
       if (websocketRef.current) {
-        websocketRef.current.close(); // Close the previous WebSocket connection if one exists
+        websocketRef.current.onclose = null; // Remove any existing onclose handlers to avoid triggering reconnections
+        websocketRef.current.close();
+        websocketRef.current = null;
       }
 
+      // Fetch the initial layout data
       const response = await fetch(`http://localhost:5000/api/layouts/${layoutId}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch layout details for layoutId: ${layoutId}`);
@@ -48,39 +68,57 @@ const LayoutList = () => {
       console.log("[LayoutList] Fetched layout data:", data);
       setSelectedLayout(data);
 
-      // Set up WebSocket connection
-      websocketRef.current = new WebSocket("ws://localhost:5000");
-
-      websocketRef.current.onopen = () => {
-        console.log("[FRONTEND] Connected to WebSocket server");
-        websocketRef.current.send(JSON.stringify({ type: "subscribe", layoutId }));
-      };
-
-      websocketRef.current.onmessage = (event) => {
-        try {
-          const parsedData = JSON.parse(event.data);
-          console.log("[FRONTEND] Received WebSocket message:", parsedData);
-          if (parsedData.type === "layoutUpdate" && parsedData.data.layoutId === layoutId) {
-            setSelectedLayout(parsedData.data);
-            console.log("[FRONTEND] Layout updated via WebSocket:", parsedData.data);
-          }
-        } catch (e) {
-          console.error("[FRONTEND] Error parsing WebSocket message:", e);
-        }
-      };
-
-      websocketRef.current.onclose = () => {
-        console.log("[FRONTEND] WebSocket connection closed");
-      };
-
-      websocketRef.current.onerror = (error) => {
-        console.error("[FRONTEND] WebSocket error:", error);
-      };
+      // Set up WebSocket connection for real-time updates
+      establishWebSocketConnection(layoutId);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      pendingLayoutIdRef.current = null; // Allow new layout selection after handling is complete
     }
+  };
+
+  const establishWebSocketConnection = (layoutId) => {
+    websocketRef.current = new WebSocket("ws://localhost:5000");
+
+    websocketRef.current.onopen = () => {
+      console.log("[FRONTEND] Connected to WebSocket server");
+      websocketRef.current.send(JSON.stringify({ type: "subscribe", layoutId }));
+    };
+
+    websocketRef.current.onmessage = (event) => {
+      try {
+        const parsedData = JSON.parse(event.data);
+        console.log("[FRONTEND] Received WebSocket message:", parsedData);
+
+        if (
+          (parsedData.type === "layoutUpdate" || parsedData.type === "layoutData") &&
+          parsedData.data.layoutId === layoutId
+        ) {
+          // Update the layout with the received data
+          setSelectedLayout(parsedData.data);
+          console.log("[FRONTEND] Layout updated via WebSocket:", parsedData.data);
+        }
+      } catch (e) {
+        console.error("[FRONTEND] Error parsing WebSocket message:", e);
+      }
+    };
+
+    websocketRef.current.onclose = (event) => {
+      console.log("[FRONTEND] WebSocket connection closed. Reason:", event.reason);
+      if (pendingLayoutIdRef.current === layoutId && reconnectAttemptsRef.current < 5) {
+        // Attempt to reconnect only if this layoutId is still active and attempts are below threshold
+        reconnectAttemptsRef.current += 1;
+        setTimeout(() => {
+          console.log(`[FRONTEND] Reconnecting to WebSocket server... Attempt #${reconnectAttemptsRef.current}`);
+          establishWebSocketConnection(layoutId);
+        }, 5000);
+      }
+    };
+
+    websocketRef.current.onerror = (error) => {
+      console.error("[FRONTEND] WebSocket error:", error);
+    };
   };
 
   return (

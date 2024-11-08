@@ -1,5 +1,3 @@
-// middleware/awsMiddleware.js
-
 const { DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
 const {
   DynamoDBStreamsClient,
@@ -9,30 +7,40 @@ const {
 } = require("@aws-sdk/client-dynamodb-streams");
 const { unmarshall } = require("@aws-sdk/util-dynamodb");
 const debounce = require("lodash.debounce");
-const { clients, layoutUpdatesCache } = require("../state");
+const { layoutUpdatesCache, clients } = require("../state");  // Import layoutUpdatesCache and clients
 const { dynamoDbClient, dynamoDbStreamsClient } = require("./awsClients");
 const { fetchLayoutById, getLayoutsByAdId } = require("../services/layoutService");
+const WebSocket = require("ws");
 
 /**
- * Broadcast layoutUpdate event to all WebSocket clients subscribed to the given layoutId.
+ * Broadcast function for sending layout updates to WebSocket clients.
  * @param {string} layoutId - The ID of the layout to update.
+ * @param {object} updatedData - The updated layout data.
  */
-const broadcastLayoutUpdate = (layoutId) => {
-  const updatedLayout = layoutUpdatesCache[layoutId];
-  if (updatedLayout && clients.length > 0) {
-    clients.forEach((client) => {
-      if (client.readyState === 1 && client.layoutId === layoutId) { // Check if WebSocket is open
-        client.send(JSON.stringify({ type: "layoutUpdate", data: updatedLayout }));
-        console.log(`[BACKEND] Sent layoutUpdate to client for layoutId: ${layoutId}`);
+const broadcastLayoutUpdate = (layoutId, updatedData) => {
+  // Remove closed or invalid WebSocket clients
+  clients.forEach((clientData, clientWs) => {
+    if (clientWs.readyState !== WebSocket.OPEN) {
+      console.log("[BACKEND] Removing client due to closed or invalid WebSocket.");
+      clients.delete(clientWs);
+    }
+  });
+
+  // Broadcast to valid clients listening to the specified layoutId
+  clients.forEach((clientData, clientWs) => {
+    if (clientData.layoutId === layoutId && clientWs.readyState === WebSocket.OPEN) {
+      try {
+        clientWs.send(JSON.stringify({ type: "layoutUpdate", data: updatedData }));
+        console.log(`[BACKEND] Broadcasted layout update to client for layoutId: ${layoutId}`);
+      } catch (error) {
+        console.error(`[BACKEND] Error broadcasting to client for layoutId: ${layoutId}`, error);
       }
-    });
-  } else {
-    console.warn(`[BACKEND] No clients connected for layoutId: ${layoutId} or layout not cached.`);
-  }
+    }
+  });
 };
 
-// Debounce the broadcast function to batch rapid updates
-const debouncedBroadcastLayoutUpdate = debounce(broadcastLayoutUpdate, 1000); // 1-second debounce
+// Debounce the broadcast function to reduce unnecessary broadcasts
+const debouncedBroadcastLayoutUpdate = debounce(broadcastLayoutUpdate, 1000); // 1 second debounce
 
 /**
  * Set up DynamoDB Stream listeners for specified tables.
@@ -149,10 +157,10 @@ const pollStream = async (shardIterator, tableName) => {
         try {
           const fullLayout = await fetchLayoutById(layoutId);
           if (fullLayout) {
-            layoutUpdatesCache[layoutId] = fullLayout;
+            layoutUpdatesCache[layoutId] = fullLayout; // Use `layoutUpdatesCache` directly here
             console.log(`[BACKEND] Cached full layout for layoutId: ${layoutId}`);
             // Schedule the debounced broadcast
-            debouncedBroadcastLayoutUpdate(layoutId);
+            debouncedBroadcastLayoutUpdate(layoutId, fullLayout);
           } else {
             console.warn(`[BACKEND] No layout data found for layoutId: ${layoutId}`);
           }
@@ -173,4 +181,4 @@ const pollStream = async (shardIterator, tableName) => {
   }
 };
 
-module.exports = { listenToDynamoDbStreams, broadcastLayoutUpdate };
+module.exports = { listenToDynamoDbStreams };
