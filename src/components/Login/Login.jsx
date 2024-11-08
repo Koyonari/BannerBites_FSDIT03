@@ -33,6 +33,7 @@ const Login = () => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({ username, password }),
+            credentials: "include" // Send cookies with the request
         });
 
         if (!response.ok) {
