@@ -1,7 +1,7 @@
 // models/TVModel.js
 const { QueryCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
 const { DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
-const { dynamoDb, dynamoDbClient } = require("../middleware/awsMiddleware");
+const { dynamoDb } = require("../middleware/awsClients");
 
 const TVModel = {
   getIndexStatus: async (tableName, indexName) => {

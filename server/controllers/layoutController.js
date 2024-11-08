@@ -26,7 +26,7 @@ const generatePresignedUrlController = async (req, res) => {
       process.env.S3_BUCKET_NAME,
       key,
       contentType,
-      300
+      300,
     );
     res.json({ url, key });
   } catch (error) {
@@ -61,7 +61,11 @@ const saveLayout = async (req, res) => {
 
       // Step 3: Save scheduled ads
       for (const scheduledAd of item.scheduledAds) {
-        await ScheduledAdModel.saveScheduledAd(layout.layoutId, item.index, scheduledAd);
+        await ScheduledAdModel.saveScheduledAd(
+          layout.layoutId,
+          item.index,
+          scheduledAd,
+        );
         console.log(`Scheduled ad ${scheduledAd.ad.id} saved successfully.`);
 
         // Step 4: Save unique ads
@@ -83,7 +87,10 @@ const saveLayout = async (req, res) => {
 };
 
 const updateLayout = async (req, res) => {
-  console.log("Request to /api/layouts/:layoutId:", JSON.stringify(req.body, null, 2));
+  console.log(
+    "Request to /api/layouts/:layoutId:",
+    JSON.stringify(req.body, null, 2),
+  );
 
   try {
     const { layoutId } = req.params;
@@ -96,7 +103,8 @@ const updateLayout = async (req, res) => {
     }
 
     // Step 1: Fetch existing scheduled ads
-    const existingScheduledAds = await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);
+    const existingScheduledAds =
+      await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);
 
     // Step 2: Find scheduled ads to delete
     const updatedScheduledAds = layout.gridItems.flatMap((item) =>
@@ -104,21 +112,26 @@ const updateLayout = async (req, res) => {
         gridItemId: `${layoutId}#${item.index}`,
         scheduledTime: scheduledAd.scheduledTime,
         adId: scheduledAd.ad?.id,
-      }))
+      })),
     );
 
     const adsToDelete = existingScheduledAds.filter((existingAd) => {
       return !updatedScheduledAds.some(
         (updatedAd) =>
           updatedAd.gridItemId === existingAd.gridItemId &&
-          updatedAd.scheduledTime === existingAd.scheduledTime
+          updatedAd.scheduledTime === existingAd.scheduledTime,
       );
     });
 
     // Step 3: Delete old scheduled ads
     for (const adToDelete of adsToDelete) {
-      await ScheduledAdModel.deleteScheduledAd(adToDelete.gridItemId, adToDelete.scheduledTime);
-      console.log(`Scheduled ad with ID ${adToDelete.adId} deleted successfully.`);
+      await ScheduledAdModel.deleteScheduledAd(
+        adToDelete.gridItemId,
+        adToDelete.scheduledTime,
+      );
+      console.log(
+        `Scheduled ad with ID ${adToDelete.adId} deleted successfully.`,
+      );
     }
 
     // Step 4: Update layout details
@@ -135,11 +148,17 @@ const updateLayout = async (req, res) => {
 
       for (const scheduledAd of item.scheduledAds) {
         if (!scheduledAd.ad || !scheduledAd.ad.id) {
-          console.error(`Missing adId for scheduled ad at grid item index ${item.index}`);
+          console.error(
+            `Missing id for scheduled ad at grid item index ${item.index}`,
+          );
           continue;
         }
 
-        await ScheduledAdModel.saveScheduledAd(layout.layoutId, item.index, scheduledAd);
+        await ScheduledAdModel.saveScheduledAd(
+          layout.layoutId,
+          item.index,
+          scheduledAd,
+        );
         console.log(`Scheduled ad ${scheduledAd.ad.id} updated successfully.`);
 
         if (!uniqueAds.has(scheduledAd.ad.id)) {
@@ -186,7 +205,6 @@ const getLayoutById = async (req, res) => {
   }
 };
 
-
 const fetchLayoutById = async (layoutId) => {
   try {
     // Step 1: Get layout details
@@ -202,7 +220,7 @@ const fetchLayoutById = async (layoutId) => {
     // Step 3: Get scheduled ads and ad details
     for (const item of gridItems) {
       const scheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemId(
-        `${layoutId}#${item.index}`
+        `${layoutId}#${item.index}`,
       );
 
       for (const scheduledAd of scheduledAds) {

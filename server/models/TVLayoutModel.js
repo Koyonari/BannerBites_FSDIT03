@@ -1,6 +1,6 @@
 // models/TVLayoutModel.js
 const { PutCommand } = require("@aws-sdk/lib-dynamodb");
-const { dynamoDb } = require("../middleware/awsMiddleware");
+const { dynamoDb } = require("../middleware/awsClients");
 
 const TVLayoutModel = {
   assignLayoutToTV: async (tvId, layoutId, assignedDate) => {

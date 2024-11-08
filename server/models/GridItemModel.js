@@ -1,6 +1,6 @@
 // models/GridItemModel.js
 const { PutCommand, QueryCommand } = require("@aws-sdk/lib-dynamodb");
-const { dynamoDb } = require("../middleware/awsMiddleware");
+const { dynamoDb } = require("../middleware/awsClients");
 
 const GridItemModel = {
   saveGridItem: async (layoutId, item) => {

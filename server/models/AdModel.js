@@ -1,6 +1,6 @@
 // models/AdModel.js
 const { PutCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
-const { dynamoDb } = require("../middleware/awsMiddleware");
+const { dynamoDb } = require("../middleware/awsClients");
 
 const AdModel = {
   saveAd: async (ad) => {

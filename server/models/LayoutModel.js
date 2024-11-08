@@ -1,6 +1,6 @@
 // models/LayoutModel.js
 const { PutCommand, GetCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
-const { dynamoDb } = require("../middleware/awsMiddleware");
+const { dynamoDb } = require("../middleware/awsClients");
 
 const LayoutModel = {
   saveLayout: async (layout) => {

@@ -1,6 +1,6 @@
 // models/ScheduledAdModel.js
 const { PutCommand, DeleteCommand, QueryCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
-const { dynamoDb } = require("../middleware/awsMiddleware");
+const { dynamoDb } = require("../middleware/awsClients");
 
 const ScheduledAdModel = {
   saveScheduledAd: async (layoutId, gridIndex, scheduledAd) => {

@@ -1,6 +1,6 @@
 // models/LocationModel.js
 const { ScanCommand } = require("@aws-sdk/lib-dynamodb");
-const { dynamoDb } = require("../middleware/awsMiddleware");
+const { dynamoDb } = require("../middleware/awsClients");
 
 const LocationModel = {
   getAllLocations: async () => {
