@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../Navbar";
+import LayoutViewer from "../AdViewer/LayoutViewer"; // Import LayoutViewer here
 
 const LayoutList = () => {
   const [layouts, setLayouts] = useState([]);
   const [selectedLayout, setSelectedLayout] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const eventSourceRef = useRef(null); // Use useRef to keep track of the SSE connection
 
   useEffect(() => {
     fetchLayouts();
@@ -22,7 +24,7 @@ const LayoutList = () => {
       const data = await response.json();
       const uniqueLayouts = data.filter(
         (layout, index, self) =>
-          index === self.findIndex((l) => l.layoutId === layout.layoutId),
+          index === self.findIndex((l) => l.layoutId === layout.layoutId)
       );
       setLayouts(uniqueLayouts);
     } catch (err) {
@@ -32,18 +34,29 @@ const LayoutList = () => {
     }
   };
 
-  const fetchLayoutDetails = async (layoutId) => {
+  const handleLayoutSelect = async (layoutId) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(
-        `http://localhost:5000/api/layouts/${layoutId}`,
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch layout details");
+      setSelectedLayout(null); // Reset selected layout while fetching
+
+      if (eventSourceRef.current) {
+        // Clean up any existing SSE connection
+        console.log(`[LayoutList] Cleaning up existing SSE connection for layoutId: ${selectedLayout?.layoutId}`);
+        eventSourceRef.current.close();
       }
+
+      // Fetch the initial layout data
+      const response = await fetch(`http://localhost:5000/api/layouts/${layoutId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch layout details for layoutId: ${layoutId}`);
+      }
+
       const data = await response.json();
+      console.log("[LayoutList] Fetched layout data:", data);
+
       setSelectedLayout(data);
+      setupSSE(layoutId); // Set up SSE for the selected layout
     } catch (err) {
       setError(err.message);
     } finally {
@@ -51,137 +64,48 @@ const LayoutList = () => {
     }
   };
 
-  const AdComponent = ({ type, content, styles }) => {
-    let mediaUrl = content.mediaUrl || content.src;
+  const setupSSE = (layoutId) => {
+    console.log(`[LayoutList] Setting up SSE for layoutId: ${layoutId}`);
 
-    if (!mediaUrl && content.s3Bucket && content.s3Key) {
-      const s3Region = content.s3Region || "ap-southeast-1";
-      const encodeS3Key = (key) => {
-        return key
-          .split("/")
-          .map((segment) => encodeURIComponent(segment))
-          .join("/");
+    try {
+      eventSourceRef.current = new EventSource(`http://localhost:5000/events?layoutId=${layoutId}`);
+
+      eventSourceRef.current.onopen = () => {
+        console.log("[FRONTEND] Connected to SSE server for layout:", layoutId);
       };
-      const encodedS3Key = encodeS3Key(content.s3Key);
-      mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
-    }
 
-    return (
-      <div
-        className="h-full overflow-hidden rounded-lg shadow-sm"
-        style={styles}
-      >
-        {type === "text" && (
-          <div className="p-4">
-            <h3 className="text-lg font-semibold">{content.title}</h3>
-            <p className="text-gray-600">{content.description}</p>
-          </div>
-        )}
-        {type === "image" && (
-          <div>
-            <img
-              src={mediaUrl}
-              alt={content.title}
-              className="h-auto w-full object-cover"
-            />
-            <div className="p-4">
-              <h3 className="text-lg font-semibold">{content.title}</h3>
-              <p className="text-gray-600">{content.description}</p>
-            </div>
-          </div>
-        )}
-        {type === "video" && (
-          <div>
-            <video controls className="w-full">
-              <source src={mediaUrl} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-            <div className="p-4">
-              <h3 className="text-lg font-semibold">{content.title}</h3>
-              <p className="text-gray-600">{content.description}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
+      eventSourceRef.current.onmessage = (event) => {
+        try {
+          const parsedData = JSON.parse(event.data);
+          console.log("[FRONTEND] Received SSE message:", parsedData);
 
-  const AdViewer = ({ layout }) => {
-    if (!layout) {
-      return <div>No layout provided</div>;
-    }
-
-    const { rows, columns, gridItems } = layout;
-
-    return (
-      <div
-        className="grid h-full w-full gap-4"
-        style={{
-          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-        }}
-      >
-        {gridItems.map((item) => {
-          if (!item || item.hidden) return null;
-
-          const { index, row, column, scheduledAds, rowSpan, colSpan } = item;
-
-          let adToDisplay = null;
-
-          if (scheduledAds?.length > 0) {
-            const now = new Date();
-            const currentTimeString = `${now
-              .getHours()
-              .toString()
-              .padStart(2, "0")}:${now
-              .getMinutes()
-              .toString()
-              .padStart(2, "0")}`;
-
-            const availableAds = scheduledAds.filter(
-              (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
-            );
-
-            if (availableAds.length > 0) {
-              adToDisplay = availableAds.reduce((latestAd, currentAd) =>
-                currentAd.scheduledTime > latestAd.scheduledTime
-                  ? currentAd
-                  : latestAd,
-              );
-            } else {
-              adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
-                currentAd.scheduledTime < nextAd.scheduledTime
-                  ? currentAd
-                  : nextAd,
-              );
-            }
+          if (
+            (parsedData.type === "layoutUpdate" || parsedData.type === "layoutData") &&
+            parsedData.data.layoutId === layoutId
+          ) {
+            setSelectedLayout(parsedData.data); // Update the layout state with new data
+            console.log("[FRONTEND] Layout updated via SSE:", parsedData.data);
           }
+        } catch (e) {
+          console.error("[FRONTEND] Error parsing SSE message:", e);
+        }
+      };
 
-          if (!adToDisplay) return null;
+      eventSourceRef.current.onerror = (error) => {
+        console.error("[FRONTEND] SSE error:", error);
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+        }
 
-          const ad = adToDisplay.ad;
-          const { type, content, styles } = ad;
-
-          const gridRowStart = row + 1;
-          const gridColumnStart = column + 1;
-          const gridRowEnd = gridRowStart + (rowSpan || 1);
-          const gridColumnEnd = gridColumnStart + (colSpan || 1);
-
-          return (
-            <div
-              key={index}
-              className="rounded-lg bg-white"
-              style={{
-                gridRow: `${gridRowStart} / ${gridRowEnd}`,
-                gridColumn: `${gridColumnStart} / ${gridColumnEnd}`,
-              }}
-            >
-              <AdComponent type={type} content={content} styles={styles} />
-            </div>
-          );
-        })}
-      </div>
-    );
+        // Attempt to reconnect after a delay
+        setTimeout(() => {
+          console.log("[FRONTEND] Reconnecting to SSE...");
+          setupSSE(layoutId);
+        }, 5000); // 5-second delay before attempting to reconnect
+      };
+    } catch (err) {
+      console.error("[FRONTEND] Failed to initialize SSE connection:", err);
+    }
   };
 
   return (
@@ -226,7 +150,7 @@ const LayoutList = () => {
                       ? "bg-orange-600 text-white"
                       : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                   }`}
-                  onClick={() => fetchLayoutDetails(layout.layoutId)}
+                  onClick={() => handleLayoutSelect(layout.layoutId)}
                 >
                   {layout.name || `Layout ${layout.layoutId}`}
                 </button>
@@ -261,7 +185,7 @@ const LayoutList = () => {
                 </div>
               )}
               {selectedLayout && !loading && (
-                <AdViewer layout={selectedLayout} />
+                <LayoutViewer layout={selectedLayout} />
               )}
               {!selectedLayout && !loading && (
                 <div className="p-4 text-center text-gray-500">

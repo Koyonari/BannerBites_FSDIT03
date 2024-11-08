@@ -20,6 +20,7 @@ app.use(
     origin: "http://localhost:3000", // Adjust for production
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true // Ensure that credentials are passed if necessary
   })
 );
 app.use(express.json({ limit: "10mb" }));
@@ -37,6 +38,8 @@ app.post("/generate-presigned-url", generatePresignedUrlController);
 app.get('/events', async (req, res) => {
   const layoutId = req.query.layoutId;
 
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
