@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import { HomeIcon } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import {useNavigate } from "react-router-dom";
 
-const homeIcon = {
-  navbar: [
-    { href: "/", icon: HomeIcon, label: "Home" },
-  ],
-};
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -30,6 +24,7 @@ const Login = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ username, password, role }), // Include role in the request
+        credentials: "include"
       });
 
       if (!response.ok) {
@@ -103,6 +98,7 @@ const Login = () => {
           <button
             type="submit"
             className="w-full py-2 bg-orange-500 text-white font-semibold rounded-md hover:bg-orange-600"
+            //onClick={() => navigate('/')}
           >
             Login
           </button>

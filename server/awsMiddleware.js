@@ -2,7 +2,7 @@
 
 // Import necessary AWS SDK v3 clients and utilities
 const { S3Client } = require('@aws-sdk/client-s3');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBClient, ScanCommand} = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
 const dotenv = require('dotenv');
 
@@ -40,36 +40,45 @@ const dynamoDb = DynamoDBDocumentClient.from(dynamoDbClient);
 const getUserByUsername = async (username) => {
   if (!username) {
     throw new Error("Username is required");
-}
-try {
+  }
+
+  try {
     const params = {
-        TableName: process.env.DYNAMODB_TABLE_USERS, // DynamoDB Users table
-        Key: { username },
-        TableName: process.env.DYNAMODB_TABLE_USERS,
-        FilterExpression: "username = :username",
-        ExpressionAttributeValues: {
-            ":username": username,
-        },
+      TableName: process.env.DYNAMODB_TABLE_USERS,
+      FilterExpression: "#username = :username",
+      ExpressionAttributeNames: {
+        "#username": "username"
+      },
+      ExpressionAttributeValues: {
+        ":username": { S: username }
+      },
     };
-    const { Item } = await dynamoDb.send(new GetCommand(params));
-    return Item;
-    const data = await dynamoDb.send(new ScanCommand(params));
-    
-    console.log("DynamoDB scan result:", data); // Debug: Check DynamoDB response
-    // Assuming `username` is unique, return the first matching item
+
+    const data = await dynamoDbClient.send(new ScanCommand(params));
+
+    console.log("DynamoDB scan result:", JSON.stringify(data, null, 2)); // Debug: Print full result
+
     if (data.Items && data.Items.length > 0) {
-        return data.Items[0];
+      const item = data.Items[0];
+
+      // Extract values
+      return {
+        username: item.username.S,
+        password: item.password.S,
+        roles: item.roles ? item.roles.M : null,  // Adjust if roles is a map or different structure
+        userId: item.userId.S
+      };
     } else {
-        console.log("User not found"); // Debug: No user matched
-        throw new Error("User not found");
+      console.log("User not found"); // Debug: No user matched
+      throw new Error("User not found");
     }
-} catch (error) {
-    console.error('Error retrieving user:', error);
-    throw new Error('Error retrieving user');
+  } catch (error) {
     console.error("Error retrieving user:", error);
     throw new Error("Error retrieving user");
-}
+  }
 };
+
+
 
 // Function to authenticate user and generate JWT
 const authenticateUser = async (username, password) => {
@@ -120,4 +129,4 @@ app.get('/api/protected', verifyToken, (req, res) => {
 
 
 // Export the initialized clients
-module.exports = { dynamoDb, s3, authenticateUser };
+module.exports = { dynamoDb, s3, authenticateUser, verifyToken };
