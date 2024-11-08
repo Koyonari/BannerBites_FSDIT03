@@ -10,7 +10,6 @@ const { DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
 
 const { authenticateUser } = require('./awsMiddleware'); // Import authenticateUser function
 
-const cookieParser = require('cookie-parser'); // Import cookie-parser
 
 // Load environment variables
 dotenv.config();
@@ -31,41 +30,20 @@ app.use(cors({
   origin: 'http://localhost:5000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
-app.use(cookieParser());
 
 // Login endpoint
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
-  // Debug: Check if username and password are being received
-  console.log("Login request received with username:", username);
-  console.log("Login request received with password:", password);
-
   try {
       const token = await authenticateUser(username, password);
-
-      // Debug: Log the token if authentication is successful
-      console.log("Authentication successful, token:", token);
-      
-      res.cookie('authToken', token, {
-        httpOnly: true,          // Prevent JavaScript access to cookies
-        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-        maxAge: 60 * 60 * 1000   // 1 hour expiration
-    });
-
       res.status(200).json({ token });
   } catch (error) {
-      // Debug: Log the error message if authentication fails
-      console.error("Authentication failed:", error.message);
-
       res.status(401).json({ message: 'Invalid username or password' });
   }
 });
-
-
 // Debugging: Log the dynamoDb object to verify initialization
 console.log('DynamoDB Document Client:', dynamoDb);
 console.log('Has send method:', typeof dynamoDb.send === 'function');
