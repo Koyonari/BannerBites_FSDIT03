@@ -39,7 +39,10 @@ const generatePresignedUrlController = async (req, res) => {
 
 // Updated saveLayout without transactions
 const saveLayout = async (req, res) => {
-  console.log("Request to /api/layouts/save:", JSON.stringify(req.body, null, 2));
+  console.log(
+    "Request to /api/layouts/save:",
+    JSON.stringify(req.body, null, 2),
+  );
 
   try {
     const layout = req.body;
@@ -50,45 +53,108 @@ const saveLayout = async (req, res) => {
       return res.status(400).json({ message: "Invalid layout data." });
     }
 
-    // Save layout details
-    await LayoutModel.saveLayout(layout);
-    console.log(`Layout ${layout.layoutId} saved successfully.`);
-
-    // Track unique ads to prevent duplicate saves
+    const transactItems = [];
     const uniqueAds = new Set();
 
-    // Save grid items and scheduled ads
+    // Step 1: Add the Layout (Ensure keys match the table schema)
+    transactItems.push({
+      Put: {
+        TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
+        Item: {
+          layoutId: layout.layoutId, // Assuming layoutId is the partition key
+          ...layout,
+        },
+      },
+    });
+
+    // Step 2: Add Grid Items and Scheduled Ads
     for (const item of layout.gridItems) {
       console.log(`Processing Grid Item at index ${item.index}`);
-      // Save or update grid item
-      await GridItemModel.saveGridItem(layout.layoutId, item);
-      console.log(`Grid item at index ${item.index} saved successfully.`);
 
-      // Save scheduled ads
+      // Ensure that gridItem key is defined properly
+      if (item.index === undefined) {
+        console.error(`Missing index for grid item at layoutId: ${layout.layoutId}`);
+        continue;
+      }
+
+      // Add Grid Item
+      transactItems.push({
+        Put: {
+          TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+          Item: {
+            layoutId: layout.layoutId, // Assuming layoutId is the partition key
+            index: item.index,         // Assuming index is the sort key
+            ...item,
+          },
+        },
+      });
+
+      // Add Scheduled Ads
       for (const scheduledAd of item.scheduledAds) {
-        if (!scheduledAd.ad || !scheduledAd.ad.adId) { // Use ad.adId
-          console.error(`Missing adId for scheduled ad at grid item index ${item.index}`);
+        if (!scheduledAd.ad || !scheduledAd.ad.adId) {
+          console.error(
+            `Missing adId for scheduled ad at grid item index ${item.index}`,
+          );
           continue;
         }
 
-        console.log(`Saving Scheduled Ad with id ${scheduledAd.id} and adId ${scheduledAd.ad.adId}`);
-        // Save scheduled ad
-        await ScheduledAdModel.saveScheduledAd(layout.layoutId, item.index, scheduledAd);
-        console.log(`Scheduled ad ${scheduledAd.ad.adId} saved successfully.`);
+        console.log(
+          `Adding Scheduled Ad with id ${scheduledAd.id} and adId ${scheduledAd.ad.adId}`,
+        );
 
-        // Save ad if not already saved
+        // Ensure scheduledAd key is defined properly
+        if (!scheduledAd.id) {
+          console.error(`Missing id for scheduled ad at grid item index ${item.index}`);
+          continue;
+        }
+
+        transactItems.push({
+          Put: {
+            TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+            Item: {
+              layoutId: layout.layoutId,           // Assuming layoutId is part of the key
+              gridItemId: `${layout.layoutId}#${item.index}`, // Assuming this is the partition key or composite key
+              scheduledTime: scheduledAd.scheduledTime, // Assuming this is a necessary attribute
+              ...scheduledAd,
+            },
+          },
+        });
+
+        // Add Ad if not already added (Ensure the keys are properly set)
         if (!uniqueAds.has(scheduledAd.ad.adId)) {
-          console.log(`Saving Ad with adId ${scheduledAd.ad.adId}`);
-          await AdModel.saveAd(scheduledAd.ad);
-          console.log(`Ad ${scheduledAd.ad.adId} saved successfully.`);
+          console.log(`Adding Ad with adId ${scheduledAd.ad.adId}`);
+          transactItems.push({
+            Put: {
+              TableName: process.env.DYNAMODB_TABLE_ADS,
+              Item: {
+                adId: scheduledAd.ad.adId, // Assuming adId is the partition key
+                ...scheduledAd.ad,
+              },
+            },
+          });
           uniqueAds.add(scheduledAd.ad.adId);
         }
       }
     }
 
-    return res.status(201).json({
-      message: "Layout and related items saved successfully.",
-    });
+    // Step 3: Execute Transaction
+    if (transactItems.length > 0) {
+      const transactionCommand = new TransactWriteCommand({
+        TransactItems: transactItems,
+      });
+
+      await dynamoDb.send(transactionCommand);
+
+      console.log(
+        `Layout ${layout.layoutId} and related items saved successfully.`,
+      );
+      return res
+        .status(201)
+        .json({ message: "Layout and related items saved successfully." });
+    } else {
+      console.error("No valid transaction items to execute.");
+      return res.status(400).json({ message: "No valid items to save." });
+    }
   } catch (error) {
     console.error("Error saving layout and related items:", error);
     return res.status(500).json({ message: "Internal server error." });
@@ -187,24 +253,44 @@ const getLayoutById = async (req, res) => {
 const fetchLayoutById = async (layoutId) => {
   try {
     // Step 1: Get layout details
+    console.log(`Fetching layout details for layoutId: ${layoutId}`);
     const layout = await LayoutModel.getLayoutById(layoutId);
 
     if (!layout) {
+      console.error(`Layout not found for layoutId: ${layoutId}`);
       return null; // Layout not found
     }
 
+    console.log(`Fetched layout: ${JSON.stringify(layout)}`);
+
     // Step 2: Get grid items
     const gridItems = await GridItemModel.getGridItemsByLayoutId(layoutId);
+    if (!gridItems || gridItems.length === 0) {
+      console.error(`No grid items found for layoutId: ${layoutId}`);
+    }
 
     // Step 3: Get scheduled ads and ad details
     for (const item of gridItems) {
-      const scheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemId(
-        `${layoutId}#${item.index}`
-      );
+      console.log(`Fetching scheduled ads for grid item index: ${item.index}`);
+
+      const gridItemId = `${layoutId}#${item.index}`; // Ensure this matches schema
+      console.log(`Using gridItemId for GetCommand in ScheduledAds table: ${gridItemId}`);
+
+      const scheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemId(gridItemId);
 
       for (const scheduledAd of scheduledAds) {
-        const ad = await AdModel.getAdById(scheduledAd.adId); // Use adId
-        scheduledAd.ad = ad;
+        console.log(`Fetching Ad details for adId: ${scheduledAd.adId}`);
+        
+        try {
+          const ad = await AdModel.getAdById(scheduledAd.adId);
+          if (!ad) {
+            console.error(`Ad not found for adId: ${scheduledAd.adId}`);
+          } else {
+            scheduledAd.ad = ad;
+          }
+        } catch (error) {
+          console.error(`Error fetching Ad for adId: ${scheduledAd.adId}`, error);
+        }
       }
 
       item.scheduledAds = scheduledAds;
@@ -213,7 +299,7 @@ const fetchLayoutById = async (layoutId) => {
     layout.gridItems = gridItems;
     return layout; // Return the layout object
   } catch (error) {
-    console.error("Error fetching layout data:", error);
+    console.error(`Error fetching layout data for layoutId: ${layoutId}`, error);
     throw error; // Rethrow the error to be handled by the caller
   }
 };

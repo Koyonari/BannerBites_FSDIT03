@@ -5,13 +5,32 @@ const { dynamoDb } = require("../middleware/awsClients");
 const AdModel = {
   // Retrieve an ad by adId
   getAdById: async (adId) => {
-    const params = {
-      TableName: process.env.DYNAMODB_TABLE_ADS,
-      Key: { adId },
-    };
-    const command = new GetCommand(params);
-    const data = await dynamoDb.send(command);
-    return data.Item;
+    try {
+      console.log(`Fetching Ad with adId: ${adId}, type of adId: ${typeof adId}`);
+  
+      const key = {
+        adId: adId, // Ensure this matches your DynamoDB key schema exactly
+      };
+  
+      console.log(`Using key for GetCommand in Ads table: ${JSON.stringify(key)}`);
+  
+      const adResult = await dynamoDb.send(new GetCommand({
+        TableName: process.env.DYNAMODB_TABLE_ADS,
+        Key: key,
+      }));
+  
+      if (!adResult.Item) {
+        console.error(`No Ad found with adId: ${adId}`);
+        return null; // Ad not found
+      }
+  
+      console.log(`Fetched Ad details: ${JSON.stringify(adResult.Item)}`);
+      return adResult.Item;
+  
+    } catch (error) {
+      console.error(`Error fetching Ad with adId: ${adId}`, error);
+      throw error; // Rethrow the error to be handled by the caller
+    }
   },
 
   // Save or update an ad using adId
