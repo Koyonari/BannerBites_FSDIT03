@@ -11,20 +11,19 @@ const { unmarshall } = require("@aws-sdk/util-dynamodb");
 const debounce = require("lodash.debounce");
 const { clients, layoutUpdatesCache } = require("../state");
 const { dynamoDbClient, dynamoDbStreamsClient } = require("./awsClients");
-const { fetchLayoutById, getLayoutsByAdId } = require("../services/layoutService"); // Import from layoutService.js
+const { fetchLayoutById, getLayoutsByAdId } = require("../services/layoutService");
 
 /**
- * Send a layoutUpdate event to all clients subscribed to the given layoutId.
+ * Broadcast layoutUpdate event to all WebSocket clients subscribed to the given layoutId.
  * @param {string} layoutId - The ID of the layout to update.
  */
-const sendLayoutUpdate = (layoutId) => {
+const broadcastLayoutUpdate = (layoutId) => {
   const updatedLayout = layoutUpdatesCache[layoutId];
   if (updatedLayout && clients.length > 0) {
     clients.forEach((client) => {
-      if (client.layoutId === layoutId) {
-        const updatedLayoutCopy = JSON.parse(JSON.stringify(updatedLayout));
-        client.res.write(`data: ${JSON.stringify({ type: "layoutUpdate", data: updatedLayoutCopy })}\n\n`);
-        console.log(`[BACKEND] Sent layoutUpdate to client ${client.id} for layoutId: ${layoutId}`);
+      if (client.readyState === 1 && client.layoutId === layoutId) { // Check if WebSocket is open
+        client.send(JSON.stringify({ type: "layoutUpdate", data: updatedLayout }));
+        console.log(`[BACKEND] Sent layoutUpdate to client for layoutId: ${layoutId}`);
       }
     });
   } else {
@@ -32,8 +31,8 @@ const sendLayoutUpdate = (layoutId) => {
   }
 };
 
-// Debounce the sendLayoutUpdate function to batch rapid updates
-const debouncedSendLayoutUpdate = debounce(sendLayoutUpdate, 1000); // 1 second debounce
+// Debounce the broadcast function to batch rapid updates
+const debouncedBroadcastLayoutUpdate = debounce(broadcastLayoutUpdate, 1000); // 1-second debounce
 
 /**
  * Set up DynamoDB Stream listeners for specified tables.
@@ -152,8 +151,8 @@ const pollStream = async (shardIterator, tableName) => {
           if (fullLayout) {
             layoutUpdatesCache[layoutId] = fullLayout;
             console.log(`[BACKEND] Cached full layout for layoutId: ${layoutId}`);
-            // Schedule the debounced send
-            debouncedSendLayoutUpdate(layoutId);
+            // Schedule the debounced broadcast
+            debouncedBroadcastLayoutUpdate(layoutId);
           } else {
             console.warn(`[BACKEND] No layout data found for layoutId: ${layoutId}`);
           }
@@ -166,7 +165,6 @@ const pollStream = async (shardIterator, tableName) => {
       shardIterator = recordsData.NextShardIterator;
     } catch (error) {
       console.error(`[BACKEND] Error polling DynamoDB Stream for table ${tableName}:`, error);
-      // Optionally, implement retry logic or move to the next shard
       break; // Exit the polling loop on error
     }
 
@@ -175,4 +173,4 @@ const pollStream = async (shardIterator, tableName) => {
   }
 };
 
-module.exports = { listenToDynamoDbStreams };
+module.exports = { listenToDynamoDbStreams, broadcastLayoutUpdate };

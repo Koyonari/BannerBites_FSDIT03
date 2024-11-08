@@ -1,98 +1,72 @@
+// server.js (Your main server file)
+
+const express = require("express");
+const http = require("http");
+const WebSocket = require("ws");
 const cors = require("cors");
-const { listenToDynamoDbStreams } = require("./middleware/awsMiddleware");
+const { listenToDynamoDbStreams, broadcastLayoutUpdate } = require("./middleware/awsMiddleware");
 const dotenv = require("dotenv");
 const layoutRoutes = require("./routes/layoutRoutes");
 const locationRoutes = require("./routes/locationRoutes");
 const tvRoutes = require("./routes/tvRoutes");
 const state = require("./state");
-const { generatePresignedUrlController, getLayoutById, fetchLayoutById } = require("./controllers/layoutController");
-
+const { generatePresignedUrlController, fetchLayoutById } = require("./controllers/layoutController");
 
 dotenv.config();
 
-const express = require("express");
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(
-  cors({
-    origin: "http://localhost:3000", // Adjust for production
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true // Ensure that credentials are passed if necessary
-  })
-);
+app.use(cors({
+  origin: "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 app.use(express.json({ limit: "10mb" }));
 
 // Routes
 app.use("/api/layouts", layoutRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/tvs", tvRoutes);
-
-// Generate presigned URL route
 app.post("/generate-presigned-url", generatePresignedUrlController);
 
-// SSE Endpoint
-// SSE Endpoint
-app.get('/events', async (req, res) => {
-  const layoutId = req.query.layoutId;
+// WebSocket Server Handling
+wss.on("connection", (ws) => {
+  console.log("[BACKEND] New WebSocket connection established");
 
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-
-  const clientId = Date.now();
-  const newClient = {
-    id: clientId,
-    res,
-    layoutId,
-  };
-  state.clients.push(newClient);
-
-  console.log(`[BACKEND] SSE client connected: ${clientId} for layoutId: ${layoutId}`);
-
-  // Initialize cache if not already done
-  if (!state.layoutUpdatesCache[layoutId]) {
+  ws.on("message", async (message) => {
     try {
-      const initialData = await fetchLayoutById(layoutId); // Use fetchLayoutById instead of getLayoutById
-      if (initialData) {
-        state.layoutUpdatesCache[layoutId] = initialData;
-        console.log(`[BACKEND] Cached initial layout for layoutId: ${layoutId}`);
-      } else {
-        console.warn(`[BACKEND] No layout data found for layoutId: ${layoutId}`);
+      const parsedMessage = JSON.parse(message);
+      if (parsedMessage.type === "subscribe" && parsedMessage.layoutId) {
+        ws.layoutId = parsedMessage.layoutId;
+        state.clients.push(ws);
+
+        // Send cached data if available
+        const layoutId = parsedMessage.layoutId;
+        const cachedData = layoutUpdatesCache[layoutId];
+        if (cachedData) {
+          ws.send(JSON.stringify({ type: "layoutData", data: cachedData }));
+        }
       }
     } catch (error) {
-      console.error(`[BACKEND] Error fetching layout data for layoutId: ${layoutId}`, error);
+      console.error("[BACKEND] Error handling WebSocket message:", error);
     }
-  }
+  });
 
-  // Send initial layout data from cache
-  const cachedLayout = state.layoutUpdatesCache[layoutId];
-  if (cachedLayout) {
-    res.write(`data: ${JSON.stringify({ type: "layoutData", data: cachedLayout })}\n\n`);
-    console.log(`[BACKEND] Sent initial layout data to client ${clientId} for layoutId: ${layoutId}`);
-  } else {
-    res.write(`data: ${JSON.stringify({ type: "error", message: "Layout not found" })}\n\n`);
-  }
-
-  // Remove client when connection closes
-  req.on('close', () => {
-    console.log(`[BACKEND] SSE client disconnected: ${clientId}`);
-    const index = state.clients.findIndex((client) => client.id === clientId);
-    if (index !== -1) {
-      state.clients.splice(index, 1);
-    }
+  ws.on("close", () => {
+    console.log("[BACKEND] WebSocket client disconnected");
+    state.clients = state.clients.filter(client => client !== ws);
   });
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`HTTP Server running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`HTTP/WebSocket Server running on port ${PORT}`);
 });
 
-// Start listening to DynamoDB Streams
+// Listen to DynamoDB streams
 listenToDynamoDbStreams();
