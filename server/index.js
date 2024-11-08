@@ -10,6 +10,7 @@ const { DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
 
 const { authenticateUser } = require('./awsMiddleware'); // Import authenticateUser function
 
+const cookieParser = require('cookie-parser'); // Import cookie-parser
 
 // Load environment variables
 dotenv.config();
@@ -30,8 +31,10 @@ app.use(cors({
   origin: 'http://localhost:5000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
+app.use(cookieParser());
 
 // Login endpoint
 app.post('/api/login', async (req, res) => {
@@ -46,6 +49,12 @@ app.post('/api/login', async (req, res) => {
 
       // Debug: Log the token if authentication is successful
       console.log("Authentication successful, token:", token);
+      
+      res.cookie('authToken', token, {
+        httpOnly: true,          // Prevent JavaScript access to cookies
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        maxAge: 60 * 60 * 1000   // 1 hour expiration
+    });
 
       res.status(200).json({ token });
   } catch (error) {

@@ -88,8 +88,27 @@ const authenticateUser = async (username, password) => {
       throw new Error("Invalid credentials");
   }
 };
+const verifyToken = (req, res, next) => {
+  const token = req.cookies.authToken; // Get token from cookies
 
+  if (!token) {
+    return res.status(403).json({ message: "Not authenticated" });
+  }
 
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Attach decoded user info to request object
+    next();
+  } catch (error) {
+    res.status(401).json({ message: "Invalid token" });
+  }
+};
+
+/*
+app.get('/api/protected', verifyToken, (req, res) => {
+  res.json({ message: "This is a protected route", user: req.user });
+});
+*/
 
 
 // Export the initialized clients
