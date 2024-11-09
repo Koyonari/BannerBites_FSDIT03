@@ -6,6 +6,7 @@ import LayoutViewer from "../AdViewer/AdViewer";
 import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
 import GazeVisualizer from "../AdAnalytics/GazeVisualizer"; 
 import CalibrationComponent from "../AdAnalytics/CalibrationComponent"; // Adjusted import path
+import webgazer from "webgazer"; 
 
 const LayoutList = () => {
   const [layouts, setLayouts] = useState([]);
@@ -234,8 +235,14 @@ const LayoutList = () => {
     setIsLookingAtAd(false);
     setGazedAdId(null);
     setCurrentGazeData(null);
+    // End WebGazer tracking if initialized
+  if (webgazer) {
+    webgazer.end();
+    console.log("[WebGazer] Tracking ended from handleEndTracking.");
+  }
   };
 
+  
   return (
     <>
       <Navbar />
