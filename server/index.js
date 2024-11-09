@@ -36,41 +36,17 @@ app.use("/api/tvs", tvRoutes);
 app.post("/generate-presigned-url", generatePresignedUrlController);
 
 // Endpoint to receive gaze data
-app.post("/api/gaze-data", (req, res) => {
+app.post('/api/gaze-data', (req, res) => {
   const { gazeData } = req.body;
-
   if (!Array.isArray(gazeData)) {
-    return res.status(400).json({ error: "Invalid data: gazeData must be an array" });
+    return res.status(400).json({ error: 'Invalid gaze data format' });
   }
 
-  gazeData.forEach((gazePoint) => {
-    const { x, y, timestamp } = gazePoint;
+  // TODO: Process the gaze data (e.g., save to a database)
+  console.log('Received gaze data:', gazeData);
 
-    const gazedAdId = isGazeWithinAd(x, y);
-    if (gazedAdId) {
-      console.log(`[Gaze Detected] User is viewing ad ${gazedAdId} at time ${timestamp}`);
-    } else {
-      console.log(`[Gaze Detected] User is not viewing any ad at time ${timestamp}`);
-    }
-  });
-
-  res.status(200).json({ message: "Gaze data processed successfully" });
+  res.status(200).json({ message: 'Gaze data received successfully' });
 });
-
-// Function to determine if a gaze point is within any ad boundary
-const isGazeWithinAd = (x, y) => {
-  for (let ad of adsBoundaries) {
-    const adLeft = ad.topLeftX;
-    const adRight = adLeft + ad.width;
-    const adTop = ad.topLeftY;
-    const adBottom = adTop + ad.height;
-
-    if (x >= adLeft && x <= adRight && y >= adTop && y <= adBottom) {
-      return ad.id;
-    }
-  }
-  return null;
-};
 
 // WebSocket Server Handling
 wss.on("connection", (ws) => {

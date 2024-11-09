@@ -1,4 +1,5 @@
 // src/components/LayoutList/LayoutList.jsx
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../Navbar";
 import LayoutViewer from "../AdViewer/AdViewer";
@@ -15,7 +16,7 @@ const LayoutList = () => {
   const reconnectAttemptsRef = useRef(0);
 
   // Tracking states
-  const [isTracking, setIsTracking] = useState(false); // Manages whether tracking is active
+  const [isTracking, setIsTracking] = useState(false);
   const [retentionTime, setRetentionTime] = useState(0);
   const [isLookingAtAd, setIsLookingAtAd] = useState(false);
   const [gazedAdId, setGazedAdId] = useState(null);
@@ -29,15 +30,29 @@ const LayoutList = () => {
   // Gaze points to be sent to backend
   const [gazePoints, setGazePoints] = useState([]);
 
+  // State to track highlighted grid cell
+  const [highlightedCellId, setHighlightedCellId] = useState(null);
+
+  // Create a ref for the grid element
+  const gridRef = useRef(null);
+
   useEffect(() => {
     fetchLayouts();
+
+    // Global unhandled promise rejection handler
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
 
     return () => {
       if (websocketRef.current) {
         websocketRef.current.close();
       }
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
     };
   }, []);
+
+  const handleUnhandledRejection = (event) => {
+    console.error("Unhandled promise rejection:", event.reason);
+  };
 
   const fetchLayouts = async () => {
     try {
@@ -51,6 +66,7 @@ const LayoutList = () => {
       setLayouts(data);
     } catch (err) {
       setError(err.message);
+      console.error("Error fetching layouts:", err);
     } finally {
       setLoading(false);
     }
@@ -67,19 +83,19 @@ const LayoutList = () => {
       setLoading(true);
       setError(null);
       setSelectedLayout(null);
-      setIsTracking(false); // Ensure tracking is reset when a new layout is selected
+      setIsTracking(false);
       setRetentionTime(0);
       setIsLookingAtAd(false);
       setGazedAdId(null);
+      setCurrentGazeData(null); // Reset gaze visualizer
+      setHighlightedCellId(null); // Reset highlighted cell
 
-      // Close existing WebSocket connection if any
       if (websocketRef.current) {
         websocketRef.current.onclose = null;
         websocketRef.current.close();
         websocketRef.current = null;
       }
 
-      // Fetch selected layout details
       const response = await fetch(`http://localhost:5000/api/layouts/${layoutId}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch layout details for layoutId: ${layoutId}`);
@@ -88,30 +104,61 @@ const LayoutList = () => {
       console.log("[LayoutList] Fetched layout data:", data);
       setSelectedLayout(data);
 
-      // Do not initiate tracking here; tracking starts when user clicks "Start Calibration"
+      establishWebSocketConnection(layoutId);
+      setIsTracking(true);
     } catch (err) {
       setError(err.message);
+      console.error("Error selecting layout:", err);
     } finally {
       setLoading(false);
       pendingLayoutIdRef.current = null;
     }
   };
 
-  // Function to start tracking
-  const startTracking = () => {
-    if (selectedLayout) {
-      setIsTracking(true);
-      // Initialize or reset any tracking-specific states here if needed
-    }
-  };
+  const establishWebSocketConnection = (layoutId) => {
+    websocketRef.current = new WebSocket("ws://localhost:5000");
 
-  // Function to stop tracking
-  const stopTracking = () => {
-    setIsTracking(false);
-    // Clean up tracking-specific states if needed
-    setRetentionTime(0);
-    setIsLookingAtAd(false);
-    setGazedAdId(null);
+    websocketRef.current.onopen = () => {
+      console.log("[FRONTEND] Connected to WebSocket server");
+      websocketRef.current.send(JSON.stringify({ type: "subscribe", layoutId }));
+    };
+
+    websocketRef.current.onmessage = (event) => {
+      try {
+        const parsedData = JSON.parse(event.data);
+        console.log("[FRONTEND] Received WebSocket message:", parsedData);
+
+        if (
+          (parsedData.type === "layoutUpdate" || parsedData.type === "layoutData") &&
+          parsedData.data.layoutId === layoutId
+        ) {
+          setSelectedLayout(parsedData.data);
+          console.log("[FRONTEND] Layout updated via WebSocket:", parsedData.data);
+        }
+      } catch (e) {
+        console.error("[FRONTEND] Error parsing WebSocket message:", e);
+      }
+    };
+
+    websocketRef.current.onclose = (event) => {
+      console.log("[FRONTEND] WebSocket connection closed. Reason:", event.reason);
+      if (
+        pendingLayoutIdRef.current === layoutId &&
+        reconnectAttemptsRef.current < 5
+      ) {
+        reconnectAttemptsRef.current += 1;
+        setTimeout(() => {
+          console.log(
+            `[FRONTEND] Reconnecting to WebSocket server... Attempt #${reconnectAttemptsRef.current}`
+          );
+          establishWebSocketConnection(layoutId);
+        }, 5000);
+      }
+    };
+
+    websocketRef.current.onerror = (error) => {
+      console.error("[FRONTEND] WebSocket error:", error);
+    };
   };
 
   // Gaze data handler to accumulate gaze points
@@ -120,8 +167,41 @@ const LayoutList = () => {
       const gazePoint = { x, y, timestamp: Date.now() };
       setGazePoints((prevPoints) => [...prevPoints, gazePoint]);
       setCurrentGazeData({ x, y });
+
+      // Determine the highlighted cell based on gaze coordinates
+      if (selectedLayout && selectedLayout.gridItems && gridRef.current) {
+        const rect = gridRef.current.getBoundingClientRect();
+        const relativeX = x - rect.left;
+        const relativeY = y - rect.top;
+
+        // Ensure gaze is within the grid boundaries
+        if (
+          relativeX < 0 ||
+          relativeY < 0 ||
+          relativeX > rect.width ||
+          relativeY > rect.height
+        ) {
+          setHighlightedCellId(null);
+          return;
+        }
+
+        const cellWidth = rect.width / selectedLayout.columns;
+        const cellHeight = rect.height / selectedLayout.rows;
+
+        const column = Math.floor(relativeX / cellWidth);
+        const row = Math.floor(relativeY / cellHeight);
+
+        const cellIndex = row * selectedLayout.columns + column;
+        const cell = selectedLayout.gridItems[cellIndex];
+
+        if (cell) {
+          setHighlightedCellId(cell.index); // Assuming each cell has a unique 'index'
+        } else {
+          setHighlightedCellId(null);
+        }
+      }
     },
-    []
+    [selectedLayout, gridRef]
   );
 
   useEffect(() => {
@@ -149,6 +229,7 @@ const LayoutList = () => {
       }
       console.log("[Gaze Data Sent]", gazeDataArray);
     } catch (error) {
+      setError(error.message);
       console.error("[Gaze Data Error]", error);
     }
   };
@@ -164,6 +245,8 @@ const LayoutList = () => {
     setRetentionTime(0);
     setIsLookingAtAd(false);
     setGazedAdId(null);
+    setCurrentGazeData(null); // Reset gaze visualizer
+    setHighlightedCellId(null); // Reset highlighted cell
   };
 
   return (
@@ -237,12 +320,18 @@ const LayoutList = () => {
               </div>
             </div>
 
-            {/* Layout Viewer and Tracking Controls */}
-            <div className="ml-[2vw] flex h-[80vh] w-[80vw] flex-col items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg">
-              <div className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg bg-white shadow-inner w-full">
+            {/* Layout Viewer */}
+            <div className="ml-[2vw] flex h-[80vh] w-[80vw] items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg">
+              <div
+                className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg bg-white shadow-inner"
+                id="layout-grid"
+              >
                 {loading && selectedLayout && (
                   <div className="flex items-center justify-center p-4 text-gray-600">
-                    <svg className="mr-2 h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                    <svg
+                      className="mr-2 h-5 w-5 animate-spin"
+                      viewBox="0 0 24 24"
+                    >
                       <circle
                         cx="12"
                         cy="12"
@@ -261,7 +350,11 @@ const LayoutList = () => {
                   </div>
                 )}
                 {selectedLayout && !loading && (
-                  <LayoutViewer layout={selectedLayout} />
+                  <LayoutViewer
+                    layout={selectedLayout}
+                    highlightedCellId={highlightedCellId}
+                    gridRef={gridRef} // Pass the ref here
+                  />
                 )}
                 {!selectedLayout && !loading && (
                   <div className="p-4 text-center text-gray-500">
@@ -269,50 +362,35 @@ const LayoutList = () => {
                   </div>
                 )}
               </div>
-
-              {/* Tracking Controls */}
-              {selectedLayout && hasConsent && (
-                <div className="mt-4 flex space-x-2">
-                  {!isTracking ? (
-                    <button
-                      onClick={startTracking}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg"
-                    >
-                      Start Calibration
-                    </button>
-                  ) : (
-                    <button
-                      onClick={stopTracking}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg"
-                    >
-                      Stop Tracking
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
+          </div>
+        )}
+
+        {/* Viewer Analytics Section */}
+        {selectedLayout && hasConsent && (
+          <div className="mt-8 rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
+            <p className="mb-2">
+              <strong>Retention Time:</strong> {retentionTime} seconds
+            </p>
+            <p>
+              <strong>Looking at Ad:</strong>{" "}
+              {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
+            </p>
           </div>
         )}
       </div>
 
-      {/* Viewer Analytics Section */}
-      {selectedLayout && hasConsent && (
-        <div className="mt-8 rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
-          <p className="mb-2">
-            <strong>Retention Time:</strong> {retentionTime} seconds
-          </p>
-          <p>
-            <strong>Looking at Ad:</strong> {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
-          </p>
-        </div>
+      {/* Render GazeTrackingComponent only if tracking */}
+      {isTracking && selectedLayout && hasConsent && (
+        <GazeTrackingComponent
+          onGazeData={handleGazeData}
+          isActive={isTracking}
+        />
       )}
 
-      {/* Render GazeTrackingComponent only if tracking is active */}
-      {isTracking && selectedLayout && hasConsent && (
-        <GazeTrackingComponent onGazeData={handleGazeData} isActive={isTracking} />
-      )}
-      {currentGazeData && <GazeVisualizer gazeData={currentGazeData} />}
+      {/* Render GazeVisualizer only if tracking is active and gaze data exists */}
+      {isTracking && currentGazeData && <GazeVisualizer gazeData={currentGazeData} />}
     </>
   );
 };
