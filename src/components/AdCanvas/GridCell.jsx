@@ -175,7 +175,7 @@ const GridCell = ({
           className="flex h-full w-full items-center justify-center"
           style={contentStyle}
         >
-          <p className="text-center text-gray-500">{type} Ad</p>
+          <p className="text-center text-gray-500 lg:text-2xl">{type} Ad</p>
         </div>
       );
     }
