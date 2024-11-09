@@ -1,5 +1,3 @@
-// src/components/AdAnalytics/GazeVisualizer.jsx
-
 import React, { useEffect, useRef } from "react";
 
 const GazeVisualizer = ({ gazeData }) => {
@@ -9,49 +7,33 @@ const GazeVisualizer = ({ gazeData }) => {
     if (!canvasRef.current || !gazeData) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-    // Resize canvas to match the window size
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    let animationFrameId;
 
-    // Clear previous drawings
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const render = () => {
+      // Resize canvas to match the window size
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
 
-    // Draw a circle at the gaze coordinates
-    ctx.beginPath();
-    ctx.arc(gazeData.x, gazeData.y, 10, 0, 2 * Math.PI);
-    ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
-    ctx.fill();
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+      // Clear previous drawings
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw camera bounding rectangle for debugging
-    const cameraElement = document.getElementById("webgazerVideoFeed");
-    if (cameraElement) {
-      const rect = cameraElement.getBoundingClientRect();
-      ctx.strokeStyle = "blue";
+      // Draw a circle at the gaze coordinates
+      ctx.beginPath();
+      ctx.arc(gazeData.x, gazeData.y, 10, 0, 2 * Math.PI);
+      ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+      ctx.fill();
+      ctx.strokeStyle = "red";
       ctx.lineWidth = 2;
-      ctx.strokeRect(rect.left, rect.top, rect.width, rect.height);
-      ctx.fillStyle = "blue";
-      ctx.font = "16px Arial";
-      ctx.fillText("Camera", rect.left, rect.top - 10);
-    }
+      ctx.stroke();
 
-    // Draw ad bounding rectangles for debugging
-    const adElements = document.querySelectorAll(".ad-item");
-    adElements.forEach((adElement) => {
-      const rect = adElement.getBoundingClientRect();
-      ctx.strokeStyle = "green";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(rect.left, rect.top, rect.width, rect.height);
-      ctx.fillStyle = "green";
-      ctx.font = "14px Arial";
-      const adId = adElement.getAttribute("data-ad-id");
-      ctx.fillText(`Ad ${adId}`, rect.left, rect.top - 10);
-    });
+      animationFrameId = requestAnimationFrame(render);
+    };
 
+    render();
+
+    return () => cancelAnimationFrame(animationFrameId);
   }, [gazeData]);
 
   return (

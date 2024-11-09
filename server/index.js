@@ -35,35 +35,42 @@ app.use("/api/locations", locationRoutes);
 app.use("/api/tvs", tvRoutes);
 app.post("/generate-presigned-url", generatePresignedUrlController);
 
-// API endpoint to receive viewer data
-app.post('/api/viewerData', (req, res) => {
-  // Log the entire request body for debugging
-  console.log('Viewer Data Received:', req.body);
+// Endpoint to receive gaze data
+app.post("/api/gaze-data", (req, res) => {
+  const { gazeData } = req.body;
 
-  // Destructure the expected fields from the request body
-  const { layoutId, looking, timestamp } = req.body;
-
-  // Basic Validation
-  if (
-    typeof layoutId !== 'string' ||
-    typeof looking !== 'boolean' ||
-    typeof timestamp !== 'string' ||
-    isNaN(Date.parse(timestamp))
-  ) {
-    console.warn('Invalid data format received:', req.body);
-    return res.status(400).json({ error: 'Invalid data format' });
+  if (!Array.isArray(gazeData)) {
+    return res.status(400).json({ error: "Invalid data: gazeData must be an array" });
   }
 
-  // Log formatted data
-  console.log(`Viewer Data:
-    Layout ID: ${layoutId}
-    Looking: ${looking}
-    Timestamp: ${timestamp}
-  `);
+  gazeData.forEach((gazePoint) => {
+    const { x, y, timestamp } = gazePoint;
 
-  // Respond to the client
-  res.status(200).json({ message: 'Viewer data logged successfully' });
+    const gazedAdId = isGazeWithinAd(x, y);
+    if (gazedAdId) {
+      console.log(`[Gaze Detected] User is viewing ad ${gazedAdId} at time ${timestamp}`);
+    } else {
+      console.log(`[Gaze Detected] User is not viewing any ad at time ${timestamp}`);
+    }
+  });
+
+  res.status(200).json({ message: "Gaze data processed successfully" });
 });
+
+// Function to determine if a gaze point is within any ad boundary
+const isGazeWithinAd = (x, y) => {
+  for (let ad of adsBoundaries) {
+    const adLeft = ad.topLeftX;
+    const adRight = adLeft + ad.width;
+    const adTop = ad.topLeftY;
+    const adBottom = adTop + ad.height;
+
+    if (x >= adLeft && x <= adRight && y >= adTop && y <= adBottom) {
+      return ad.id;
+    }
+  }
+  return null;
+};
 
 // WebSocket Server Handling
 wss.on("connection", (ws) => {

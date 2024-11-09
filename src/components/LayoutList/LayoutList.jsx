@@ -1,10 +1,8 @@
-// src/components/LayoutList.jsx
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../Navbar";
-import LayoutViewer from "../AdViewer/AdViewer"; 
+import LayoutViewer from "../AdViewer/AdViewer";
 import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
-import GazeVisualizer from "../AdAnalytics/GazeVisualizer"; 
+import GazeVisualizer from "../AdAnalytics/GazeVisualizer";
 
 const LayoutList = () => {
   const [layouts, setLayouts] = useState([]);
@@ -19,7 +17,7 @@ const LayoutList = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [retentionTime, setRetentionTime] = useState(0);
   const [isLookingAtAd, setIsLookingAtAd] = useState(false);
-  const [gazedAdId, setGazedAdId] = useState(null); // Track which ad is being gazed at
+  const [gazedAdId, setGazedAdId] = useState(null);
 
   // Consent state
   const [hasConsent, setHasConsent] = useState(false);
@@ -27,14 +25,13 @@ const LayoutList = () => {
   // Gaze data for visualization
   const [currentGazeData, setCurrentGazeData] = useState(null);
 
-  // Gaze history for smoothing (useRef instead of useState to prevent stale closures)
-  const gazeHistoryRef = useRef([]);
+  // Gaze points to be sent to backend
+  const [gazePoints, setGazePoints] = useState([]);
 
   useEffect(() => {
     fetchLayouts();
 
     return () => {
-      // Cleanup WebSocket when component unmounts
       if (websocketRef.current) {
         websocketRef.current.close();
       }
@@ -60,7 +57,6 @@ const LayoutList = () => {
 
   const handleLayoutSelect = async (layoutId) => {
     if (pendingLayoutIdRef.current === layoutId) {
-      // If this layout is already pending, ignore the repeated request.
       return;
     }
     pendingLayoutIdRef.current = layoutId;
@@ -73,17 +69,14 @@ const LayoutList = () => {
       setIsTracking(false);
       setRetentionTime(0);
       setIsLookingAtAd(false);
-      setGazedAdId(null); // Reset gazed ad
-      gazeHistoryRef.current = []; // Reset gaze history
+      setGazedAdId(null);
 
-      // Close the previous WebSocket connection if one exists
       if (websocketRef.current) {
         websocketRef.current.onclose = null;
         websocketRef.current.close();
         websocketRef.current = null;
       }
 
-      // Fetch the initial layout data
       const response = await fetch(`http://localhost:5000/api/layouts/${layoutId}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch layout details for layoutId: ${layoutId}`);
@@ -92,7 +85,6 @@ const LayoutList = () => {
       console.log("[LayoutList] Fetched layout data:", data);
       setSelectedLayout(data);
 
-      // Set up WebSocket connection for real-time updates
       establishWebSocketConnection(layoutId);
       setIsTracking(true);
     } catch (err) {
@@ -120,7 +112,6 @@ const LayoutList = () => {
           (parsedData.type === "layoutUpdate" || parsedData.type === "layoutData") &&
           parsedData.data.layoutId === layoutId
         ) {
-          // Update the layout with the received data
           setSelectedLayout(parsedData.data);
           console.log("[FRONTEND] Layout updated via WebSocket:", parsedData.data);
         }
@@ -135,7 +126,6 @@ const LayoutList = () => {
         pendingLayoutIdRef.current === layoutId &&
         reconnectAttemptsRef.current < 5
       ) {
-        // Attempt to reconnect only if this layoutId is still active and attempts are below threshold
         reconnectAttemptsRef.current += 1;
         setTimeout(() => {
           console.log(
@@ -151,50 +141,48 @@ const LayoutList = () => {
     };
   };
 
-  const handleGazeAtAd = useCallback(({ x, y }) => {
-    const adElements = document.querySelectorAll(".ad-item");
-    let gazedAtAdId = null;
-
-    adElements.forEach((adElement) => {
-      const rect = adElement.getBoundingClientRect();
-      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        gazedAtAdId = adElement.getAttribute("data-ad-id");
-      }
-    });
-
-    if (gazedAtAdId !== gazedAdId) {
-      // Reset retention time if gazed ad changes
-      setRetentionTime(0);
-    }
-
-    if (gazedAtAdId) {
-      setIsLookingAtAd(true);
-      setGazedAdId(gazedAtAdId);
+  // Gaze data handler to accumulate gaze points
+  const handleGazeAtAd = useCallback(
+    ({ x, y }) => {
+      const gazePoint = { x, y, timestamp: Date.now() };
+      setGazePoints((prevPoints) => [...prevPoints, gazePoint]);
       setCurrentGazeData({ x, y });
-    } else {
-      setIsLookingAtAd(false);
-      setGazedAdId(null);
-      setCurrentGazeData({ x, y });
-    }
-  }, [gazedAdId]);
+    },
+    []
+  );
 
   useEffect(() => {
-    let interval = null;
-    if (isTracking && isLookingAtAd) {
-      interval = setInterval(() => {
-        setRetentionTime((prevTime) => prevTime + 1);
-      }, 1000);
-    } else {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [isTracking, isLookingAtAd]);
+    const interval = setInterval(() => {
+      if (gazePoints.length > 0) {
+        sendGazeDataToBackend(gazePoints);
+        setGazePoints([]);
+      }
+    }, 5000); // Send every 5 seconds
 
+    return () => clearInterval(interval);
+  }, [gazePoints]);
+
+  const sendGazeDataToBackend = async (gazeDataArray) => {
+    try {
+      const response = await fetch("http://localhost:5000/api/gaze-data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ gazeData: gazeDataArray }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send gaze data to backend");
+      }
+      console.log("[Gaze Data Sent]", gazeDataArray);
+    } catch (error) {
+      console.error("[Gaze Data Error]", error);
+    }
+  };
+
+  // Handle consent for gaze tracking
   const handleConsent = () => {
     setHasConsent(true);
-    if (selectedLayout) {
-      setIsTracking(true);
-    }
   };
 
   const handleDeclineConsent = () => {
@@ -231,6 +219,7 @@ const LayoutList = () => {
         )}
         {hasConsent && (
           <div className="grid md:flex md:grid-cols-2">
+            {/* Layout Selection */}
             <div className="rounded-lg bg-white p-6 shadow md:w-[20vw]">
               <h2 className="mb-4 text-xl font-bold">Available Layouts</h2>
               {loading && !selectedLayout && (
@@ -275,6 +264,7 @@ const LayoutList = () => {
               </div>
             </div>
 
+            {/* Layout Viewer */}
             <div className="ml-[2vw] flex h-[80vh] w-[80vw] items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg">
               <div className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg bg-white shadow-inner">
                 {loading && selectedLayout && (
@@ -327,12 +317,10 @@ const LayoutList = () => {
         )}
       </div>
 
-      {/* Render GazeTrackingComponent only once */}
+      {/* Render GazeTrackingComponent only if tracking */}
       {isTracking && selectedLayout && hasConsent && (
         <GazeTrackingComponent onGazeAtAd={handleGazeAtAd} isActive={isTracking} />
       )}
-
-      {/* Render GazeVisualizer */}
       {currentGazeData && <GazeVisualizer gazeData={currentGazeData} />}
     </>
   );

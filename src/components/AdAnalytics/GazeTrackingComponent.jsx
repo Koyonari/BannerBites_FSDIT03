@@ -1,5 +1,3 @@
-// src/components/AdAnalytics/GazeTrackingComponent.jsx
-
 import React, { useEffect, useRef } from "react";
 import webgazer from "webgazer";
 
@@ -42,10 +40,21 @@ const GazeTrackingComponent = ({ onGazeAtAd, isActive }) => {
         alert("Gaze tracking failed to initialize.");
       });
 
-    // Show the webgazer video and overlays
-    webgazer.showVideo(true);
-    webgazer.showFaceOverlay(true);
+    // Show only the prediction points (optional: hide video and face overlay)
+    webgazer.showVideo(false);
+    webgazer.showFaceOverlay(false);
     webgazer.showPredictionPoints(true);
+
+    // Handle visibility change to pause/resume WebGazer
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && isInitializedRef.current) {
+        webgazer.pause();  // Pause when tab is hidden
+      } else if (document.visibilityState === "visible" && isActive) {
+        webgazer.resume(); // Resume when visible again
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Cleanup function
     return () => {
@@ -58,16 +67,11 @@ const GazeTrackingComponent = ({ onGazeAtAd, isActive }) => {
           console.error("[WebGazer] Error during cleanup:", error);
         }
       }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [isActive, onGazeAtAd]);
 
-  return (
-    <div className="webgazer-video-container" style={{ position: 'fixed', top: 10, left: 10, zIndex: 10000 }}>
-      <video id="webgazerVideoFeed" width="320" height="240" style={{ border: '2px solid #fff' }}></video>
-      <canvas id="webgazerFaceOverlay" width="320" height="240" style={{ position: 'absolute', top: 10, left: 10 }}></canvas>
-      <canvas id="webgazerPredictionPoints" width="320" height="240" style={{ position: 'absolute', top: 10, left: 10 }}></canvas>
-    </div>
-  );
+  return null; // Remove any UI related to the webcam since it's not needed
 };
 
 export default GazeTrackingComponent;
