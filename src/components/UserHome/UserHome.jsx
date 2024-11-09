@@ -15,7 +15,7 @@ const Card = ({ title, date, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="card relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-orange-500 bg-black text-center text-white transition-all duration-300 ease-in-out hover:-translate-y-2 hover:bg-orange-500 hover:shadow-xl dark:bg-white dark:text-black sm:h-full lg:h-[35vh] lg:w-[28vw]"
+      className="card relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-orange-500 bg-black text-center text-white transition-all duration-300 ease-in-out hover:-translate-y-2 hover:bg-orange-500 hover:shadow-xl dark:bg-white dark:text-black sm:h-full lg:h-[35vh] lg:w-[28vw] xl:border-4"
     >
       <div>
         <h1 className="text-md px-6 py-4 font-bold sm:text-xl md:px-2 lg:text-2xl 2xl:text-4xl">
