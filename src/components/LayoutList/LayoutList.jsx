@@ -15,7 +15,7 @@ const LayoutList = () => {
   const reconnectAttemptsRef = useRef(0);
 
   // Tracking states
-  const [isTracking, setIsTracking] = useState(false);
+  const [isTracking, setIsTracking] = useState(false); // Manages whether tracking is active
   const [retentionTime, setRetentionTime] = useState(0);
   const [isLookingAtAd, setIsLookingAtAd] = useState(false);
   const [gazedAdId, setGazedAdId] = useState(null);
@@ -67,17 +67,19 @@ const LayoutList = () => {
       setLoading(true);
       setError(null);
       setSelectedLayout(null);
-      setIsTracking(false);
+      setIsTracking(false); // Ensure tracking is reset when a new layout is selected
       setRetentionTime(0);
       setIsLookingAtAd(false);
       setGazedAdId(null);
 
+      // Close existing WebSocket connection if any
       if (websocketRef.current) {
         websocketRef.current.onclose = null;
         websocketRef.current.close();
         websocketRef.current = null;
       }
 
+      // Fetch selected layout details
       const response = await fetch(`http://localhost:5000/api/layouts/${layoutId}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch layout details for layoutId: ${layoutId}`);
@@ -86,8 +88,7 @@ const LayoutList = () => {
       console.log("[LayoutList] Fetched layout data:", data);
       setSelectedLayout(data);
 
-      establishWebSocketConnection(layoutId);
-      setIsTracking(true);
+      // Do not initiate tracking here; tracking starts when user clicks "Start Calibration"
     } catch (err) {
       setError(err.message);
     } finally {
@@ -96,50 +97,21 @@ const LayoutList = () => {
     }
   };
 
-  const establishWebSocketConnection = (layoutId) => {
-    websocketRef.current = new WebSocket("ws://localhost:5000");
+  // Function to start tracking
+  const startTracking = () => {
+    if (selectedLayout) {
+      setIsTracking(true);
+      // Initialize or reset any tracking-specific states here if needed
+    }
+  };
 
-    websocketRef.current.onopen = () => {
-      console.log("[FRONTEND] Connected to WebSocket server");
-      websocketRef.current.send(JSON.stringify({ type: "subscribe", layoutId }));
-    };
-
-    websocketRef.current.onmessage = (event) => {
-      try {
-        const parsedData = JSON.parse(event.data);
-        console.log("[FRONTEND] Received WebSocket message:", parsedData);
-
-        if (
-          (parsedData.type === "layoutUpdate" || parsedData.type === "layoutData") &&
-          parsedData.data.layoutId === layoutId
-        ) {
-          setSelectedLayout(parsedData.data);
-          console.log("[FRONTEND] Layout updated via WebSocket:", parsedData.data);
-        }
-      } catch (e) {
-        console.error("[FRONTEND] Error parsing WebSocket message:", e);
-      }
-    };
-
-    websocketRef.current.onclose = (event) => {
-      console.log("[FRONTEND] WebSocket connection closed. Reason:", event.reason);
-      if (
-        pendingLayoutIdRef.current === layoutId &&
-        reconnectAttemptsRef.current < 5
-      ) {
-        reconnectAttemptsRef.current += 1;
-        setTimeout(() => {
-          console.log(
-            `[FRONTEND] Reconnecting to WebSocket server... Attempt #${reconnectAttemptsRef.current}`
-          );
-          establishWebSocketConnection(layoutId);
-        }, 5000);
-      }
-    };
-
-    websocketRef.current.onerror = (error) => {
-      console.error("[FRONTEND] WebSocket error:", error);
-    };
+  // Function to stop tracking
+  const stopTracking = () => {
+    setIsTracking(false);
+    // Clean up tracking-specific states if needed
+    setRetentionTime(0);
+    setIsLookingAtAd(false);
+    setGazedAdId(null);
   };
 
   // Gaze data handler to accumulate gaze points
@@ -265,15 +237,12 @@ const LayoutList = () => {
               </div>
             </div>
 
-            {/* Layout Viewer */}
-            <div className="ml-[2vw] flex h-[80vh] w-[80vw] items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg">
-              <div className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg bg-white shadow-inner">
+            {/* Layout Viewer and Tracking Controls */}
+            <div className="ml-[2vw] flex h-[80vh] w-[80vw] flex-col items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg">
+              <div className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg bg-white shadow-inner w-full">
                 {loading && selectedLayout && (
                   <div className="flex items-center justify-center p-4 text-gray-600">
-                    <svg
-                      className="mr-2 h-5 w-5 animate-spin"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="mr-2 h-5 w-5 animate-spin" viewBox="0 0 24 24">
                       <circle
                         cx="12"
                         cy="12"
@@ -300,30 +269,48 @@ const LayoutList = () => {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* Viewer Analytics Section */}
-        {selectedLayout && hasConsent && (
-          <div className="mt-8 rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
-            <p className="mb-2">
-              <strong>Retention Time:</strong> {retentionTime} seconds
-            </p>
-            <p>
-              <strong>Looking at Ad:</strong> {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
-            </p>
+              {/* Tracking Controls */}
+              {selectedLayout && hasConsent && (
+                <div className="mt-4 flex space-x-2">
+                  {!isTracking ? (
+                    <button
+                      onClick={startTracking}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+                    >
+                      Start Calibration
+                    </button>
+                  ) : (
+                    <button
+                      onClick={stopTracking}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg"
+                    >
+                      Stop Tracking
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Render GazeTrackingComponent only if tracking */}
+      {/* Viewer Analytics Section */}
+      {selectedLayout && hasConsent && (
+        <div className="mt-8 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
+          <p className="mb-2">
+            <strong>Retention Time:</strong> {retentionTime} seconds
+          </p>
+          <p>
+            <strong>Looking at Ad:</strong> {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
+          </p>
+        </div>
+      )}
+
+      {/* Render GazeTrackingComponent only if tracking is active */}
       {isTracking && selectedLayout && hasConsent && (
-        <GazeTrackingComponent
-          onGazeData={handleGazeData}
-          isActive={isTracking}
-        />
+        <GazeTrackingComponent onGazeData={handleGazeData} isActive={isTracking} />
       )}
       {currentGazeData && <GazeVisualizer gazeData={currentGazeData} />}
     </>
