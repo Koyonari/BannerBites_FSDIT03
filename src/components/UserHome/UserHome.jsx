@@ -2,30 +2,21 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../Navbar";
-import MenuItem from "@mui/material/MenuItem";
-import EditIcon from "@mui/icons-material/Edit";
-import TextField from "@mui/material/TextField";
 import TVSelector from "../TVSelector";
 import AssignLayoutToTV from "../AssignLayoutToTV";
+import { MoveLeft } from "lucide-react";
 
-const currencies = [
-  {
-    value: "date",
-    label: "Sort by Date",
-  },
-  {
-    value: "alpha",
-    label: "Sort by Alphabetical",
-  },
+const sortOptions = [
+  { value: "alpha", label: "Sort by Alphabetical" },
+  { value: "date", label: "Sort by Date" },
 ];
 
 const Card = ({ title, date, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="card relative flex w-4/5 max-w-96 cursor-pointer flex-col items-center justify-center rounded-xl bg-black text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-black sm:h-full lg:h-[35vh] lg:w-[28vw]"
+      className="card relative flex w-4/5 max-w-96 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-orange-500 bg-black text-center text-white transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl dark:bg-white dark:text-black sm:h-full lg:h-[35vh] lg:w-[28vw]"
     >
-      <EditIcon className="absolute right-4 top-4 text-white dark:text-black" />
       <div>
         <h1 className="px-6 py-4 text-xl font-bold md:px-2">{title}</h1>
         <p className="text-md px-6 py-4 md:px-2">Date Created: {date}</p>
@@ -37,7 +28,7 @@ const Card = ({ title, date, onClick }) => {
 const UserHome = ({ onSelectLocation, onSelectTV }) => {
   const [locations, setLocations] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("date");
+  const [sortBy, setSortBy] = useState("alpha");
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [showTVSelector, setShowTVSelector] = useState(false);
   const [selectedTVId, setSelectedTVId] = useState(null);
@@ -100,12 +91,10 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
       <section className="min-h-screen bg-white dark:bg-black">
         <Navbar />
         <div className="p-4">
-          <button
+          <MoveLeft
             onClick={handleBack}
-            className="mb-4 rounded-md bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
-          >
-            ← Back to TV Selection
-          </button>
+            className="h-8 w-16 rounded-lg bg-gray-500 py-1 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-orange-500 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+          />
           <AssignLayoutToTV
             tvId={selectedTVId}
             onLayoutAssigned={handleLayoutAssigned}
@@ -120,12 +109,10 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
       <section className="min-h-screen bg-white dark:bg-black">
         <Navbar />
         <div className="p-4">
-          <button
+          <MoveLeft
             onClick={handleBack}
-            className="mb-4 rounded-md bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
-          >
-            ← Back to Locations
-          </button>
+            className="h-8 w-16 rounded-lg bg-gray-500 py-1 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-orange-500 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+          />
           <TVSelector
             locationId={selectedLocationId}
             onSelectTV={handleTVSelect}
@@ -139,33 +126,30 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
     <section className="h-screen bg-white dark:bg-black">
       <Navbar />
       <div className="flex justify-center gap-4 pt-4 md:px-4">
-        <div className="flex h-12 w-1/6 items-center rounded-md border border-[#0000003a] px-4 py-2 dark:border-white sm:h-14">
-          <TextField
-            className="w-full dark:text-white"
-            select
+        <div className="flex h-12 w-1/6 items-center rounded-md border border-gray-300 px-4 py-2 dark:border-white sm:h-14">
+          <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            variant="standard"
+            className="w-full bg-transparent text-black focus:outline-none dark:text-white"
           >
-            {currencies.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
                 {option.label}
-              </MenuItem>
+              </option>
             ))}
-          </TextField>
+          </select>
         </div>
-        <div className="flex h-12 w-1/2 items-center rounded-md px-4 py-2 sm:h-14">
-          <TextField
-            id="outlined-basic"
-            variant="outlined"
-            fullWidth
-            label="Search location"
+        <div className="flex h-12 w-1/2 items-center rounded-md border border-gray-300 px-4 py-2 dark:border-white sm:h-14">
+          <input
+            type="text"
+            placeholder="Search location"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-transparent text-black placeholder-gray-500 focus:outline-none dark:text-white dark:placeholder-gray-400"
           />
         </div>
-        <Link key="home" to={"/ad"} className="w-1/6 rounded-md bg-orange-500">
-          <button className="h-full w-full px-4 py-2 text-center text-xs font-bold text-white md:text-base">
+        <Link key="home" to={"/ad"} className="w-1/6">
+          <button className="h-full w-full rounded-md bg-orange-500 px-4 py-2 text-center text-xs font-bold text-white transition-colors hover:bg-orange-600 md:text-base">
             Create New
           </button>
         </Link>
