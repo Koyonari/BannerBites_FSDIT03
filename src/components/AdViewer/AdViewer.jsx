@@ -1,8 +1,9 @@
 // src/components/AdViewer/AdViewer.jsx
+
 import React from "react";
 
 // Component to represent an individual Ad
-const AdComponent = ({ type, content, styles }) => {
+const AdComponent = ({ id, type, content, styles }) => {
   let mediaUrl = content.mediaUrl || content.src;
 
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
@@ -14,7 +15,7 @@ const AdComponent = ({ type, content, styles }) => {
   }
 
   return (
-    <div className="ad-item" style={styles}>
+    <div className="ad-item" data-ad-id={id} style={styles}>
       {type === "text" && (
         <div>
           <h3>{content.title}</h3>
@@ -70,7 +71,10 @@ const AdViewer = ({ layout }) => {
         let adToDisplay = null;
 
         if (scheduledAds && scheduledAds.length > 0) {
-          const currentTimeString = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
+          const currentTime = new Date();
+          const currentTimeString = `${currentTime.getHours()
+            .toString()
+            .padStart(2, "0")}:${currentTime.getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
 
           const availableAds = scheduledAds.filter(
             (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
@@ -111,7 +115,12 @@ const AdViewer = ({ layout }) => {
               backgroundColor: "#fafafa",
             }}
           >
-            <AdComponent type={type} content={content} styles={styles} />
+            <AdComponent
+              id={index} // Assign unique id based on index
+              type={type}
+              content={content}
+              styles={styles}
+            />
           </div>
         );
       })}

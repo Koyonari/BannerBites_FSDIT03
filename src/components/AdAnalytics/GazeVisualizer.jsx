@@ -27,7 +27,7 @@ const GazeVisualizer = ({ gazeData }) => {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Optional: Draw camera bounding rectangle for debugging
+    // Draw camera bounding rectangle for debugging
     const cameraElement = document.getElementById("webgazerVideoFeed");
     if (cameraElement) {
       const rect = cameraElement.getBoundingClientRect();
@@ -39,17 +39,18 @@ const GazeVisualizer = ({ gazeData }) => {
       ctx.fillText("Camera", rect.left, rect.top - 10);
     }
 
-    // Optional: Draw ad bounding rectangle for debugging
-    const adElement = document.getElementById("advertisement");
-    if (adElement) {
+    // Draw ad bounding rectangles for debugging
+    const adElements = document.querySelectorAll(".ad-item");
+    adElements.forEach((adElement) => {
       const rect = adElement.getBoundingClientRect();
       ctx.strokeStyle = "green";
       ctx.lineWidth = 2;
       ctx.strokeRect(rect.left, rect.top, rect.width, rect.height);
       ctx.fillStyle = "green";
-      ctx.font = "16px Arial";
-      ctx.fillText("Ad", rect.left, rect.top - 10);
-    }
+      ctx.font = "14px Arial";
+      const adId = adElement.getAttribute("data-ad-id");
+      ctx.fillText(`Ad ${adId}`, rect.left, rect.top - 10);
+    });
 
   }, [gazeData]);
 

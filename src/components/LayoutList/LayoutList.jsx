@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../Navbar";
-import LayoutViewer from "../AdViewer/LayoutViewer"; 
+import LayoutViewer from "../AdViewer/AdViewer"; 
 import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
 import GazeVisualizer from "../AdAnalytics/GazeVisualizer"; 
 
@@ -19,6 +19,7 @@ const LayoutList = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [retentionTime, setRetentionTime] = useState(0);
   const [isLookingAtAd, setIsLookingAtAd] = useState(false);
+  const [gazedAdId, setGazedAdId] = useState(null); // Track which ad is being gazed at
 
   // Consent state
   const [hasConsent, setHasConsent] = useState(false);
@@ -72,6 +73,7 @@ const LayoutList = () => {
       setIsTracking(false);
       setRetentionTime(0);
       setIsLookingAtAd(false);
+      setGazedAdId(null); // Reset gazed ad
       gazeHistoryRef.current = []; // Reset gaze history
 
       // Close the previous WebSocket connection if one exists
@@ -150,33 +152,31 @@ const LayoutList = () => {
   };
 
   const handleGazeAtAd = useCallback(({ x, y }) => {
-    const adElement = document.getElementById("advertisement");
-    if (adElement) {
+    const adElements = document.querySelectorAll(".ad-item");
+    let gazedAtAdId = null;
+
+    adElements.forEach((adElement) => {
       const rect = adElement.getBoundingClientRect();
-      
-      // Update gaze history using useRef
-      gazeHistoryRef.current.push({ x, y });
-      if (gazeHistoryRef.current.length > 5) {
-        gazeHistoryRef.current.shift(); // Keep last 5 points
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        gazedAtAdId = adElement.getAttribute("data-ad-id");
       }
+    });
 
-      // Calculate average gaze
-      const len = gazeHistoryRef.current.length;
-      const avgX = len > 0 ? gazeHistoryRef.current.reduce((acc, point) => acc + point.x, 0) / len : x;
-      const avgY = len > 0 ? gazeHistoryRef.current.reduce((acc, point) => acc + point.y, 0) / len : y;
-
-      // Log average gaze coordinates and ad bounding rect
-      console.log(`Average Gaze Coordinates: (${avgX.toFixed(2)}, ${avgY.toFixed(2)})`);
-      console.log(`Ad Bounding Rect: left=${rect.left}, top=${rect.top}, right=${rect.right}, bottom=${rect.bottom}`);
-      
-      // Update visualization data
-      setCurrentGazeData({ x: avgX, y: avgY });
-      
-      // Check if average gaze coordinates are within the ad's bounding rectangle
-      const isGazingAtAd = avgX >= rect.left && avgX <= rect.right && avgY >= rect.top && avgY <= rect.bottom;
-      setIsLookingAtAd(isGazingAtAd);
+    if (gazedAtAdId !== gazedAdId) {
+      // Reset retention time if gazed ad changes
+      setRetentionTime(0);
     }
-  }, []);
+
+    if (gazedAtAdId) {
+      setIsLookingAtAd(true);
+      setGazedAdId(gazedAtAdId);
+      setCurrentGazeData({ x, y });
+    } else {
+      setIsLookingAtAd(false);
+      setGazedAdId(null);
+      setCurrentGazeData({ x, y });
+    }
+  }, [gazedAdId]);
 
   useEffect(() => {
     let interval = null;
@@ -202,6 +202,7 @@ const LayoutList = () => {
     setIsTracking(false);
     setRetentionTime(0);
     setIsLookingAtAd(false);
+    setGazedAdId(null);
   };
 
   return (
@@ -320,7 +321,7 @@ const LayoutList = () => {
               <strong>Retention Time:</strong> {retentionTime} seconds
             </p>
             <p>
-              <strong>Looking at Ad:</strong> {isLookingAtAd ? "Yes" : "No"}
+              <strong>Looking at Ad:</strong> {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
             </p>
           </div>
         )}
