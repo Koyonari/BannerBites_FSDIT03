@@ -1,37 +1,34 @@
 // src/components/AdAnalytics/GazeTrackingComponent.jsx
 
 import React, { useEffect, useRef } from "react";
+import webgazer from "webgazer";
 
 const GazeTrackingComponent = ({ onGazeAtAd, isActive }) => {
   const isInitializedRef = useRef(false);
+  const lastGazeTimeRef = useRef(0);
+  const throttleInterval = 100; // Process gaze data every 100ms
 
   useEffect(() => {
     if (!isActive) {
       return;
     }
 
-    // Ensure webgazer is loaded
-    if (!window.webgazer) {
+    // Ensure WebGazer is loaded
+    if (!webgazer) {
       console.error("[WebGazer] webgazer is not loaded.");
       alert("Gaze tracking failed to initialize. Please ensure WebGazer.js is correctly loaded.");
       return;
     }
 
-    // Ensure the advertisement element exists
-    const adElement = document.getElementById("advertisement");
-    if (!adElement) {
-      console.error("[WebGazer] Advertisement element with id 'advertisement' not found.");
-      alert("Gaze tracking failed to initialize. Advertisement element not found.");
-      return;
-    }
-
     // Initialize WebGazer
-    window.webgazer
-      .setRegression("ridge") // Set regression method
-      .setTracker("TFFacemesh") // Updated to "TFFacemesh"
+    webgazer
+      .setRegression("ridge")
+      .setTracker("TFFacemesh")
       .setGazeListener((data, elapsedTime) => {
-        if (data) {
-          const { x, y } = data; // Gaze coordinates
+        const now = Date.now();
+        if (data && (now - lastGazeTimeRef.current) > throttleInterval) {
+          lastGazeTimeRef.current = now;
+          const { x, y } = data;
           onGazeAtAd({ x, y, elapsedTime });
         }
       })
@@ -46,15 +43,15 @@ const GazeTrackingComponent = ({ onGazeAtAd, isActive }) => {
       });
 
     // Show the webgazer video and overlays
-    window.webgazer.showVideo(true); // Changed to true to display video
-    window.webgazer.showFaceOverlay(true); // Changed to true to display face overlay
-    window.webgazer.showPredictionPoints(true); // Changed to true to display prediction points
+    webgazer.showVideo(true);
+    webgazer.showFaceOverlay(true);
+    webgazer.showPredictionPoints(true);
 
     // Cleanup function
     return () => {
-      if (isInitializedRef.current && window.webgazer) {
+      if (isInitializedRef.current) {
         try {
-          window.webgazer.end();
+          webgazer.end();
           console.log("[WebGazer] Ended successfully.");
           isInitializedRef.current = false;
         } catch (error) {
@@ -64,7 +61,13 @@ const GazeTrackingComponent = ({ onGazeAtAd, isActive }) => {
     };
   }, [isActive, onGazeAtAd]);
 
-  return null; // This component doesn't render anything visible
+  return (
+    <div className="webgazer-video-container" style={{ position: 'fixed', top: 10, left: 10, zIndex: 10000 }}>
+      <video id="webgazerVideoFeed" width="320" height="240" style={{ border: '2px solid #fff' }}></video>
+      <canvas id="webgazerFaceOverlay" width="320" height="240" style={{ position: 'absolute', top: 10, left: 10 }}></canvas>
+      <canvas id="webgazerPredictionPoints" width="320" height="240" style={{ position: 'absolute', top: 10, left: 10 }}></canvas>
+    </div>
+  );
 };
 
 export default GazeTrackingComponent;

@@ -9,7 +9,7 @@ const LayoutViewer = ({ layout }) => {
   }
 
   return (
-    <div id="advertisement" className="relative w-full h-full">
+    <div id="advertisement" className="relative w-full h-full flex items-center justify-center">
       <AdViewer layout={layout} />
     </div>
   );

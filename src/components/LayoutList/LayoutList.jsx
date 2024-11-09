@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../Navbar";
-import LayoutViewer from "../AdViewer/LayoutViewer"; // Updated import path
-import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent"; // New Import
+import LayoutViewer from "../AdViewer/LayoutViewer"; 
+import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
+import GazeVisualizer from "../AdAnalytics/GazeVisualizer"; 
 
 const LayoutList = () => {
   const [layouts, setLayouts] = useState([]);
@@ -11,16 +12,22 @@ const LayoutList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const websocketRef = useRef(null);
-  const pendingLayoutIdRef = useRef(null); // Helps debounce clicks and avoid multiple unnecessary WebSocket creations.
-  const reconnectAttemptsRef = useRef(0); // Keeps track of reconnection attempts.
+  const pendingLayoutIdRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
 
   // Tracking states
-  const [isTracking, setIsTracking] = useState(false); // Whether tracking is active
-  const [retentionTime, setRetentionTime] = useState(0); // Retention time in seconds
-  const [isLookingAtAd, setIsLookingAtAd] = useState(false); // Whether the user is looking at the ad
+  const [isTracking, setIsTracking] = useState(false);
+  const [retentionTime, setRetentionTime] = useState(0);
+  const [isLookingAtAd, setIsLookingAtAd] = useState(false);
 
   // Consent state
   const [hasConsent, setHasConsent] = useState(false);
+
+  // Gaze data for visualization
+  const [currentGazeData, setCurrentGazeData] = useState(null);
+
+  // Gaze history for smoothing (useRef instead of useState to prevent stale closures)
+  const gazeHistoryRef = useRef([]);
 
   useEffect(() => {
     fetchLayouts();
@@ -56,19 +63,20 @@ const LayoutList = () => {
       return;
     }
     pendingLayoutIdRef.current = layoutId;
-    reconnectAttemptsRef.current = 0; // Reset reconnect attempts for new selection
+    reconnectAttemptsRef.current = 0;
 
     try {
       setLoading(true);
       setError(null);
       setSelectedLayout(null);
-      setIsTracking(false); // Stop tracking for previous layout
-      setRetentionTime(0); // Reset retention time
-      setIsLookingAtAd(false); // Reset gaze status
+      setIsTracking(false);
+      setRetentionTime(0);
+      setIsLookingAtAd(false);
+      gazeHistoryRef.current = []; // Reset gaze history
 
       // Close the previous WebSocket connection if one exists
       if (websocketRef.current) {
-        websocketRef.current.onclose = null; // Remove any existing onclose handlers to avoid triggering reconnections
+        websocketRef.current.onclose = null;
         websocketRef.current.close();
         websocketRef.current = null;
       }
@@ -84,12 +92,12 @@ const LayoutList = () => {
 
       // Set up WebSocket connection for real-time updates
       establishWebSocketConnection(layoutId);
-      setIsTracking(true); // Start tracking for selected layout
+      setIsTracking(true);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
-      pendingLayoutIdRef.current = null; // Allow new layout selection after handling is complete
+      pendingLayoutIdRef.current = null;
     }
   };
 
@@ -145,12 +153,28 @@ const LayoutList = () => {
     const adElement = document.getElementById("advertisement");
     if (adElement) {
       const rect = adElement.getBoundingClientRect();
-      // Check if gaze coordinates are within the ad's bounding rectangle
-      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        setIsLookingAtAd(true);
-      } else {
-        setIsLookingAtAd(false);
+      
+      // Update gaze history using useRef
+      gazeHistoryRef.current.push({ x, y });
+      if (gazeHistoryRef.current.length > 5) {
+        gazeHistoryRef.current.shift(); // Keep last 5 points
       }
+
+      // Calculate average gaze
+      const len = gazeHistoryRef.current.length;
+      const avgX = len > 0 ? gazeHistoryRef.current.reduce((acc, point) => acc + point.x, 0) / len : x;
+      const avgY = len > 0 ? gazeHistoryRef.current.reduce((acc, point) => acc + point.y, 0) / len : y;
+
+      // Log average gaze coordinates and ad bounding rect
+      console.log(`Average Gaze Coordinates: (${avgX.toFixed(2)}, ${avgY.toFixed(2)})`);
+      console.log(`Ad Bounding Rect: left=${rect.left}, top=${rect.top}, right=${rect.right}, bottom=${rect.bottom}`);
+      
+      // Update visualization data
+      setCurrentGazeData({ x: avgX, y: avgY });
+      
+      // Check if average gaze coordinates are within the ad's bounding rectangle
+      const isGazingAtAd = avgX >= rect.left && avgX <= rect.right && avgY >= rect.top && avgY <= rect.bottom;
+      setIsLookingAtAd(isGazingAtAd);
     }
   }, []);
 
@@ -159,7 +183,7 @@ const LayoutList = () => {
     if (isTracking && isLookingAtAd) {
       interval = setInterval(() => {
         setRetentionTime((prevTime) => prevTime + 1);
-      }, 1000); // Increment every second
+      }, 1000);
     } else {
       clearInterval(interval);
     }
@@ -168,7 +192,6 @@ const LayoutList = () => {
 
   const handleConsent = () => {
     setHasConsent(true);
-    // Optionally, start tracking if a layout is already selected
     if (selectedLayout) {
       setIsTracking(true);
     }
@@ -176,8 +199,6 @@ const LayoutList = () => {
 
   const handleDeclineConsent = () => {
     setHasConsent(false);
-    // Optionally, handle any state changes if consent is declined
-    // For example, you might want to reset tracking states
     setIsTracking(false);
     setRetentionTime(0);
     setIsLookingAtAd(false);
@@ -305,10 +326,13 @@ const LayoutList = () => {
         )}
       </div>
 
-      {/* Render GazeTrackingComponent only when tracking is active, a layout is selected, and consent is given */}
+      {/* Render GazeTrackingComponent only once */}
       {isTracking && selectedLayout && hasConsent && (
         <GazeTrackingComponent onGazeAtAd={handleGazeAtAd} isActive={isTracking} />
       )}
+
+      {/* Render GazeVisualizer */}
+      {currentGazeData && <GazeVisualizer gazeData={currentGazeData} />}
     </>
   );
 };
