@@ -10,6 +10,7 @@ const tvRoutes = require("./routes/tvRoutes");
 const { layoutUpdatesCache, addClient, removeClient, broadcastToClients } = require("./state");
 const { generatePresignedUrlController, fetchLayoutById } = require("./controllers/layoutController");
 const { listenToDynamoDbStreams } = require("./middleware/awsMiddleware");
+const bodyParser = require("body-parser");
 
 dotenv.config();
 
@@ -26,12 +27,43 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(express.json({ limit: "10mb" }));
+app.use(bodyParser.json());
 
 // Routes
 app.use("/api/layouts", layoutRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/tvs", tvRoutes);
 app.post("/generate-presigned-url", generatePresignedUrlController);
+
+// API endpoint to receive viewer data
+app.post('/api/viewerData', (req, res) => {
+  // Log the entire request body for debugging
+  console.log('Viewer Data Received:', req.body);
+
+  // Destructure the expected fields from the request body
+  const { layoutId, looking, timestamp } = req.body;
+
+  // Basic Validation
+  if (
+    typeof layoutId !== 'string' ||
+    typeof looking !== 'boolean' ||
+    typeof timestamp !== 'string' ||
+    isNaN(Date.parse(timestamp))
+  ) {
+    console.warn('Invalid data format received:', req.body);
+    return res.status(400).json({ error: 'Invalid data format' });
+  }
+
+  // Log formatted data
+  console.log(`Viewer Data:
+    Layout ID: ${layoutId}
+    Looking: ${looking}
+    Timestamp: ${timestamp}
+  `);
+
+  // Respond to the client
+  res.status(200).json({ message: 'Viewer data logged successfully' });
+});
 
 // WebSocket Server Handling
 wss.on("connection", (ws) => {
