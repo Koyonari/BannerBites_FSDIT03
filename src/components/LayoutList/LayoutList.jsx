@@ -1,3 +1,4 @@
+// src/components/LayoutList/LayoutList.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../Navbar";
 import LayoutViewer from "../AdViewer/AdViewer";
@@ -142,7 +143,7 @@ const LayoutList = () => {
   };
 
   // Gaze data handler to accumulate gaze points
-  const handleGazeAtAd = useCallback(
+  const handleGazeData = useCallback(
     ({ x, y }) => {
       const gazePoint = { x, y, timestamp: Date.now() };
       setGazePoints((prevPoints) => [...prevPoints, gazePoint]);
@@ -319,7 +320,10 @@ const LayoutList = () => {
 
       {/* Render GazeTrackingComponent only if tracking */}
       {isTracking && selectedLayout && hasConsent && (
-        <GazeTrackingComponent onGazeAtAd={handleGazeAtAd} isActive={isTracking} />
+        <GazeTrackingComponent
+          onGazeData={handleGazeData}
+          isActive={isTracking}
+        />
       )}
       {currentGazeData && <GazeVisualizer gazeData={currentGazeData} />}
     </>

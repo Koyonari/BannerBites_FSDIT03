@@ -1,77 +1,101 @@
-import React, { useEffect, useRef } from "react";
-import webgazer from "webgazer";
+// GazeTrackingComponent.jsx
+import { useEffect, useState } from "react";
+import CalibrationComponent from "./CalibrationComponent";
 
-const GazeTrackingComponent = ({ onGazeAtAd, isActive }) => {
-  const isInitializedRef = useRef(false);
-  const lastGazeTimeRef = useRef(0);
-  const throttleInterval = 100; // Process gaze data every 100ms
+const GazeTrackingComponent = ({ onGazeData, isActive }) => {
+  const [isWebGazerLoaded, setIsWebGazerLoaded] = useState(false);
+  const [isCalibrated, setIsCalibrated] = useState(false);
 
   useEffect(() => {
-    if (!isActive) {
-      return;
-    }
+    let isMounted = true;
 
-    // Ensure WebGazer is loaded
-    if (!webgazer) {
-      console.error("[WebGazer] webgazer is not loaded.");
-      alert("Gaze tracking failed to initialize. Please ensure WebGazer.js is correctly loaded.");
-      return;
-    }
-
-    // Initialize WebGazer
-    webgazer
-      .setRegression("ridge")
-      .setTracker("TFFacemesh")
-      .setGazeListener((data, elapsedTime) => {
-        const now = Date.now();
-        if (data && (now - lastGazeTimeRef.current) > throttleInterval) {
-          lastGazeTimeRef.current = now;
-          const { x, y } = data;
-          onGazeAtAd({ x, y, elapsedTime });
+    // Function to dynamically load the WebGazer script
+    const loadWebGazerScript = () => {
+      return new Promise((resolve, reject) => {
+        if (window.webgazer) {
+          resolve();
+          return;
         }
-      })
-      .begin()
-      .then(() => {
-        console.log("[WebGazer] Initialized successfully.");
-        isInitializedRef.current = true;
-      })
-      .catch((err) => {
-        console.error("[WebGazer] Initialization error:", err);
-        alert("Gaze tracking failed to initialize.");
+
+        const script = document.createElement("script");
+        script.src = "https://webgazer.cs.brown.edu/webgazer.js";
+        script.async = true;
+
+        script.onload = () => {
+          resolve();
+        };
+
+        script.onerror = () => {
+          reject(new Error("Failed to load WebGazer script."));
+        };
+
+        document.body.appendChild(script);
       });
+    };
 
-    // Show only the prediction points (optional: hide video and face overlay)
-    webgazer.showVideo(false);
-    webgazer.showFaceOverlay(false);
-    webgazer.showPredictionPoints(true);
+    const initializeWebGazer = async () => {
+      try {
+        await loadWebGazerScript();
+        if (isMounted && isActive && window.webgazer) {
+          window.webgazer
+            .setRegression("ridge")
+            .setGazeListener((data, elapsedTime) => {
+              if (data != null && isCalibrated) {
+                onGazeData(data);
+              }
+            })
+            .begin();
 
-    // Handle visibility change to pause/resume WebGazer
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden" && isInitializedRef.current) {
-        webgazer.pause();  // Pause when tab is hidden
-      } else if (document.visibilityState === "visible" && isActive) {
-        webgazer.resume(); // Resume when visible again
+          window.webgazer
+            .showVideoPreview(false)
+            .showFaceOverlay(false)
+            .showFaceFeedbackBox(false);
+
+          setIsWebGazerLoaded(true);
+        }
+      } catch (error) {
+        console.error("Error initializing WebGazer:", error);
       }
     };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    if (isActive) {
+      initializeWebGazer();
+    }
 
-    // Cleanup function
     return () => {
-      if (isInitializedRef.current) {
+      isMounted = false;
+      if (window.webgazer) {
         try {
-          webgazer.end();
-          console.log("[WebGazer] Ended successfully.");
-          isInitializedRef.current = false;
+          window.webgazer.pause();
+          window.webgazer.clearData(); // Optional: Clears the stored gaze data to avoid memory leak
+          window.webgazer.end();
+          setIsWebGazerLoaded(false);
+          setIsCalibrated(false);
         } catch (error) {
-          console.error("[WebGazer] Error during cleanup:", error);
+          console.warn("Error ending WebGazer instance: ", error);
         }
       }
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [isActive, onGazeAtAd]);
+  }, [isActive, onGazeData, isCalibrated]);
 
-  return null; // Remove any UI related to the webcam since it's not needed
+  const handleCalibrationComplete = () => {
+    setIsCalibrated(true);
+    console.log("Calibration complete!");
+  };
+
+  return (
+    <>
+      {!isCalibrated && isActive && (
+        <CalibrationComponent onCalibrationComplete={handleCalibrationComplete} />
+      )}
+      {isCalibrated && isWebGazerLoaded && (
+        // Optionally, display a message or visual indicator that calibration is done
+        <div style={{ position: "fixed", bottom: 10, left: 10, color: "green" }}>
+          Calibration Complete! Tracking is active.
+        </div>
+      )}
+    </>
+  );
 };
 
 export default GazeTrackingComponent;
