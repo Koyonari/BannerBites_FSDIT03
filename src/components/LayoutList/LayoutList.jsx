@@ -185,11 +185,11 @@ const LayoutList = () => {
   };
 
   return (
-    <>
+    <div className="dark:bg-black">
       <Navbar />
       <div className="container p-4">
-        <div className="grid md:flex md:grid-cols-2">
-          <div className="rounded-lg bg-white p-6 shadow md:w-[20vw]">
+        <div className="grid dark:bg-black md:flex md:grid-cols-2">
+          <div className="rounded-lg bg-white p-6 shadow dark:bg-black dark:text-white md:w-[20vw]">
             <h2 className="mb-4 text-xl font-bold">Available Layouts</h2>
             {loading && !selectedLayout && (
               <div className="flex items-center justify-center p-4 text-gray-600">
@@ -272,7 +272,7 @@ const LayoutList = () => {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

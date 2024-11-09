@@ -38,7 +38,7 @@ const Hero = () => {
   const HomeIconComponent = icons.navbar[0].icon;
 
   return (
-    <div className="align-center flex h-screen flex-col items-center justify-center bg-white transition-colors duration-200 dark:bg-black">
+    <div className="align-center flex h-full flex-col items-center justify-center bg-white transition-colors duration-200 dark:bg-black">
       <h1 className="mb-3 text-7xl font-bold text-black dark:text-white">
         Banner
         <span className="text-orange-500 outline-3">Bites</span>

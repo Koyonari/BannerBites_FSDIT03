@@ -586,10 +586,10 @@ const AdCanvas = () => {
       : "Click to merge/unmerge selected cells";
 
   return (
-    <div className="ad-canvas flex w-full flex-col items-center justify-center text-center">
-      <div className="absolute right-4 top-[calc(6rem+1rem)] z-10">
+    <div className="ad-canvas flex w-full flex-col items-center justify-center text-center dark:bg-black">
+      <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
         <CircleHelp
-          className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 ${
+          className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
             showHelp ? "text-orange-500" : "text-gray-600"
           }`}
           fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
@@ -738,7 +738,7 @@ const AdCanvas = () => {
         />
       </div>
 
-      {/* Hint/tooltip components */}
+      {/* Tooltip components */}
       <Tooltip id="sidebar-tooltip" {...tooltipPropsRight} />
       <Tooltip id="merge-tooltip" {...tooltipPropsRight} />
       <Tooltip id="addRows-tooltip" {...tooltipPropsRight} />

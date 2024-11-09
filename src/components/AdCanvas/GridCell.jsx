@@ -145,7 +145,7 @@ const GridCell = ({
     if (!adToDisplay || !adToDisplay.ad)
       return (
         <div className="flex h-full w-full items-center justify-center">
-          <p className="text-center">Drop ad here</p>
+          <p className="text-center xl:text-2xl 2xl:text-3xl">Drop ad here</p>
         </div>
       );
 

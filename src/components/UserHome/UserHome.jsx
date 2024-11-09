@@ -15,11 +15,15 @@ const Card = ({ title, date, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="card relative flex w-4/5 max-w-96 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-orange-500 bg-black text-center text-white transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-xl dark:bg-white dark:text-black sm:h-full lg:h-[35vh] lg:w-[28vw]"
+      className="card relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-orange-500 bg-black text-center text-white transition-all duration-300 ease-in-out hover:-translate-y-2 hover:bg-orange-500 hover:shadow-xl dark:bg-white dark:text-black sm:h-full lg:h-[35vh] lg:w-[28vw]"
     >
       <div>
-        <h1 className="px-6 py-4 text-xl font-bold md:px-2">{title}</h1>
-        <p className="text-md px-6 py-4 md:px-2">Date Created: {date}</p>
+        <h1 className="text-md px-6 py-4 font-bold sm:text-xl md:px-2 lg:text-2xl 2xl:text-4xl">
+          {title}
+        </h1>
+        <p className="text-md sm:text-md px-6 py-4 text-sm md:px-2 lg:text-xl 2xl:text-2xl">
+          Date Created: {date}
+        </p>
       </div>
     </div>
   );
@@ -125,31 +129,35 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
   return (
     <section className="h-screen bg-white dark:bg-black">
       <Navbar />
-      <div className="flex justify-center gap-4 pt-4 md:px-4">
-        <div className="flex h-12 w-1/6 items-center rounded-md border border-gray-300 px-4 py-2 dark:border-white sm:h-14">
+      <div className="flex h-12 justify-center gap-4 pt-4 md:px-4 xl:h-24">
+        <div className="flex h-full w-1/6 items-center rounded-md border border-gray-300 px-4 py-2 lg:text-xl xl:text-2xl">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="w-full bg-transparent text-black focus:outline-none dark:text-white"
+            className="w-full bg-transparent text-black focus:outline-none dark:bg-black dark:text-white"
           >
             {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
+              <option
+                key={option.value}
+                className="dark:text-black"
+                value={option.value}
+              >
                 {option.label}
               </option>
             ))}
           </select>
         </div>
-        <div className="flex h-12 w-1/2 items-center rounded-md border border-gray-300 px-4 py-2 dark:border-white sm:h-14">
+        <div className="flex h-full w-1/2 items-center rounded-md border border-gray-300 px-4 py-2 dark:border-white">
           <input
             type="text"
             placeholder="Search location"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent text-black placeholder-gray-500 focus:outline-none dark:text-white dark:placeholder-gray-400"
+            className="w-full bg-transparent text-black placeholder-gray-500 focus:outline-none dark:text-white dark:placeholder-gray-400 lg:text-xl xl:text-2xl"
           />
         </div>
         <Link key="home" to={"/ad"} className="w-1/6">
-          <button className="h-full w-full rounded-md bg-orange-500 px-4 py-2 text-center text-xs font-bold text-white transition-colors hover:bg-orange-600 md:text-base">
+          <button className="h-full w-full rounded-md bg-orange-500 px-4 py-2 text-center text-xs font-bold text-white transition-colors hover:bg-orange-600 md:text-base lg:text-xl xl:text-2xl">
             Create New
           </button>
         </Link>
