@@ -3,7 +3,7 @@
 import React from "react";
 
 // Component to represent an individual Ad
-const AdComponent = ({ id, type, content, styles, isHighlighted }) => {
+const AdComponent = ({ id, type, content, styles }) => {
   let mediaUrl = content.mediaUrl || content.src;
 
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
@@ -15,11 +15,7 @@ const AdComponent = ({ id, type, content, styles, isHighlighted }) => {
   }
 
   return (
-    <div
-      className={`ad-item ${isHighlighted ? "highlighted" : ""}`}
-      data-ad-id={id}
-      style={styles}
-    >
+    <div className="ad-item" data-ad-id={id} style={styles}>
       {type === "text" && (
         <div>
           <h3>{content.title}</h3>
@@ -48,7 +44,7 @@ const AdComponent = ({ id, type, content, styles, isHighlighted }) => {
 };
 
 // Main AdViewer component to render the layout
-const AdViewer = ({ layout, highlightedCellId, gridRef }) => {
+const AdViewer = ({ layout }) => {
   if (!layout) {
     return <div>No layout provided</div>;
   }
@@ -58,7 +54,6 @@ const AdViewer = ({ layout, highlightedCellId, gridRef }) => {
   return (
     <div
       className="ad-viewer-grid"
-      ref={gridRef} // Attach the ref here
       style={{
         display: "grid",
         gridTemplateRows: `repeat(${rows}, 1fr)`,
@@ -91,7 +86,7 @@ const AdViewer = ({ layout, highlightedCellId, gridRef }) => {
             );
           } else {
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
-              currentAd.scheduledTime < nextAd.scheduledTime ? nextAd : currentAd
+              currentAd.scheduledTime < nextAd.scheduledTime ? currentAd : nextAd
             );
           }
         }
@@ -117,10 +112,7 @@ const AdViewer = ({ layout, highlightedCellId, gridRef }) => {
               gridColumn: `${gridColumnStart} / ${gridColumnEnd}`,
               border: "1px solid #ccc",
               padding: "10px",
-              backgroundColor:
-                highlightedCellId === index ? "#ffe6e6" : "#fafafa", // Light red if highlighted
-              transition: "background-color 0.3s, border 0.3s",
-              borderColor: highlightedCellId === index ? "#ff0000" : "#ccc", // Red border if highlighted
+              backgroundColor: "#fafafa",
             }}
           >
             <AdComponent
@@ -128,7 +120,6 @@ const AdViewer = ({ layout, highlightedCellId, gridRef }) => {
               type={type}
               content={content}
               styles={styles}
-              isHighlighted={highlightedCellId === index} // Highlight if matched
             />
           </div>
         );
