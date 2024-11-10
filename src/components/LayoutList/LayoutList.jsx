@@ -1,5 +1,4 @@
 // src/components/LayoutList.jsx
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../Navbar";
 import AdViewer from "../AdViewer/AdViewer";
@@ -32,6 +31,7 @@ const LayoutList = () => {
   // Calibration states
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [calibrationCompleted, setCalibrationCompleted] = useState(false);
+  const [isCalibrated, setIsCalibrated] = useState(false);
 
   useEffect(() => {
     fetchLayouts();
@@ -171,7 +171,7 @@ const LayoutList = () => {
     ({ x, y }) => {
       const adElements = document.querySelectorAll(".ad-item");
       let gazedAtAdId = null;
-
+  
       adElements.forEach((adElement) => {
         const rect = adElement.getBoundingClientRect();
         if (
@@ -183,36 +183,44 @@ const LayoutList = () => {
           gazedAtAdId = adElement.getAttribute("data-ad-id");
         }
       });
-
+  
       if (gazedAtAdId !== gazedAdId) {
         // Reset retention time if gazed ad changes
         setRetentionTime(0);
       }
-
+  
       if (gazedAtAdId) {
         setIsLookingAtAd(true);
         setGazedAdId(gazedAtAdId);
-        setCurrentGazeData({ x, y });
       } else {
         setIsLookingAtAd(false);
         setGazedAdId(null);
-        setCurrentGazeData({ x, y });
       }
+  
+      setCurrentGazeData({ x, y }); // Update gaze data for visualizer
     },
     [gazedAdId]
   );
-
   useEffect(() => {
-    let interval = null;
-    if (isTracking && isLookingAtAd) {
-      interval = setInterval(() => {
-        setRetentionTime((prevTime) => prevTime + 1);
-      }, 1000);
-    } else {
-      clearInterval(interval);
+    let gazeListenerSet = false;
+  
+    if (isCalibrated && isTracking) {
+      webgazer.setGazeListener((data, elapsedTime) => {
+        if (data) {
+          handleGazeAtAd(data);
+        }
+      });
+      gazeListenerSet = true;
+      console.log("[WebGazer] Gaze listener has been set.");
     }
-    return () => clearInterval(interval);
-  }, [isTracking, isLookingAtAd]);
+  
+    return () => {
+      if (gazeListenerSet) {
+        webgazer.clearGazeListener();
+        console.log("[WebGazer] Gaze listener has been cleared.");
+      }
+    };
+  }, [isCalibrated, isTracking, handleGazeAtAd]);
 
   const handleConsent = () => {
     setHasConsent(true);
@@ -242,6 +250,7 @@ const LayoutList = () => {
   const handleCalibrationComplete = () => {
     setIsCalibrating(false);
     setCalibrationCompleted(true);
+    setIsCalibrated(true); // Indicate that calibration is complete
     // Start gaze tracking after calibration
     setIsTracking(true);
   };
@@ -250,8 +259,9 @@ const LayoutList = () => {
     console.log("[WebGazer] Tracking ended from handleEndTracking.");
   
     try {
-      if (webgazer && webgazer.end && webgazer.isReady) {
+      if (webgazer && webgazer.end) {
         webgazer.end();
+        webgazer.clearGazeListener();
         console.log(
           "[WebGazer] WebGazer ended and listeners cleared successfully."
         );
@@ -279,13 +289,14 @@ const LayoutList = () => {
       setIsLookingAtAd(false);
       setGazedAdId(null);
       setCurrentGazeData(null);
+      setIsCalibrated(false); // Reset calibration state if desired
   
       console.log("[WebGazer] All resources and states have been reset.");
     } catch (error) {
       console.error("[WebGazer] Error during tracking cleanup:", error);
     }
   };
-
+  
   return (
     <>
       <Navbar />
