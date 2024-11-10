@@ -1,7 +1,8 @@
 // src/components/LayoutViewer.jsx
 
 import React from "react";
-import AdViewer from "../AdViewer/AdViewer"; 
+import AdViewer from "./AdViewer";
+import PropTypes from "prop-types";
 
 const LayoutViewer = ({ layout }) => {
   if (!layout) {
@@ -13,6 +14,14 @@ const LayoutViewer = ({ layout }) => {
       <AdViewer layout={layout} />
     </div>
   );
+};
+
+LayoutViewer.propTypes = {
+  layout: PropTypes.shape({
+    rows: PropTypes.number.isRequired,
+    columns: PropTypes.number.isRequired,
+    gridItems: PropTypes.array.isRequired,
+  }),
 };
 
 export default LayoutViewer;

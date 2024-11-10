@@ -1,106 +1,126 @@
-import React, { useEffect, useState } from "react";
+// src/components/AdAnalytics/CalibrationComponent.jsx
+
+import React, { useEffect, useState, useRef } from 'react';
 import webgazer from "webgazer";
 
-// Example using calibration points for the calibration process
-const calibrationPoints = [
-  { x: 10, y: 10 },
-  { x: 90, y: 10 },
-  { x: 50, y: 50 },
-  { x: 10, y: 90 },
-  { x: 90, y: 90 },
-];
+const generateRandomPoints = (numPoints) => {
+  const points = [];
+  for (let i = 0; i < numPoints; i++) {
+    points.push({
+      xPercent: Math.random() * 80 + 10, // Ensures points are within 10%-90% of the screen
+      yPercent: Math.random() * 80 + 10,
+    });
+  }
+  return points;
+};
+
+const calibrationPoints = generateRandomPoints(9);
 
 const CalibrationComponent = ({ onCalibrationComplete }) => {
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
-  const [isCapturing, setIsCapturing] = useState(false);
+  const [samplesCollected, setSamplesCollected] = useState(0);
+  const samplesPerPoint = 20;
+
+  const webgazerInitializedRef = useRef(false);
+
+  useEffect(() => {
+    const initializeWebGazer = async () => {
+      try {
+        await webgazer.setRegression("ridge").saveDataAcrossSessions(true);
+        await webgazer.begin();
+        webgazerInitializedRef.current = true;
+      } catch (error) {
+        console.error("Error initializing WebGazer:", error);
+      }
+    };
+
+    initializeWebGazer();
+
+    return () => {
+      if (webgazerInitializedRef.current) {
+        webgazer.end();
+        webgazer.clearData();
+        webgazer.clearGazeListener();
+        webgazerInitializedRef.current = false;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (currentPointIndex < calibrationPoints.length) {
-      setIsCapturing(true);
-      const timer = setTimeout(() => {
-        setIsCapturing(false);
-        setCurrentPointIndex(currentPointIndex + 1);
-      }, 2000); // Wait for 2 seconds on each point
+      const interval = setInterval(() => {
+        const { xPercent, yPercent } = calibrationPoints[currentPointIndex];
+        const x = (xPercent / 100) * window.innerWidth;
+        const y = (yPercent / 100) * window.innerHeight;
 
-      webgazer.setGazeListener((data, elapsedTime) => {
-        if (data) {
-          console.log(`Calibration Data Captured at Point ${currentPointIndex}`, data);
+        webgazer.recordScreenPosition(x, y);
+        setSamplesCollected((prev) => prev + 1);
+
+        if (samplesCollected + 1 >= samplesPerPoint) {
+          clearInterval(interval);
+          setSamplesCollected(0);
+
+          if (currentPointIndex + 1 < calibrationPoints.length) {
+            setCurrentPointIndex((prev) => prev + 1);
+          } else {
+            // Calibration is complete
+            webgazer.clearGazeListener();
+            webgazer.end();
+            onCalibrationComplete();
+          }
         }
-      });
+      }, 100);
 
-      return () => {
-        clearTimeout(timer);
-        webgazer.clearGazeListener();
-      };
-    } else {
-      setIsCapturing(false);
-      onCalibrationComplete();
+      return () => clearInterval(interval);
     }
-  }, [currentPointIndex, onCalibrationComplete]);
+  }, [currentPointIndex, samplesCollected, onCalibrationComplete]);
 
   return (
     <div className="calibration-overlay fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center">
       <p className="mb-4 text-white text-lg">
-        Please follow the red dot with your eyes for calibration.
+        Focus on the dot until it turns green.
       </p>
 
-      {/* Render calibration points */}
-      {calibrationPoints.map((point, index) => (
+      {/* Calibration Point */}
+      {currentPointIndex < calibrationPoints.length && (
         <div
-          key={index}
           style={{
             position: "absolute",
-            left: `${point.x}%`,
-            top: `${point.y}%`,
-            transform: "translate(-50%, -50%)", // Center the point
+            left: `${calibrationPoints[currentPointIndex].xPercent}%`,
+            top: `${calibrationPoints[currentPointIndex].yPercent}%`,
+            transform: "translate(-50%, -50%)",
             width: 20,
             height: 20,
             borderRadius: "50%",
-            backgroundColor: index === currentPointIndex ? "red" : "transparent",
-            border: "2px solid red",
-            transition: "background-color 0.3s",
-            pointerEvents: "none", // Ensure calibration points don't block interactions
+            backgroundColor:
+              samplesCollected < samplesPerPoint ? "red" : "green",
+            border: "2px solid white",
           }}
         />
-      ))}
-
-      {/* Capturing Indicator */}
-      {isCapturing && (
-        <div className="capturing-indicator absolute bottom-10">
-          <svg className="animate-spin h-6 w-6 text-white" viewBox="0 0 24 24">
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-              fill="none"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          <p className="text-white mt-2">Capturing gaze data...</p>
-        </div>
       )}
 
-      {/* Progress Bar */}
-      <div className="mt-4 w-1/2 bg-gray-300 rounded-full">
-        <div
-          className="bg-green-500 text-xs leading-none py-1 text-center text-white rounded-full"
-          style={{ width: `${((currentPointIndex) / calibrationPoints.length) * 100}%` }}
-        >
-          {Math.round(((currentPointIndex) / calibrationPoints.length) * 100)}%
-        </div>
-      </div>
+      {/* Progress Indicator */}
+      {currentPointIndex < calibrationPoints.length ? (
+        <>
+          <div className="mt-4 w-1/2 bg-gray-300 rounded-full">
+            <div
+              className="bg-green-500 text-xs leading-none py-1 text-center text-white rounded-full"
+              style={{
+                width: `${(samplesCollected / samplesPerPoint) * 100}%`,
+              }}
+            >
+              {Math.round((samplesCollected / samplesPerPoint) * 100)}%
+            </div>
+          </div>
 
-      {/* Current Calibration Point */}
-      <p className="mt-2 text-white">
-        Calibration Point {currentPointIndex + 1} of {calibrationPoints.length}
-      </p>
+          {/* Current Calibration Point */}
+          <p className="mt-2 text-white">
+            Calibration Point {currentPointIndex + 1} of {calibrationPoints.length}
+          </p>
+        </>
+      ) : (
+        <p className="mt-2 text-white">Calibration Complete</p>
+      )}
     </div>
   );
 };

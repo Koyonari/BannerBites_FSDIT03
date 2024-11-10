@@ -3,30 +3,40 @@
 import React from "react";
 
 // Component to represent an individual Ad
-const AdComponent = ({ id, type, content, styles }) => {
-  let mediaUrl = content.mediaUrl || content.src;
+const AdComponent = React.memo(({ id, type, content, styles }) => {
+  const {
+    title,
+    description,
+    mediaUrl: contentMediaUrl,
+    src,
+    s3Bucket,
+    s3Key,
+    s3Region: contentS3Region,
+  } = content;
 
-  if (!mediaUrl && content.s3Bucket && content.s3Key) {
-    const s3Region = content.s3Region || "ap-southeast-1";
+  let mediaUrl = contentMediaUrl || src;
+
+  if (!mediaUrl && s3Bucket && s3Key) {
+    const s3Region = contentS3Region || process.env.REACT_APP_S3_REGION || "ap-southeast-1";
     const encodeS3Key = (key) =>
       key.split("/").map((segment) => encodeURIComponent(segment)).join("/");
-    const encodedS3Key = encodeS3Key(content.s3Key);
-    mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
+    const encodedS3Key = encodeS3Key(s3Key);
+    mediaUrl = `https://${s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
 
   return (
     <div className="ad-item" data-ad-id={id} style={styles}>
       {type === "text" && (
         <div>
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3>{title}</h3>
+          <p>{description}</p>
         </div>
       )}
       {type === "image" && (
         <div>
-          <img src={mediaUrl} alt={content.title} style={{ maxWidth: "100%" }} />
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <img src={mediaUrl} alt={title} style={{ maxWidth: "100%" }} />
+          <h3>{title}</h3>
+          <p>{description}</p>
         </div>
       )}
       {type === "video" && (
@@ -35,13 +45,13 @@ const AdComponent = ({ id, type, content, styles }) => {
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3>{title}</h3>
+          <p>{description}</p>
         </div>
       )}
     </div>
   );
-};
+});
 
 // Main AdViewer component to render the layout
 const AdViewer = ({ layout }) => {
@@ -72,13 +82,12 @@ const AdViewer = ({ layout }) => {
 
         if (scheduledAds && scheduledAds.length > 0) {
           const currentTime = new Date();
-          const currentTimeString = `${currentTime.getHours()
-            .toString()
-            .padStart(2, "0")}:${currentTime.getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
+          const currentTimeString = currentTime.toTimeString().slice(0, 5); // "HH:mm"
 
-          const availableAds = scheduledAds.filter(
-            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
-          );
+          const availableAds = scheduledAds.filter((scheduledAd) => {
+            const scheduledTime = scheduledAd.scheduledTime;
+            return scheduledTime <= currentTimeString;
+          });
 
           if (availableAds.length > 0) {
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>

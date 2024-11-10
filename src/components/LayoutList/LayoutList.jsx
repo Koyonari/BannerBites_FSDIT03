@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../Navbar";
-import LayoutViewer from "../AdViewer/AdViewer";
+import AdViewer from "../AdViewer/AdViewer";
 import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
 import GazeVisualizer from "../AdAnalytics/GazeVisualizer";
-import CalibrationComponent from "../AdAnalytics/CalibrationComponent"; // Adjusted import path
+import CalibrationComponent from "../AdAnalytics/CalibrationComponent";
 import webgazer from "webgazer";
 
 const LayoutList = () => {
@@ -28,9 +28,6 @@ const LayoutList = () => {
 
   // Gaze data for visualization
   const [currentGazeData, setCurrentGazeData] = useState(null);
-
-  // Gaze history for smoothing (useRef instead of useState to prevent stale closures)
-  const gazeHistoryRef = useRef([]);
 
   // Calibration states
   const [isCalibrating, setIsCalibrating] = useState(false);
@@ -80,7 +77,6 @@ const LayoutList = () => {
       setRetentionTime(0);
       setIsLookingAtAd(false);
       setGazedAdId(null); // Reset gazed ad
-      gazeHistoryRef.current = []; // Reset gaze history
       setCalibrationCompleted(false); // Reset calibration status
 
       // Close the previous WebSocket connection if one exists
@@ -92,11 +88,11 @@ const LayoutList = () => {
 
       // Fetch the initial layout data
       const response = await fetch(
-        `http://localhost:5000/api/layouts/${layoutId}`,
+        `http://localhost:5000/api/layouts/${layoutId}`
       );
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch layout details for layoutId: ${layoutId}`,
+          `Failed to fetch layout details for layoutId: ${layoutId}`
         );
       }
       const data = await response.json();
@@ -120,7 +116,7 @@ const LayoutList = () => {
     websocketRef.current.onopen = () => {
       console.log("[FRONTEND] Connected to WebSocket server");
       websocketRef.current.send(
-        JSON.stringify({ type: "subscribe", layoutId }),
+        JSON.stringify({ type: "subscribe", layoutId })
       );
     };
 
@@ -138,7 +134,7 @@ const LayoutList = () => {
           setSelectedLayout(parsedData.data);
           console.log(
             "[FRONTEND] Layout updated via WebSocket:",
-            parsedData.data,
+            parsedData.data
           );
         }
       } catch (e) {
@@ -149,7 +145,7 @@ const LayoutList = () => {
     websocketRef.current.onclose = (event) => {
       console.log(
         "[FRONTEND] WebSocket connection closed. Reason:",
-        event.reason,
+        event.reason
       );
       if (
         pendingLayoutIdRef.current === layoutId &&
@@ -159,7 +155,7 @@ const LayoutList = () => {
         reconnectAttemptsRef.current += 1;
         setTimeout(() => {
           console.log(
-            `[FRONTEND] Reconnecting to WebSocket server... Attempt #${reconnectAttemptsRef.current}`,
+            `[FRONTEND] Reconnecting to WebSocket server... Attempt #${reconnectAttemptsRef.current}`
           );
           establishWebSocketConnection(layoutId);
         }, 5000);
@@ -203,7 +199,7 @@ const LayoutList = () => {
         setCurrentGazeData({ x, y });
       }
     },
-    [gazedAdId],
+    [gazedAdId]
   );
 
   useEffect(() => {
@@ -252,17 +248,16 @@ const LayoutList = () => {
 
   const handleEndTracking = () => {
     console.log("[WebGazer] Tracking ended from handleEndTracking.");
-
+  
     try {
-      // Properly end WebGazer and clear gaze listeners
-      if (webgazer && webgazer.end) {
+      if (webgazer && webgazer.end && webgazer.isReady) {
         webgazer.end();
         console.log(
-          "[WebGazer] WebGazer ended and listeners cleared successfully.",
+          "[WebGazer] WebGazer ended and listeners cleared successfully."
         );
       }
-
-      // Hide video feed and overlays if they are still showing (custom logic to match fork's behavior)
+  
+      // Hide video feed and overlays if they are still showing
       const videoFeed = document.getElementById("webgazerVideoFeed");
       if (videoFeed) {
         videoFeed.style.display = "none";
@@ -272,19 +267,19 @@ const LayoutList = () => {
         faceOverlay.style.display = "none";
       }
       const predictionPoints = document.getElementById(
-        "webgazerPredictionPoints",
+        "webgazerPredictionPoints"
       );
       if (predictionPoints) {
         predictionPoints.style.display = "none";
       }
-
-      // Set all state to reset
+  
+      // Reset state
       setIsTracking(false);
       setRetentionTime(0);
       setIsLookingAtAd(false);
       setGazedAdId(null);
       setCurrentGazeData(null);
-
+  
       console.log("[WebGazer] All resources and states have been reset.");
     } catch (error) {
       console.error("[WebGazer] Error during tracking cleanup:", error);
@@ -391,7 +386,7 @@ const LayoutList = () => {
                     </div>
                   )}
                   {selectedLayout && !loading && (
-                    <LayoutViewer layout={selectedLayout} />
+                    <AdViewer layout={selectedLayout} />
                   )}
                   {!selectedLayout && !loading && (
                     <div className="p-4 text-center text-gray-500">
@@ -404,7 +399,7 @@ const LayoutList = () => {
 
             {/* Calibration and Tracking Controls */}
             <div className="mt-4 flex space-x-2">
-              {!isCalibrating && (
+              {!isCalibrating && !calibrationCompleted && (
                 <button
                   onClick={handleStartCalibration}
                   className="rounded-lg bg-blue-500 px-4 py-2 text-white"
@@ -454,17 +449,13 @@ const LayoutList = () => {
         />
       )}
 
-      {/* Render GazeTrackingComponent only when tracking is active, not calibrating, and calibration is completed */}
-      {isTracking &&
-        !isCalibrating &&
-        calibrationCompleted &&
-        selectedLayout &&
-        hasConsent && (
-          <GazeTrackingComponent
-            onGazeAtAd={handleGazeAtAd}
-            isActive={isTracking}
-          />
-        )}
+      {/* Render GazeTrackingComponent only when tracking is active */}
+      {isTracking && selectedLayout && hasConsent && (
+        <GazeTrackingComponent
+          onGazeAtAd={handleGazeAtAd}
+          isActive={isTracking}
+        />
+      )}
 
       {/* Render GazeVisualizer */}
       {currentGazeData && <GazeVisualizer gazeData={currentGazeData} />}

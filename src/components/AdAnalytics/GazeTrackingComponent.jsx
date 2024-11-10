@@ -1,15 +1,31 @@
-import { useEffect } from "react";
-import WebGazerSingleton from "../../utils/WebGazerSingleton";
+import { useEffect, useRef } from "react";
+import webgazer from "webgazer";
 
 const GazeTrackingComponent = ({ onGazeAtAd, isActive }) => {
+  const webgazerInitializedRef = useRef(false);
+
   useEffect(() => {
     if (isActive) {
-      WebGazerSingleton.initialize(onGazeAtAd);
+      webgazer
+        .setGazeListener((data, elapsedTime) => {
+          if (data) {
+            onGazeAtAd(data);
+          }
+        })
+        .begin()
+        .then(() => {
+          webgazerInitializedRef.current = true;
+        })
+        .catch((error) => {
+          console.error("Error initializing WebGazer:", error);
+        });
     }
 
     return () => {
-      if (!isActive) {
-        WebGazerSingleton.end();
+      if (webgazerInitializedRef.current) {
+        webgazer.end();
+        webgazer.clearGazeListener();
+        webgazerInitializedRef.current = false;
       }
     };
   }, [isActive, onGazeAtAd]);
