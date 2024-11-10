@@ -7,11 +7,20 @@ const LayoutList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAllLayouts, setShowAllLayouts] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const MOBILE_DISPLAY_LIMIT = 3;
 
   useEffect(() => {
     fetchLayouts();
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const fetchLayouts = async () => {
@@ -184,10 +193,12 @@ const LayoutList = () => {
     );
   };
 
-  const visibleLayouts = showAllLayouts
-    ? layouts
-    : layouts.slice(0, MOBILE_DISPLAY_LIMIT);
-  const hasMoreLayouts = layouts.length > MOBILE_DISPLAY_LIMIT;
+  const visibleLayouts =
+    isMobile && !showAllLayouts
+      ? layouts.slice(0, MOBILE_DISPLAY_LIMIT)
+      : layouts;
+
+  const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
 
   return (
     <div className="min-h-screen dark:bg-black">
@@ -243,7 +254,7 @@ const LayoutList = () => {
 
                 {hasMoreLayouts && (
                   <button
-                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-50 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-100 md:hidden"
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-50 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-100"
                     onClick={() => setShowAllLayouts(!showAllLayouts)}
                   >
                     <span>
