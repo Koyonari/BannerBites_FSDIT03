@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../Navbar";
-import LayoutViewer from "../AdViewer/AdViewer"; 
+import LayoutViewer from "../AdViewer/AdViewer";
 import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
-import GazeVisualizer from "../AdAnalytics/GazeVisualizer"; 
+import GazeVisualizer from "../AdAnalytics/GazeVisualizer";
 import CalibrationComponent from "../AdAnalytics/CalibrationComponent"; // Adjusted import path
-import webgazer from "webgazer"; 
+import webgazer from "webgazer";
 
 const LayoutList = () => {
   const [layouts, setLayouts] = useState([]);
@@ -91,9 +91,13 @@ const LayoutList = () => {
       }
 
       // Fetch the initial layout data
-      const response = await fetch(`http://localhost:5000/api/layouts/${layoutId}`);
+      const response = await fetch(
+        `http://localhost:5000/api/layouts/${layoutId}`,
+      );
       if (!response.ok) {
-        throw new Error(`Failed to fetch layout details for layoutId: ${layoutId}`);
+        throw new Error(
+          `Failed to fetch layout details for layoutId: ${layoutId}`,
+        );
       }
       const data = await response.json();
       console.log("[LayoutList] Fetched layout data:", data);
@@ -115,7 +119,9 @@ const LayoutList = () => {
 
     websocketRef.current.onopen = () => {
       console.log("[FRONTEND] Connected to WebSocket server");
-      websocketRef.current.send(JSON.stringify({ type: "subscribe", layoutId }));
+      websocketRef.current.send(
+        JSON.stringify({ type: "subscribe", layoutId }),
+      );
     };
 
     websocketRef.current.onmessage = (event) => {
@@ -124,12 +130,16 @@ const LayoutList = () => {
         console.log("[FRONTEND] Received WebSocket message:", parsedData);
 
         if (
-          (parsedData.type === "layoutUpdate" || parsedData.type === "layoutData") &&
+          (parsedData.type === "layoutUpdate" ||
+            parsedData.type === "layoutData") &&
           parsedData.data.layoutId === layoutId
         ) {
           // Update the layout with the received data
           setSelectedLayout(parsedData.data);
-          console.log("[FRONTEND] Layout updated via WebSocket:", parsedData.data);
+          console.log(
+            "[FRONTEND] Layout updated via WebSocket:",
+            parsedData.data,
+          );
         }
       } catch (e) {
         console.error("[FRONTEND] Error parsing WebSocket message:", e);
@@ -137,7 +147,10 @@ const LayoutList = () => {
     };
 
     websocketRef.current.onclose = (event) => {
-      console.log("[FRONTEND] WebSocket connection closed. Reason:", event.reason);
+      console.log(
+        "[FRONTEND] WebSocket connection closed. Reason:",
+        event.reason,
+      );
       if (
         pendingLayoutIdRef.current === layoutId &&
         reconnectAttemptsRef.current < 5
@@ -146,7 +159,7 @@ const LayoutList = () => {
         reconnectAttemptsRef.current += 1;
         setTimeout(() => {
           console.log(
-            `[FRONTEND] Reconnecting to WebSocket server... Attempt #${reconnectAttemptsRef.current}`
+            `[FRONTEND] Reconnecting to WebSocket server... Attempt #${reconnectAttemptsRef.current}`,
           );
           establishWebSocketConnection(layoutId);
         }, 5000);
@@ -158,32 +171,40 @@ const LayoutList = () => {
     };
   };
 
-  const handleGazeAtAd = useCallback(({ x, y }) => {
-    const adElements = document.querySelectorAll(".ad-item");
-    let gazedAtAdId = null;
+  const handleGazeAtAd = useCallback(
+    ({ x, y }) => {
+      const adElements = document.querySelectorAll(".ad-item");
+      let gazedAtAdId = null;
 
-    adElements.forEach((adElement) => {
-      const rect = adElement.getBoundingClientRect();
-      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        gazedAtAdId = adElement.getAttribute("data-ad-id");
+      adElements.forEach((adElement) => {
+        const rect = adElement.getBoundingClientRect();
+        if (
+          x >= rect.left &&
+          x <= rect.right &&
+          y >= rect.top &&
+          y <= rect.bottom
+        ) {
+          gazedAtAdId = adElement.getAttribute("data-ad-id");
+        }
+      });
+
+      if (gazedAtAdId !== gazedAdId) {
+        // Reset retention time if gazed ad changes
+        setRetentionTime(0);
       }
-    });
 
-    if (gazedAtAdId !== gazedAdId) {
-      // Reset retention time if gazed ad changes
-      setRetentionTime(0);
-    }
-
-    if (gazedAtAdId) {
-      setIsLookingAtAd(true);
-      setGazedAdId(gazedAtAdId);
-      setCurrentGazeData({ x, y });
-    } else {
-      setIsLookingAtAd(false);
-      setGazedAdId(null);
-      setCurrentGazeData({ x, y });
-    }
-  }, [gazedAdId]);
+      if (gazedAtAdId) {
+        setIsLookingAtAd(true);
+        setGazedAdId(gazedAtAdId);
+        setCurrentGazeData({ x, y });
+      } else {
+        setIsLookingAtAd(false);
+        setGazedAdId(null);
+        setCurrentGazeData({ x, y });
+      }
+    },
+    [gazedAdId],
+  );
 
   useEffect(() => {
     let interval = null;
@@ -230,38 +251,65 @@ const LayoutList = () => {
   };
 
   const handleEndTracking = () => {
-    setIsTracking(false);
-    setRetentionTime(0);
-    setIsLookingAtAd(false);
-    setGazedAdId(null);
-    setCurrentGazeData(null);
-    // End WebGazer tracking if initialized
-  if (webgazer) {
-    webgazer.end();
     console.log("[WebGazer] Tracking ended from handleEndTracking.");
-  }
+
+    try {
+      // Properly end WebGazer and clear gaze listeners
+      if (webgazer && webgazer.end) {
+        webgazer.end();
+        console.log(
+          "[WebGazer] WebGazer ended and listeners cleared successfully.",
+        );
+      }
+
+      // Hide video feed and overlays if they are still showing (custom logic to match fork's behavior)
+      const videoFeed = document.getElementById("webgazerVideoFeed");
+      if (videoFeed) {
+        videoFeed.style.display = "none";
+      }
+      const faceOverlay = document.getElementById("webgazerFaceOverlay");
+      if (faceOverlay) {
+        faceOverlay.style.display = "none";
+      }
+      const predictionPoints = document.getElementById(
+        "webgazerPredictionPoints",
+      );
+      if (predictionPoints) {
+        predictionPoints.style.display = "none";
+      }
+
+      // Set all state to reset
+      setIsTracking(false);
+      setRetentionTime(0);
+      setIsLookingAtAd(false);
+      setGazedAdId(null);
+      setCurrentGazeData(null);
+
+      console.log("[WebGazer] All resources and states have been reset.");
+    } catch (error) {
+      console.error("[WebGazer] Error during tracking cleanup:", error);
+    }
   };
 
-  
   return (
     <>
       <Navbar />
       <div className="container p-4">
         {!hasConsent && (
-          <div className="consent p-4 bg-yellow-100 rounded-lg mb-4">
+          <div className="consent mb-4 rounded-lg bg-yellow-100 p-4">
             <p className="mb-2">
               This application uses your webcam to track gaze for enhancing your
               advertisement experience. Do you consent to enable gaze tracking?
             </p>
             <button
               onClick={handleConsent}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg mr-2"
+              className="mr-2 rounded-lg bg-green-500 px-4 py-2 text-white"
             >
               Yes, I Consent
             </button>
             <button
               onClick={handleDeclineConsent}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg"
+              className="rounded-lg bg-red-500 px-4 py-2 text-white"
             >
               No, Thanks
             </button>
@@ -274,7 +322,10 @@ const LayoutList = () => {
                 <h2 className="mb-4 text-xl font-bold">Available Layouts</h2>
                 {loading && !selectedLayout && (
                   <div className="flex items-center justify-center p-4 text-gray-600">
-                    <svg className="mr-2 h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                    <svg
+                      className="mr-2 h-5 w-5 animate-spin"
+                      viewBox="0 0 24 24"
+                    >
                       <circle
                         cx="12"
                         cy="12"
@@ -356,7 +407,7 @@ const LayoutList = () => {
               {!isCalibrating && (
                 <button
                   onClick={handleStartCalibration}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+                  className="rounded-lg bg-blue-500 px-4 py-2 text-white"
                   disabled={isCalibrating || isTracking || !selectedLayout}
                 >
                   Start Calibration
@@ -365,7 +416,7 @@ const LayoutList = () => {
               {isTracking && (
                 <button
                   onClick={handleEndTracking}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg"
+                  className="rounded-lg bg-red-500 px-4 py-2 text-white"
                 >
                   End Tracking
                 </button>
@@ -380,11 +431,14 @@ const LayoutList = () => {
                   <strong>Retention Time:</strong> {retentionTime} seconds
                 </p>
                 <p>
-                  <strong>Looking at Ad:</strong> {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
+                  <strong>Looking at Ad:</strong>{" "}
+                  {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
                 </p>
                 {calibrationCompleted && (
-                  <div className="mt-4 p-4 bg-green-100 rounded-lg">
-                    <p className="text-green-700">Calibration was successfully completed.</p>
+                  <div className="mt-4 rounded-lg bg-green-100 p-4">
+                    <p className="text-green-700">
+                      Calibration was successfully completed.
+                    </p>
                   </div>
                 )}
               </div>
@@ -395,13 +449,22 @@ const LayoutList = () => {
 
       {/* Render CalibrationComponent */}
       {isCalibrating && (
-        <CalibrationComponent onCalibrationComplete={handleCalibrationComplete} />
+        <CalibrationComponent
+          onCalibrationComplete={handleCalibrationComplete}
+        />
       )}
 
       {/* Render GazeTrackingComponent only when tracking is active, not calibrating, and calibration is completed */}
-      {isTracking && !isCalibrating && calibrationCompleted && selectedLayout && hasConsent && (
-        <GazeTrackingComponent onGazeAtAd={handleGazeAtAd} isActive={isTracking} />
-      )}
+      {isTracking &&
+        !isCalibrating &&
+        calibrationCompleted &&
+        selectedLayout &&
+        hasConsent && (
+          <GazeTrackingComponent
+            onGazeAtAd={handleGazeAtAd}
+            isActive={isTracking}
+          />
+        )}
 
       {/* Render GazeVisualizer */}
       {currentGazeData && <GazeVisualizer gazeData={currentGazeData} />}

@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import webgazer from "webgazer";
 
+// Example using calibration points for the calibration process
 const calibrationPoints = [
   { x: 10, y: 10 },
   { x: 90, y: 10 },
   { x: 50, y: 50 },
   { x: 10, y: 90 },
   { x: 90, y: 90 },
-]; // Points are expressed in percentages of the screen width and height
+];
 
 const CalibrationComponent = ({ onCalibrationComplete }) => {
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
@@ -15,26 +16,24 @@ const CalibrationComponent = ({ onCalibrationComplete }) => {
 
   useEffect(() => {
     if (currentPointIndex < calibrationPoints.length) {
-      // Start capturing gaze data
       setIsCapturing(true);
       const timer = setTimeout(() => {
         setIsCapturing(false);
         setCurrentPointIndex(currentPointIndex + 1);
       }, 2000); // Wait for 2 seconds on each point
 
-      // Optionally, collect calibration data here
-      // For example:
-      // webgazer.setGazeListener((data, elapsedTime) => {
-      //   if (data) {
-      //     // Process calibration data
-      //   }
-      // }).begin();
+      webgazer.setGazeListener((data, elapsedTime) => {
+        if (data) {
+          console.log(`Calibration Data Captured at Point ${currentPointIndex}`, data);
+        }
+      });
 
       return () => {
         clearTimeout(timer);
         webgazer.clearGazeListener();
       };
     } else {
+      setIsCapturing(false);
       onCalibrationComplete();
     }
   }, [currentPointIndex, onCalibrationComplete]);
@@ -44,6 +43,8 @@ const CalibrationComponent = ({ onCalibrationComplete }) => {
       <p className="mb-4 text-white text-lg">
         Please follow the red dot with your eyes for calibration.
       </p>
+
+      {/* Render calibration points */}
       {calibrationPoints.map((point, index) => (
         <div
           key={index}
@@ -62,6 +63,7 @@ const CalibrationComponent = ({ onCalibrationComplete }) => {
           }}
         />
       ))}
+
       {/* Capturing Indicator */}
       {isCapturing && (
         <div className="capturing-indicator absolute bottom-10">
@@ -84,6 +86,7 @@ const CalibrationComponent = ({ onCalibrationComplete }) => {
           <p className="text-white mt-2">Capturing gaze data...</p>
         </div>
       )}
+
       {/* Progress Bar */}
       <div className="mt-4 w-1/2 bg-gray-300 rounded-full">
         <div
@@ -93,6 +96,7 @@ const CalibrationComponent = ({ onCalibrationComplete }) => {
           {Math.round(((currentPointIndex) / calibrationPoints.length) * 100)}%
         </div>
       </div>
+
       {/* Current Calibration Point */}
       <p className="mt-2 text-white">
         Calibration Point {currentPointIndex + 1} of {calibrationPoints.length}

@@ -1,5 +1,3 @@
-// src/components/AdAnalytics/GazeVisualizer.jsx
-
 import React, { useEffect, useRef } from "react";
 
 const GazeVisualizer = ({ gazeData }) => {
@@ -9,7 +7,7 @@ const GazeVisualizer = ({ gazeData }) => {
     if (!canvasRef.current || !gazeData) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
     // Resize canvas to match the window size
     canvas.width = window.innerWidth;
@@ -27,19 +25,7 @@ const GazeVisualizer = ({ gazeData }) => {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Draw camera bounding rectangle for debugging
-    const cameraElement = document.getElementById("webgazerVideoFeed");
-    if (cameraElement) {
-      const rect = cameraElement.getBoundingClientRect();
-      ctx.strokeStyle = "blue";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(rect.left, rect.top, rect.width, rect.height);
-      ctx.fillStyle = "blue";
-      ctx.font = "16px Arial";
-      ctx.fillText("Camera", rect.left, rect.top - 10);
-    }
-
-    // Draw ad bounding rectangles for debugging
+    // Draw debugging rectangles around ads
     const adElements = document.querySelectorAll(".ad-item");
     adElements.forEach((adElement) => {
       const rect = adElement.getBoundingClientRect();
@@ -51,7 +37,6 @@ const GazeVisualizer = ({ gazeData }) => {
       const adId = adElement.getAttribute("data-ad-id");
       ctx.fillText(`Ad ${adId}`, rect.left, rect.top - 10);
     });
-
   }, [gazeData]);
 
   return (

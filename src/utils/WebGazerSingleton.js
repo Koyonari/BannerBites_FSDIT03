@@ -1,5 +1,3 @@
-// src/utils/WebGazerSingleton.js
-
 import webgazer from "webgazer";
 
 class WebGazerSingleton {
@@ -8,9 +6,11 @@ class WebGazerSingleton {
   static initialize(onGazeListener) {
     if (this.instance) return; // Prevent reinitialization
 
+    // You may need to customize the initialization options based on the fork
     webgazer
-      .setRegression("ridge")
-      .setTracker("TFFacemesh")
+      .setRegression("ridge") // Example: using ridge regression (verify if options differ)
+      .setTracker("TFFacemesh") // Example: using TFFacemesh as the tracker
+      .showPredictionPoints(true) // Assuming there might be a modified prediction point feature
       .setGazeListener((data, elapsedTime) => {
         if (data) {
           onGazeListener(data);

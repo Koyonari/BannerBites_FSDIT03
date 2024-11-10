@@ -1,5 +1,3 @@
-// src/components/AdAnalytics/GazeTrackingComponent.jsx
-
 import { useEffect } from "react";
 import WebGazerSingleton from "../../utils/WebGazerSingleton";
 
