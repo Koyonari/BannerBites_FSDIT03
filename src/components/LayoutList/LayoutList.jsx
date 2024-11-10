@@ -67,10 +67,7 @@ const LayoutList = () => {
     }
 
     return (
-      <div
-        className="h-full overflow-hidden rounded-lg shadow-sm"
-        style={styles}
-      >
+      <div className="h-full overflow-hidden" style={styles}>
         {type === "text" && (
           <div className="p-4">
             <h3 className="text-lg font-semibold">{content.title}</h3>

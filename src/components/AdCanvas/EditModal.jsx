@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { SketchPicker } from "react-color";
 import Modal from "../Modal/Modal";
+import StyledAlert from "../StyledAlert";
 
 const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({
@@ -26,6 +27,21 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   const [showBorderColorPicker, setShowBorderColorPicker] = useState(false);
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (message, title = "Alert", type = "info") => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
 
   useEffect(() => {
     if (ad && ad.content) {
@@ -112,7 +128,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Error fetching pre-signed URL:", errorData);
-        alert("Failed to get pre-signed URL");
+        showAlert("Failed to get pre-signed URL");
         return;
       }
 
@@ -143,7 +159,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
       }
     } catch (error) {
       console.error("Error uploading file:", error);
-      alert("Error uploading file");
+      showAlert("Error uploading file");
     } finally {
       setIsUploading(false);
     }
@@ -369,6 +385,13 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
           </div>
         </div>
       </div>
+      <StyledAlert
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
     </Modal>
   );
 };

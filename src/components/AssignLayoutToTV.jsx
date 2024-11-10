@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import StyledAlert from "./StyledAlert";
 
 const AssignLayoutToTV = ({ tvId, onLayoutAssigned }) => {
   const [layouts, setLayouts] = useState([]);
   const [selectedLayoutId, setSelectedLayoutId] = useState("");
   const [assignedDate, setAssignedDate] = useState("");
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (message, title = "Alert", type = "info") => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
 
   useEffect(() => {
     axios
@@ -21,14 +37,14 @@ const AssignLayoutToTV = ({ tvId, onLayoutAssigned }) => {
           assignedDate: assignedDate,
         })
         .then(() => {
-          alert("Layout assigned successfully!");
+          showAlert("Layout assigned successfully!");
           onLayoutAssigned();
         })
         .catch((error) =>
           console.error("Error assigning layout to TV:", error),
         );
     } else {
-      alert("Please select a layout and date.");
+      showAlert("Please select a layout and date.");
     }
   };
 
@@ -76,6 +92,13 @@ const AssignLayoutToTV = ({ tvId, onLayoutAssigned }) => {
           Assign Layout
         </button>
       </div>
+      <StyledAlert
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
     </div>
   );
 };

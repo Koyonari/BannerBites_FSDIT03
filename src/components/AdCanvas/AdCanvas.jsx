@@ -7,6 +7,7 @@ import EditModal from "./EditModal";
 import ScheduleModal from "./ScheduleModal";
 import SaveLayoutModal from "./SaveLayoutModal";
 import SelectionModePopup from "./SelectionModePopup";
+import StyledAlert from "../StyledAlert";
 import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
@@ -33,8 +34,22 @@ const AdCanvas = () => {
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
   const [isNamingLayout, setIsNamingLayout] = useState(false);
-  const navigate = useNavigate();
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
+  const showAlert = (message, title = "Alert", type = "info") => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
 
+  const navigate = useNavigate();
   const handleMoveLeft = () => {
     navigate(-1);
   };
@@ -168,7 +183,7 @@ const AdCanvas = () => {
     const updatedGrid = [...gridItems];
 
     if (!updatedGrid[index]) {
-      alert("Invalid cell selection!");
+      showAlert("Invalid cell selection!");
       return;
     }
 
@@ -176,14 +191,16 @@ const AdCanvas = () => {
 
     if (selectedCells.length > 0) {
       if (!validateMerge(selectedCells)) {
-        alert("Invalid merge selection. Please check your selection.");
+        showAlert("Invalid merge selection. Please check your selection.");
         return;
       }
       indicesToMerge = selectedCells;
     } else if (direction === "horizontal" || direction === "vertical") {
       if (direction === "horizontal") {
         if ((index + 1) % columns === 0) {
-          alert("Cannot merge horizontally. No adjacent cell to the right.");
+          showAlert(
+            "Cannot merge horizontally. No adjacent cell to the right.",
+          );
           return;
         }
         const rightIndex = index + 1;
@@ -194,13 +211,13 @@ const AdCanvas = () => {
         ) {
           indicesToMerge = [index, rightIndex];
         } else {
-          alert("Cannot merge horizontally. Adjacent cell is invalid.");
+          showAlert("Cannot merge horizontally. Adjacent cell is invalid.");
           return;
         }
       } else if (direction === "vertical") {
         const bottomIndex = index + columns;
         if (bottomIndex >= totalCells) {
-          alert("Cannot merge vertically. No adjacent cell below.");
+          showAlert("Cannot merge vertically. No adjacent cell below.");
           return;
         }
         if (
@@ -210,7 +227,7 @@ const AdCanvas = () => {
         ) {
           indicesToMerge = [index, bottomIndex];
         } else {
-          alert("Cannot merge vertically. Adjacent cell is invalid.");
+          showAlert("Cannot merge vertically. Adjacent cell is invalid.");
           return;
         }
       }
@@ -255,7 +272,7 @@ const AdCanvas = () => {
 
       setGridItems(updatedGrid);
     } else {
-      alert("Cannot merge the selected cells.");
+      showAlert("Cannot merge the selected cells.");
     }
   };
 
@@ -327,7 +344,7 @@ const AdCanvas = () => {
         const sortedCells = [...allCellsToMerge].sort((a, b) => a - b);
         handleMerge(sortedCells[0], "selection", sortedCells);
       } else {
-        alert("Selected cells must form a valid rectangle or square.");
+        showAlert("Selected cells must form a valid rectangle or square.");
       }
 
       setSelectedMergedCells([]);
@@ -338,12 +355,12 @@ const AdCanvas = () => {
 
     // Case 3: Regular merge operation for non-merged cells
     if (selectedCells.length < 2) {
-      alert("Please select at least 2 cells to merge.");
+      showAlert("Please select at least 2 cells to merge.");
       return;
     }
 
     if (!validateMerge(selectedCells)) {
-      alert("Selected cells must form a valid rectangle or square.");
+      showAlert("Selected cells must form a valid rectangle or square.");
       setSelectedCells([]);
       setIsSelectionMode(false);
       return;
@@ -397,7 +414,7 @@ const AdCanvas = () => {
     // Validate that adItem has a content property
     if (!adItem.content) {
       console.error("AdItem is missing the 'content' property:", adItem);
-      alert("Failed to schedule the ad. Missing content information.");
+      showAlert("Failed to schedule the ad. Missing content information.");
       return;
     }
     const updatedGrid = [...gridItems];
@@ -458,11 +475,11 @@ const AdCanvas = () => {
       );
 
       console.log("Layout saved successfully:", response.data);
-      alert("Layout saved successfully!");
+      showAlert("Layout saved successfully!");
       setIsNamingLayout(false);
     } catch (error) {
       console.error("Error saving layout:", error);
-      alert("Failed to save layout. Please try again.");
+      showAlert("Failed to save layout. Please try again.");
     }
   };
 
@@ -779,6 +796,13 @@ const AdCanvas = () => {
           }}
         />
       )}
+      <StyledAlert
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
     </div>
   );
 };
