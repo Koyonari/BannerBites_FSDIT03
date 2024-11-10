@@ -17,7 +17,7 @@ const ScheduleModal = ({ ad, onSave, onClose }) => {
       />
 
       {/* Modal Content */}
-      <div className="relative z-50 w-full max-w-md rounded-lg bg-white shadow-lg dark:bg-black">
+      <div className="relative z-50 w-full max-w-md rounded-lg border bg-white shadow-lg dark:border-white dark:bg-black">
         {/* Header */}
         <div className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-2">
@@ -30,7 +30,7 @@ const ScheduleModal = ({ ad, onSave, onClose }) => {
             onClick={onClose}
             className="rounded-full p-1 hover:bg-gray-100"
           >
-            <X className="h-5 w-5 text-gray-500 dark:text-white" />
+            <X className="h-5 w-5 text-gray-500 dark:text-white hover:dark:text-black" />
           </button>
         </div>
 
