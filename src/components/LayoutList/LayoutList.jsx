@@ -6,6 +6,9 @@ const LayoutList = () => {
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showAllLayouts, setShowAllLayouts] = useState(false);
+
+  const MOBILE_DISPLAY_LIMIT = 3;
 
   useEffect(() => {
     fetchLayouts();
@@ -89,7 +92,7 @@ const LayoutList = () => {
         )}
         {type === "video" && (
           <div>
-            <video controls className="w-full">
+            <video autoPlay loop muted playsInline className="w-full">
               <source src={mediaUrl} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
@@ -181,13 +184,18 @@ const LayoutList = () => {
     );
   };
 
+  const visibleLayouts = showAllLayouts
+    ? layouts
+    : layouts.slice(0, MOBILE_DISPLAY_LIMIT);
+  const hasMoreLayouts = layouts.length > MOBILE_DISPLAY_LIMIT;
+
   return (
-    <div className="dark:bg-black">
+    <div className="min-h-screen dark:bg-black">
       <Navbar />
-      <div className="container mx-auto h-full w-full p-12">
-        <div className="flex min-h-[600px]">
-          <div className="w-[300px] flex-shrink-0">
-            <div className="rounded-lg bg-white p-6 shadow dark:bg-black dark:text-white">
+      <div className="container mx-auto w-full p-4 md:p-12">
+        <div className="flex flex-col md:min-h-[600px] md:flex-row">
+          <div className="w-full md:w-[300px] md:flex-shrink-0">
+            <div className="mb-6 rounded-lg bg-white p-6 shadow dark:bg-black dark:text-white md:mb-0">
               <h2 className="mb-4 text-xl font-bold">Available Layouts</h2>
               {loading && !selectedLayout && (
                 <div className="flex items-center justify-center p-4 text-gray-600">
@@ -219,7 +227,7 @@ const LayoutList = () => {
                 </div>
               )}
               <div className="space-y-2">
-                {layouts.map((layout) => (
+                {visibleLayouts.map((layout) => (
                   <button
                     key={layout.layoutId}
                     className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
@@ -232,12 +240,37 @@ const LayoutList = () => {
                     {layout.name || `Layout ${layout.layoutId}`}
                   </button>
                 ))}
+
+                {hasMoreLayouts && (
+                  <button
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-50 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-100 md:hidden"
+                    onClick={() => setShowAllLayouts(!showAllLayouts)}
+                  >
+                    <span>
+                      {showAllLayouts
+                        ? "Show Less"
+                        : `Show ${layouts.length - MOBILE_DISPLAY_LIMIT} More`}
+                    </span>
+                    <svg
+                      className={`h-4 w-4 transform transition-transform ${showAllLayouts ? "rotate-180" : ""}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           </div>
-
-          <div className="ml-8 flex-1">
-            <div className="flex h-full min-h-[600px] items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg">
+          <div className="flex-1 md:ml-8">
+            <div className="flex h-[500px] items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg md:h-full md:min-h-[600px]">
               <div className="h-full w-full overflow-hidden rounded-lg bg-white shadow-inner">
                 {loading && selectedLayout && (
                   <div className="flex h-full items-center justify-center p-4 text-gray-600">

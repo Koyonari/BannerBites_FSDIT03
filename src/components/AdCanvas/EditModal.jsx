@@ -182,10 +182,10 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   return (
     <Modal isOpen={!!ad} onClose={onClose}>
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="!z-[9999] flex h-[80vh] w-full max-w-2xl flex-col rounded-lg bg-white">
+        <div className="!z-[9999] flex h-[80vh] w-full max-w-2xl flex-col rounded-lg bg-white dark:bg-black">
           {/* Header */}
           <div className="border-b p-6">
-            <h3 className="text-2xl font-semibold">
+            <h3 className="text-2xl font-bold dark:text-white">
               Edit {adType.charAt(0).toUpperCase() + adType.slice(1)} Ad
             </h3>
           </div>
@@ -193,7 +193,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
           {/* Content */}
           <div className="flex-1 space-y-4 overflow-y-auto p-6">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                 Title
               </label>
               <input
@@ -207,7 +207,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                 Description
               </label>
               <textarea
@@ -223,7 +223,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             {adType === "text" && (
               <div className="space-y-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                     Font Family
                   </label>
                   <input
@@ -237,7 +237,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                     Font Size
                   </label>
                   <input
@@ -252,7 +252,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
                 {/* Text Color Picker */}
                 <div className="relative">
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                     Text Color
                   </label>
                   <div
@@ -287,7 +287,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             {(adType === "image" || adType === "video") && (
               <div className="space-y-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                     Upload {adType}
                   </label>
                   <input
@@ -322,7 +322,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
             {/* Border Color */}
             <div className="relative">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                 Border Color
               </label>
               <div
@@ -353,7 +353,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
             {/* Scheduled Time */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                 Scheduled Time
               </label>
               <input

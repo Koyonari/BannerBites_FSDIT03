@@ -127,7 +127,7 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
   }
 
   return (
-    <section className="h-screen bg-white dark:bg-black">
+    <section className="min-h-screen bg-white dark:bg-black">
       <Navbar />
       <div className="flex h-12 justify-center gap-4 pt-4 md:px-4 xl:h-24">
         <div className="flex h-full w-1/6 items-center rounded-md border border-gray-300 px-4 py-2 lg:text-xl xl:text-2xl">

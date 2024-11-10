@@ -730,7 +730,7 @@ const AdCanvas = () => {
       <div className="mx-auto flex w-4/5 flex-row justify-between py-4 lg:py-8">
         <MoveLeft
           onClick={handleMoveLeft}
-          className="h-8 w-16 rounded-lg bg-orange-500 py-1 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+          className="h-8 w-16 rounded-lg bg-orange-500 py-1 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
         />
 
         <div
@@ -744,14 +744,14 @@ const AdCanvas = () => {
             className={`h-8 w-16 rounded-lg py-2 text-white transition-colors duration-300 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
               !isMergeButtonActive
                 ? "cursor-not-allowed bg-gray-400"
-                : "bg-orange-500 hover:cursor-pointer"
+                : "bg-orange-500 hover:cursor-pointer hover:bg-orange-600"
             }`}
           />
         </div>
 
         <Check
           onClick={handleOpenSelector}
-          className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
+          className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
         />
       </div>
 
