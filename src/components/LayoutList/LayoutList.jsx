@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../Navbar";
+import { Maximize2, Minimize2 } from "lucide-react";
 
 const LayoutList = () => {
   const [layouts, setLayouts] = useState([]);
@@ -8,6 +9,9 @@ const LayoutList = () => {
   const [error, setError] = useState(null);
   const [showAllLayouts, setShowAllLayouts] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+  const previewRef = useRef(null);
 
   const MOBILE_DISPLAY_LIMIT = 3;
 
@@ -19,9 +23,30 @@ const LayoutList = () => {
     };
     handleResize();
 
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
   }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!isFullscreen) {
+        await previewRef.current.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error("Fullscreen error:", err);
+    }
+  };
 
   const fetchLayouts = async () => {
     try {
@@ -281,8 +306,34 @@ const LayoutList = () => {
             </div>
           </div>
           <div className="flex-1 md:ml-8">
-            <div className="flex h-[500px] items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg md:h-full md:min-h-[600px]">
-              <div className="h-full w-full overflow-hidden rounded-lg bg-white shadow-inner">
+            <div
+              className="relative flex h-[500px] items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg md:h-full md:min-h-[600px]"
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+            >
+              {selectedLayout && !loading && (
+                <button
+                  onClick={toggleFullscreen}
+                  className={`absolute right-6 top-6 z-10 rounded-full bg-gray-800 p-2 text-white transition-opacity duration-200 hover:bg-gray-700 ${
+                    isHovering || isFullscreen ? "opacity-100" : "opacity-0"
+                  }`}
+                  aria-label={
+                    isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                  }
+                >
+                  {isFullscreen ? (
+                    <Minimize2 className="h-5 w-5" />
+                  ) : (
+                    <Maximize2 className="h-5 w-5" />
+                  )}
+                </button>
+              )}
+              <div
+                ref={previewRef}
+                className={`h-full w-full overflow-hidden rounded-lg bg-white shadow-inner ${
+                  isFullscreen ? "flex items-center justify-center" : ""
+                }`}
+              >
                 {loading && selectedLayout && (
                   <div className="flex h-full items-center justify-center p-4 text-gray-600">
                     <svg

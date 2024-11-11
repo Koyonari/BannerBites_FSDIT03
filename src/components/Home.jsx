@@ -40,12 +40,12 @@ const Hero = () => {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-white p-4 transition-colors duration-200 dark:bg-black">
       <div className="flex w-full max-w-lg flex-col items-center dark:bg-black">
-        <h1 className="mb-1 text-center text-4xl font-bold text-black dark:text-white md:text-6xl lg:text-7xl">
+        <h1 className="mb-1 text-center text-7xl font-bold text-black dark:text-white md:text-6xl lg:text-4xl">
           Banner
           <span className="text-orange-500 outline-3">Bites</span>
         </h1>
 
-        <div className="relative mx-auto flex h-16 w-full max-w-72 justify-center rounded-lg border-2 border-orange-500 bg-white p-4 dark:bg-black md:p-6">
+        <div className="relative flex h-16 w-full max-w-72 justify-center rounded-lg border-2 border-orange-500 bg-white p-4 dark:bg-black md:p-6">
           <div className="flex w-full max-w-xs items-center justify-between">
             <Link
               to={icons.navbar[0].href}
