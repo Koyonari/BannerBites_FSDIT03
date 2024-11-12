@@ -35,6 +35,7 @@ const Login = () => {
       localStorage.setItem("authToken", data.token); // Store the token
 
       alert(`Logged in successfully as ${role} - ${username}`);
+      navigate('/'); // Redirect to home page after showing alert
     } catch (err) {
       setError(err.message);
     }
