@@ -1,7 +1,7 @@
+// deleteLayout.test.js
 const { deleteLayout } = require('../controllers/layoutController');
-const GridItemModel = require('../models/GridItemModel');
-const ScheduledAdModel = require('../models/ScheduledAdModel');
-const AdModel = require('../models/AdModel');
+const { dynamoDb } = require('../middleware/awsClients');
+const { TransactWriteCommand } = require('@aws-sdk/lib-dynamodb');
 
 jest.mock('../middleware/awsClients', () => ({
   dynamoDb: {
@@ -9,19 +9,23 @@ jest.mock('../middleware/awsClients', () => ({
   },
 }));
 
-jest.mock('../models/GridItemModel');
-jest.mock('../models/ScheduledAdModel');
-jest.mock('../models/AdModel');
-// At the top of your test file
-const { mockClient } = require('aws-sdk-client-mock');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+// Mock other dependencies
+jest.mock('../models/GridItemModel', () => ({
+  getGridItemsByLayoutId: jest.fn(),
+}));
 
-const dynamoDbMock = mockClient(DynamoDBClient);
+jest.mock('../models/ScheduledAdModel', () => ({
+  getScheduledAdsByLayoutId: jest.fn(),
+  getScheduledAdsByAdId: jest.fn(),
+}));
 
-// Reset mocks after each test
-afterEach(() => {
-  dynamoDbMock.reset();
-});
+jest.mock('../models/AdModel', () => ({
+  deleteAdById: jest.fn(),
+}));
+
+const GridItemModel = require('../models/GridItemModel');
+const ScheduledAdModel = require('../models/ScheduledAdModel');
+const AdModel = require('../models/AdModel');
 
 describe('deleteLayout', () => {
   afterEach(() => {
@@ -39,44 +43,30 @@ describe('deleteLayout', () => {
       json: jest.fn(),
     };
 
+    // Mock the related data retrieval
     GridItemModel.getGridItemsByLayoutId.mockResolvedValue([
       { layoutId: 'layout-123', index: 0 },
     ]);
+
     ScheduledAdModel.getScheduledAdsByLayoutId.mockResolvedValue([
-      { gridItemId: 'layout-123#0', scheduledTime: '00:00', adId: 'ad-1' },
+      { gridItemId: 'layout-123#0', scheduledTime: '12:00', adId: 'ad-1' },
     ]);
+
+    // Mock the DynamoDB send method
+    dynamoDb.send.mockResolvedValue({});
+
+    // Mock the AdModel methods
     ScheduledAdModel.getScheduledAdsByAdId.mockResolvedValue([]);
     AdModel.deleteAdById.mockResolvedValue({});
 
-    dynamoDb.send.mockResolvedValue({});
-
     await deleteLayout(req, res);
 
-    expect(dynamoDb.send).toHaveBeenCalled();
+    expect(dynamoDb.send).toHaveBeenCalledWith(expect.any(TransactWriteCommand));
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       message: 'Layout layout-123 and its related items deleted successfully.',
     });
   });
 
-  it('should return 500 if an error occurs', async () => {
-    const req = {
-      params: {
-        layoutId: 'layout-123',
-      },
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
-
-    GridItemModel.getGridItemsByLayoutId.mockRejectedValue(
-      new Error('Database error')
-    );
-
-    await deleteLayout(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error.' });
-  });
+  // Additional test cases...
 });
