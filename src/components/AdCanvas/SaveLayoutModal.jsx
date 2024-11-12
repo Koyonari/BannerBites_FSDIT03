@@ -1,13 +1,29 @@
 // SaveLayoutModal.js
 import React, { useState } from "react";
-import Modal from "../Modal/Modal"; // Adjust the import path based on your project structure
+import Modal from "../Modal/Modal";
+import StyledAlert from "../StyledAlert";
 
 const SaveLayoutModal = ({ onSave, onClose }) => {
   const [layoutName, setLayoutName] = useState("");
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (message, title = "Alert", type = "info") => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
 
   const handleSave = () => {
     if (layoutName.trim() === "") {
-      alert("Please enter a name for the layout.");
+      showAlert("Please enter a name for the layout.");
       return;
     }
     onSave(layoutName);
@@ -38,6 +54,13 @@ const SaveLayoutModal = ({ onSave, onClose }) => {
           Cancel
         </button>
       </div>
+      <StyledAlert
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
     </Modal>
   );
 };

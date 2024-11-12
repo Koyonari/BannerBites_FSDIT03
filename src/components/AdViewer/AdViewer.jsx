@@ -8,7 +8,10 @@ const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
     const s3Region = content.s3Region || "ap-southeast-1";
     const encodeS3Key = (key) =>
-      key.split("/").map((segment) => encodeURIComponent(segment)).join("/");
+      key
+        .split("/")
+        .map((segment) => encodeURIComponent(segment))
+        .join("/");
     const encodedS3Key = encodeS3Key(content.s3Key);
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
@@ -23,7 +26,7 @@ const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
   }
 
   // Handle missing content gracefully
-  if (type === "text" && (!content.title && !content.description)) {
+  if (type === "text" && !content.title && !content.description) {
     return (
       <div className="ad-item" style={styles}>
         <p className="text-gray-500">No content available for text ad</p>
@@ -57,14 +60,18 @@ const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
       )}
       {type === "image" && mediaUrl && (
         <div>
-          <img src={mediaUrl} alt={content.title || "Image Ad"} style={{ maxWidth: "100%" }} />
+          <img
+            src={mediaUrl}
+            alt={content.title || "Image Ad"}
+            style={{ maxWidth: "100%" }}
+          />
           <h3>{content.title || "Untitled"}</h3>
           <p>{content.description || "No description provided."}</p>
         </div>
       )}
       {type === "video" && mediaUrl && (
         <div>
-          <video controls style={{ width: "100%" }}>
+          <video autoPlay loop muted playsInline className="w-full">
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
@@ -107,16 +114,20 @@ const AdViewer = ({ layout }) => {
           const currentTimeString = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
 
           const availableAds = scheduledAds.filter(
-            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
           );
 
           if (availableAds.length > 0) {
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
-              currentAd.scheduledTime > latestAd.scheduledTime ? currentAd : latestAd
+              currentAd.scheduledTime > latestAd.scheduledTime
+                ? currentAd
+                : latestAd,
             );
           } else {
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
-              currentAd.scheduledTime < nextAd.scheduledTime ? currentAd : nextAd
+              currentAd.scheduledTime < nextAd.scheduledTime
+                ? currentAd
+                : nextAd,
             );
           }
         }
@@ -129,9 +140,6 @@ const AdViewer = ({ layout }) => {
               style={{
                 gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
                 gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
-                border: "1px solid #ccc",
-                padding: "10px",
-                backgroundColor: "#fafafa",
               }}
             >
               <div className="ad-placeholder text-gray-500">
@@ -150,9 +158,6 @@ const AdViewer = ({ layout }) => {
             style={{
               gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
               gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
-              border: "1px solid #ccc",
-              padding: "10px",
-              backgroundColor: "#fafafa",
             }}
           >
             <AdComponent type={type} content={content} styles={styles} />

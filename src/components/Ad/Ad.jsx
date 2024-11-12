@@ -38,7 +38,7 @@ const Ad = () => {
   return (
     <div>
       <Navbar />
-      <div className="px-8 pt-8 dark:bg-black">
+      <div className="px-8 dark:bg-black md:mt-[-7.5vh] lg:mt-[-10vh]">
         <ErrorBoundary>
           <DndProvider backend={HTML5Backend}>
             <div>

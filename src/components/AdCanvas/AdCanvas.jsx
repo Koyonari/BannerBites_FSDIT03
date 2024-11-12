@@ -7,6 +7,7 @@ import EditModal from "./EditModal";
 import ScheduleModal from "./ScheduleModal";
 import SaveLayoutModal from "./SaveLayoutModal";
 import SelectionModePopup from "./SelectionModePopup";
+import StyledAlert from "../StyledAlert";
 import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
@@ -38,33 +39,50 @@ const AdCanvas = () => {
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
   const [isNamingLayout, setIsNamingLayout] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
+  const showAlert = (message, title = "Alert", type = "info") => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
+
   const navigate = useNavigate();
 
   useEffect(() => {
     if (selectedLayout) {
-      console.log('Retrieved Layout:', selectedLayout); // Log retrieved layout
-      const properlyInitializedGridItems = selectedLayout.gridItems.map((item) => ({
-        ...item,
-        scheduledAds: item.scheduledAds.map((scheduledAd) => ({
-          ...scheduledAd,
-          id: scheduledAd.id || uuidv4(), // Ensure each scheduledAd has an ID
-          ad: {
-            ...scheduledAd.ad,
-            id: scheduledAd.ad.id || uuidv4(), // Ensure ad has an id
-          },
-        })),
-        isMerged: item.isMerged || false,
-        hidden: item.hidden || false,
-        rowSpan: item.rowSpan || 1,
-        colSpan: item.colSpan || 1,
-        mergeDirection: item.mergeDirection || null,
-        selectedCells: item.selectedCells || [],
-      }));
-  
+      console.log("Retrieved Layout:", selectedLayout); // Log retrieved layout
+      const properlyInitializedGridItems = selectedLayout.gridItems.map(
+        (item) => ({
+          ...item,
+          scheduledAds: item.scheduledAds.map((scheduledAd) => ({
+            ...scheduledAd,
+            id: scheduledAd.id || uuidv4(), // Ensure each scheduledAd has an ID
+            ad: {
+              ...scheduledAd.ad,
+              id: scheduledAd.ad.id || uuidv4(), // Ensure ad has an id
+            },
+          })),
+          isMerged: item.isMerged || false,
+          hidden: item.hidden || false,
+          rowSpan: item.rowSpan || 1,
+          colSpan: item.colSpan || 1,
+          mergeDirection: item.mergeDirection || null,
+          selectedCells: item.selectedCells || [],
+        }),
+      );
+
       setRows(selectedLayout.rows);
       setColumns(selectedLayout.columns);
       setGridItems(properlyInitializedGridItems);
-      console.log('Updated Grid Items State:', properlyInitializedGridItems); // Log updated state
+      console.log("Updated Grid Items State:", properlyInitializedGridItems); // Log updated state
       setIsSelectingLayout(false);
     }
   }, [selectedLayout]);
@@ -78,13 +96,8 @@ const AdCanvas = () => {
       }
     } catch (error) {
       console.error("Error fetching layout details:", error);
-      alert("Failed to load the layout. Please try again.");
+      showAlert("Failed to load the layout. Please try again.");
     }
-  };
-
-  // Function to close the selector
-  const handleCloseSelector = () => {
-    setIsSelectingLayout(false);
   };
 
   const handleMoveLeft = () => {
@@ -220,7 +233,7 @@ const AdCanvas = () => {
     const updatedGrid = [...gridItems];
 
     if (!updatedGrid[index]) {
-      alert("Invalid cell selection!");
+      showAlert("Invalid cell selection!");
       return;
     }
 
@@ -228,14 +241,16 @@ const AdCanvas = () => {
 
     if (selectedCells.length > 0) {
       if (!validateMerge(selectedCells)) {
-        alert("Invalid merge selection. Please check your selection.");
+        showAlert("Invalid merge selection. Please check your selection.");
         return;
       }
       indicesToMerge = selectedCells;
     } else if (direction === "horizontal" || direction === "vertical") {
       if (direction === "horizontal") {
         if ((index + 1) % columns === 0) {
-          alert("Cannot merge horizontally. No adjacent cell to the right.");
+          showAlert(
+            "Cannot merge horizontally. No adjacent cell to the right.",
+          );
           return;
         }
         const rightIndex = index + 1;
@@ -246,13 +261,13 @@ const AdCanvas = () => {
         ) {
           indicesToMerge = [index, rightIndex];
         } else {
-          alert("Cannot merge horizontally. Adjacent cell is invalid.");
+          showAlert("Cannot merge horizontally. Adjacent cell is invalid.");
           return;
         }
       } else if (direction === "vertical") {
         const bottomIndex = index + columns;
         if (bottomIndex >= totalCells) {
-          alert("Cannot merge vertically. No adjacent cell below.");
+          showAlert("Cannot merge vertically. No adjacent cell below.");
           return;
         }
         if (
@@ -262,7 +277,7 @@ const AdCanvas = () => {
         ) {
           indicesToMerge = [index, bottomIndex];
         } else {
-          alert("Cannot merge vertically. Adjacent cell is invalid.");
+          showAlert("Cannot merge vertically. Adjacent cell is invalid.");
           return;
         }
       }
@@ -307,7 +322,7 @@ const AdCanvas = () => {
 
       setGridItems(updatedGrid);
     } else {
-      alert("Cannot merge the selected cells.");
+      showAlert("Cannot merge the selected cells.");
     }
   };
 
@@ -379,7 +394,7 @@ const AdCanvas = () => {
         const sortedCells = [...allCellsToMerge].sort((a, b) => a - b);
         handleMerge(sortedCells[0], "selection", sortedCells);
       } else {
-        alert("Selected cells must form a valid rectangle or square.");
+        showAlert("Selected cells must form a valid rectangle or square.");
       }
 
       setSelectedMergedCells([]);
@@ -390,12 +405,12 @@ const AdCanvas = () => {
 
     // Case 3: Regular merge operation for non-merged cells
     if (selectedCells.length < 2) {
-      alert("Please select at least 2 cells to merge.");
+      showAlert("Please select at least 2 cells to merge.");
       return;
     }
 
     if (!validateMerge(selectedCells)) {
-      alert("Selected cells must form a valid rectangle or square.");
+      showAlert("Selected cells must form a valid rectangle or square.");
       setSelectedCells([]);
       setIsSelectionMode(false);
       return;
@@ -450,20 +465,20 @@ const AdCanvas = () => {
     // Validate that adItem has a content property
     if (!adItem.content) {
       console.error("AdItem is missing the 'content' property:", adItem);
-      alert("Failed to schedule the ad. Missing content information.");
+      showAlert("Failed to schedule the ad. Missing content information.");
       return;
     }
     const updatedGrid = [...gridItems];
 
     // Check if the adItem is from the sidebar (i.e., has a placeholder ID)
-    const isNewAd = adItem.id && adItem.id.startsWith('sidebar-');
+    const isNewAd = adItem.id && adItem.id.startsWith("sidebar-");
 
     // Assign a new UUID if it's a new ad from the sidebar
     const scheduledAd = {
       id: uuidv4(),
-      ad: { 
-        ...adItem, 
-        adId: isNewAd ? uuidv4() : adItem.adId || uuidv4() // Ensure `adId` is assigned for new ads
+      ad: {
+        ...adItem,
+        adId: isNewAd ? uuidv4() : adItem.adId || uuidv4(), // Ensure `adId` is assigned for new ads
       },
       scheduledTime,
     };
@@ -474,80 +489,73 @@ const AdCanvas = () => {
   };
 
   // Handles removing ads from a grid cell
-// Handles removing ads from a grid cell
-const handleRemove = (index, scheduledAd) => {
-  // Create a deep copy of the gridItems state to prevent accidental state mutation
-  const updatedGrid = gridItems.map((item) => ({
-    ...item,
-    scheduledAds: item.scheduledAds ? [...item.scheduledAds] : [], // Ensure each scheduledAds is properly cloned
-  }));
+  // Handles removing ads from a grid cell
+  const handleRemove = (index, scheduledAd) => {
+    // Create a deep copy of the gridItems state to prevent accidental state mutation
+    const updatedGrid = gridItems.map((item) => ({
+      ...item,
+      scheduledAds: item.scheduledAds ? [...item.scheduledAds] : [], // Ensure each scheduledAds is properly cloned
+    }));
 
-  const cell = updatedGrid[index];
-  
-  // Check if the scheduledAd has a unique identifier to remove the specific one
-  if (cell.scheduledAds && cell.scheduledAds.length > 0) {
-    updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
-      (ad) => ad.id !== scheduledAd.id
-    );
-  }
+    const cell = updatedGrid[index];
 
-  // Ensure that the removal logic properly considers the updated state of scheduledAds
-  if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
-    const cellsToUnmerge = cell.selectedCells && cell.selectedCells.length > 0
-      ? cell.selectedCells
-      : [index];
+    // Check if the scheduledAd has a unique identifier to remove the specific one
+    if (cell.scheduledAds && cell.scheduledAds.length > 0) {
+      updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
+        (ad) => ad.id !== scheduledAd.id,
+      );
+    }
 
-    cellsToUnmerge.forEach((idx) => {
-      updatedGrid[idx] = {
-        scheduledAds: [],
-        isMerged: false,
-        hidden: false,
-        rowSpan: 1,
-        colSpan: 1,
-      };
-    });
-  }
+    // Ensure that the removal logic properly considers the updated state of scheduledAds
+    if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
+      const cellsToUnmerge =
+        cell.selectedCells && cell.selectedCells.length > 0
+          ? cell.selectedCells
+          : [index];
 
-  // Update the state with the new grid configuration
-  setGridItems(updatedGrid);
-};
+      cellsToUnmerge.forEach((idx) => {
+        updatedGrid[idx] = {
+          scheduledAds: [],
+          isMerged: false,
+          hidden: false,
+          rowSpan: 1,
+          colSpan: 1,
+        };
+      });
+    }
 
- // Function to save editing or saving
-const handleLayoutNameSave = async (name) => {
+    // Update the state with the new grid configuration
+    setGridItems(updatedGrid);
+  };
+
+  // Function to save editing or saving
+  const handleLayoutNameSave = async (name) => {
     try {
       const layoutId = selectedLayout ? selectedLayout.layoutId : uuidv4();
       const layout = { rows, columns, gridItems, layoutId, name };
       const cleanedLayout = cleanLayoutJSON(layout);
-  
+
       if (selectedLayout) {
         // Update an existing layout
-        await axios.put(
-          `${apiUrl}/api/layouts/${layoutId}`, 
-          cleanedLayout,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        alert("Layout updated successfully!");
+        await axios.put(`${apiUrl}/api/layouts/${layoutId}`, cleanedLayout, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        showAlert("Layout updated successfully!");
       } else {
         // Save a new layout
-        await axios.post(
-          `${apiUrl}/api/layouts/save`,
-          cleanedLayout,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        alert("Layout saved successfully!");
+        await axios.post(`${apiUrl}/api/layouts/save`, cleanedLayout, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        showAlert("Layout saved successfully!");
       }
       setIsNamingLayout(false);
     } catch (error) {
       console.error("Error saving layout:", error);
-      alert("Failed to save layout. Please try again.");
+      showAlert("Failed to save layout. Please try again.");
     }
   };
 
@@ -567,7 +575,7 @@ const handleLayoutNameSave = async (name) => {
           column,
           scheduledAds: item.scheduledAds.map((scheduledAd) => {
             const ad = scheduledAd.ad;
-            const isNewAd = ad.id && ad.id.startsWith('sidebar-');
+            const isNewAd = ad.id && ad.id.startsWith("sidebar-");
             const adData = {
               adId: isNewAd ? uuidv4() : ad.adId, // Ensure `adId` is a UUID
               type: ad.type.toLowerCase(),
@@ -585,7 +593,7 @@ const handleLayoutNameSave = async (name) => {
           colSpan: item.colSpan,
           mergeDirection: item.mergeDirection,
           selectedCells: item.selectedCells,
-          hidden: item.hidden,     
+          hidden: item.hidden,
         };
       })
       .filter((item) => item !== null); // Remove null entries
@@ -618,7 +626,7 @@ const handleLayoutNameSave = async (name) => {
         ...scheduledAds[adIndex],
         ad: {
           ...scheduledAds[adIndex].ad,
-          ...updatedAdData, 
+          ...updatedAdData,
           id: existingAdId || uuidv4(),
         },
         scheduledTime: updatedScheduledTime,
@@ -632,18 +640,22 @@ const handleLayoutNameSave = async (name) => {
 
   const handleDeleteLayout = async () => {
     if (!selectedLayout) {
-      alert("No layout is selected for deletion.");
+      showAlert("No layout is selected for deletion.");
       return;
     }
-  
-    const confirmDelete = window.confirm("Are you sure you want to delete this layout?");
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this layout?",
+    );
     if (!confirmDelete) return;
-  
+
     try {
-      const response = await axios.delete(`${apiUrl}/api/layouts/${selectedLayout.layoutId}`);
-  
+      const response = await axios.delete(
+        `${apiUrl}/api/layouts/${selectedLayout.layoutId}`,
+      );
+
       if (response.status === 200) {
-        alert("Layout deleted successfully!");
+        showAlert("Layout deleted successfully!");
         // Reset state after successful deletion
         setSelectedLayout(null);
         setIsSelectingLayout(true); // Go back to layout selection mode
@@ -652,7 +664,7 @@ const handleLayoutNameSave = async (name) => {
       }
     } catch (error) {
       console.error("Error deleting layout:", error);
-      alert("Failed to delete layout. Please try again.");
+      showAlert("Failed to delete layout. Please try again.");
     }
   };
 
@@ -700,16 +712,11 @@ const handleLayoutNameSave = async (name) => {
       : "Click to merge/unmerge selected cells";
 
   return (
-    <div className="ad-canvas flex w-full flex-col items-center justify-center text-center">
-      {isSelectingLayout ? (
-        // Layout Selector Popup
-        <LayoutSelector onSelect={handleSelectLayout} onClose={handleCloseSelector} />
-      ) : (
-        <></>
-      )}
-      <div className="absolute right-4 top-[calc(6rem+1rem)] z-10">
+    <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center text-center">
+      <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
+        {" "}
         <CircleHelp
-          className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 ${
+          className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
             showHelp ? "text-orange-500" : "text-gray-600"
           }`}
           fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
@@ -717,7 +724,7 @@ const handleLayoutNameSave = async (name) => {
           onClick={() => setShowHelp(!showHelp)}
         />
       </div>
-      <div className="flex w-full max-w-[80vw] flex-row items-stretch justify-center gap-2">
+      <div className="flex w-full max-w-[75vw] flex-row items-stretch justify-center gap-2 pt-[-2]">
         {/* Decrease Columns button */}
         <div className="group flex flex-col justify-center">
           <div
@@ -833,7 +840,7 @@ const handleLayoutNameSave = async (name) => {
       <div className="mx-auto flex w-4/5 flex-row justify-between py-4 lg:py-8">
         <MoveLeft
           onClick={handleMoveLeft}
-          className="h-8 w-16 rounded-lg bg-orange-500 py-1 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+          className="h-8 w-16 rounded-lg bg-orange-500 py-1 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
         />
 
         <div
@@ -847,25 +854,25 @@ const handleLayoutNameSave = async (name) => {
             className={`h-8 w-16 rounded-lg py-2 text-white transition-colors duration-300 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
               !isMergeButtonActive
                 ? "cursor-not-allowed bg-gray-400"
-                : "bg-orange-500 hover:cursor-pointer"
+                : "bg-orange-500 hover:cursor-pointer hover:bg-orange-600"
             }`}
           />
         </div>
 
         <Check
           onClick={handleOpenSelector}
-          className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
+          className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
         />
         {/* Delete Button */}
-      <button
-        onClick={handleDeleteLayout}
-        className="h-8 w-16 rounded-lg bg-red-500 py-1.5 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
-      >
-        Delete Layout
-      </button>
+        <button
+          onClick={handleDeleteLayout}
+          className="h-8 w-16 rounded-lg bg-red-500 py-1.5 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
+        >
+          Delete Layout
+        </button>
       </div>
 
-      {/* Hint/tooltip components */}
+      {/* Tooltip components */}
       <Tooltip id="sidebar-tooltip" {...tooltipPropsRight} />
       <Tooltip id="merge-tooltip" {...tooltipPropsRight} />
       <Tooltip id="addRows-tooltip" {...tooltipPropsRight} />
@@ -906,6 +913,16 @@ const handleLayoutNameSave = async (name) => {
           }}
         />
       )}
+      <StyledAlert
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
+
+      {/* LayoutSelector */}
+      <LayoutSelector onSelect={handleSelectLayout} />
     </div>
   );
 };
