@@ -71,7 +71,7 @@ const LayoutSelector = ({ onSelect }) => {
       </div>
 
       {/* Initial 3 layouts */}
-      <div className="border-l border-black dark:border-white">
+      <div className="w-full border-l border-black dark:border-white">
         <div className="flex w-full flex-col gap-2">
           {initialLayouts.map((layout) => (
             <div

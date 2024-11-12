@@ -649,7 +649,7 @@ const AdCanvas = () => {
         );
       });
       if (actualIndex === -1) {
-        alert("Could not find the main cell for editing.");
+        showAlert("Could not find the main cell for editing.");
         return;
       }
     }
@@ -677,7 +677,7 @@ const AdCanvas = () => {
       if (updatedGrid[mainIndex].hidden) {
         mainIndex = getMainCellIndex(mainIndex);
         if (mainIndex === -1) {
-          alert("Could not find the main cell for saving.");
+          showAlert("Could not find the main cell for saving.");
           return prevGridItems;
         }
       }
