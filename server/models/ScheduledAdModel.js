@@ -44,7 +44,7 @@ const ScheduledAdModel = {
     return data.Items;
   },
 
-  etScheduledAdsByAdId: async (adId) => {
+  getScheduledAdsByAdId: async (adId) => {
     const params = {
       TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
       IndexName: "AdIdIndex",  // Ensure this matches the index name created in the table

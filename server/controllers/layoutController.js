@@ -310,13 +310,13 @@ const deleteLayout = async (req, res) => {
 
     // Step 1: Fetch related grid items
     const gridItems = await GridItemModel.getGridItemsByLayoutId(layoutId);
-    if (!gridItems) {
+    if (!gridItems || gridItems.length === 0) {
       throw new Error(`No grid items found for layoutId: ${layoutId}`);
     }
 
     // Step 2: Fetch related scheduled ads
     const scheduledAds = await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);
-    if (!scheduledAds) {
+    if (!scheduledAds || scheduledAds.length === 0) {
       throw new Error(`No scheduled ads found for layoutId: ${layoutId}`);
     }
 
@@ -385,14 +385,24 @@ const deleteLayout = async (req, res) => {
     }
 
     // Step 5: Check for any Ads that are no longer referenced and delete them if needed
-    const adIdsToDelete = new Set(scheduledAds.map((ad) => ad.adId));
+    const adIdsToDelete = new Set(scheduledAds.map((ad) => ad.adId).filter(Boolean));
+
     for (const adId of adIdsToDelete) {
-      // Check if the ad is scheduled anywhere else
-      const associatedScheduledAds = await ScheduledAdModel.getScheduledAdsByAdId(adId);
-      if (associatedScheduledAds.length === 0) {
-        // Only delete if no other layouts are using this ad
-        await AdModel.deleteAd(adId);
-        console.log(`Ad ${adId} deleted successfully.`);
+      if (!adId) {
+        console.warn("Encountered scheduledAd with undefined adId. Skipping.");
+        continue;
+      }
+      console.log(`Checking if Ad ${adId} can be deleted.`);
+      try {
+        // Check if the ad is scheduled anywhere else
+        const associatedScheduledAds = await ScheduledAdModel.getScheduledAdsByAdId(adId);
+        if (!associatedScheduledAds || associatedScheduledAds.length === 0) {
+          // Only delete if no other layouts are using this ad
+          await AdModel.deleteAdById(adId); // Correct method name
+          console.log(`Ad ${adId} deleted successfully.`);
+        }
+      } catch (error) {
+        console.error(`Error processing Ad ${adId}:`, error);
       }
     }
 
