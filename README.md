@@ -19,86 +19,61 @@ BannerBites is a web application for managing advertisements dynamically with re
 - **Frontend**: React.js for the user interface, incorporating libraries for AWS integration, WebSocket, and UI styling.
 - **Backend**: Node.js server for API requests, AWS interactions, and WebSocket functionality.
 
-## Dependencies
+## NPM Modules Used
 
-### Frontend (React.js)
+### Back-End Dependencies
 
-#### AWS Services
+- **`@aws-sdk/client-dynamodb`**, **`@aws-sdk/client-dynamodb-streams`**, **`@aws-sdk/client-s3`**, **`@aws-sdk/lib-dynamodb`**, **`@aws-sdk/s3-request-presigner`**: AWS SDK modules for accessing and interacting with DynamoDB and S3 services.
+- **`aws-sdk`**: A comprehensive AWS SDK for Node.js, used to interact with various AWS services.
+- **`body-parser`**: Middleware for parsing incoming request bodies.
+- **`cors`**: Middleware to allow Cross-Origin Resource Sharing.
+- **`dotenv`**: Loads environment variables from a `.env` file.
+- **`express`**: A web framework for building server-side applications.
+- **`lodash.debounce`**: A utility function to delay execution of a function call.
+- **`socket.io`**: Adds real-time, bi-directional communication between client and server.
+- **`uuid`**: Generates unique identifiers, useful for tracking sessions or items.
+- **`ws`**: A WebSocket library to provide real-time functionalities.
 
-- `@aws-amplify/storage`
-- `@aws-amplify/ui-react`
-- `amazon-cognito-identity-js`
-- `aws-amplify`
-- `aws-sdk`
+#### Dev Dependencies
 
-#### UI & Styling
+- **`nodemon`**: Automatically restarts the server when code changes, used for development.
+- **`webpack`**, **`webpack-cli`**: Bundles and compiles code for server-side applications.
 
-- `@emotion/react`
-- `@emotion/styled`
-- `@mui/icons-material`
-- `@mui/material`
-- `tailwindcss`
+---
 
-#### Testing
+### Front-End Dependencies
 
-- `@testing-library/jest-dom`
-- `@testing-library/react`
-- `@testing-library/user-event`
+- **`@aws-amplify/storage`**, **`aws-amplify`**: Enables AWS Amplify storage and services, used for handling cloud operations and data storage.
+- **`amazon-cognito-identity-js`**: Provides Cognito identity management for user authentication.
+- **`@aws-amplify/ui-react`**: AWS Amplify’s UI components for React.
+- **`@emotion/react`**, **`@emotion/styled`**: CSS-in-JS libraries used with Material UI.
+- **`@mui/material`**, **`@mui/icons-material`**: Material UI components and icons for React.
+- **`axios`**: A promise-based HTTP client for making API requests.
+- **`react`**, **`react-dom`**: Core libraries for building and rendering React applications.
+- **`react-router-dom`**: Provides client-side routing for React.
+- **`socket.io-client`**: Client-side Socket.IO library for real-time communication.
+- **`uuid`**: Generates unique identifiers, consistent with back-end use.
+- **`web-vitals`**: Collects performance metrics.
+- **`webgazer`**: Gaze-tracking library for capturing user interactions.
 
-#### Utilities
+---
 
-- `hamburger-react`
-- `lucide-react`
-- `axios`
-- `react`
-- `react-color`
-- `react-datetime-picker`
-- `react-dnd`
-- `react-dnd-html5-backend`
-- `react-dom`
-- `react-modal`
-- `react-model`
-- `react-router-dom`
-- `react-scripts`
-- `react-toggle-dark-mode`
-- `socket.io-client`
-- `uuid`
-- `web-vitals`
+### UI/UX Enhancements
 
-### Backend (Node.js)
+- **`hamburger-react`**: A simple hamburger menu component for React.
+- **`lucide-react`**: A set of icons available as React components.
+- **`react-color`**: A customizable color picker component.
+- **`react-datetime-picker`**: A date-time picker for scheduling inputs.
+- **`react-dnd`**, **`react-dnd-html5-backend`**: Libraries for drag-and-drop functionalities.
+- **`react-tooltip`**: Tooltips for better UI interactivity.
+- **`react-modal`**, **`react-model`**: Components for managing modal popups.
 
-#### AWS SDK
+---
 
-- `@aws-sdk/client-dynamodb`
-- `@aws-sdk/client-s3`
-- `@aws-sdk/lib-dynamodb`
-- `@aws-sdk/s3-request-presigner`
+### Styling and Formatting
 
-#### Server Framework & Middleware
-
-- `express`
-- `cors`
-- `body-parser`
-- `dotenv`
-
-#### Real-time Communication
-
-- `socket.io`
-- `ws`
-
-#### Utilities
-
-- `uuid`
-
-### Development Dependencies
-
-- **React Dev**:
-  - `tailwindcss` for styling
-- **Node Dev**:
-  - `nodemon`
-  - `webpack`
-  - `webpack-cli`
-
+- **`tailwindcss`**: A utility-first CSS framework for rapid UI development.
+- **`prettier`**, **`prettier-plugin-tailwindcss`**: Code formatting tools, including for Tailwind CSS integration.
 ## Scripts
 
 ### Frontend

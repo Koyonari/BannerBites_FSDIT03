@@ -49,29 +49,54 @@ function Navbar() {
   const handleLayoutClick = () => {
     navigate("/layouts");
   };
+  const useBreakpoint = (sizes) => {
+    const [size, setSize] = useState(sizes.default);
+
+    useEffect(() => {
+      const handleResize = () => {
+        if (window.matchMedia("(min-width: 1536px)").matches) {
+          // 2xl
+          setSize(sizes["2xl"]);
+        } else if (window.matchMedia("(min-width: 1280px)").matches) {
+          // xl
+          setSize(sizes.xl);
+        } else {
+          setSize(sizes.default);
+        }
+      };
+
+      handleResize();
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }, [sizes]);
+
+    return size;
+  };
 
   return (
-    <section className="h-24">
-      <div className="fixed !z-[999] flex h-24 w-full items-center justify-between border-b-2 border-b-black bg-white px-6 text-2xl font-extrabold transition-colors duration-500 dark:border-b-white dark:bg-black max-md:w-full">
+    <section className="h-24 xl:h-32">
+      <div className="fixed !z-[999] flex h-24 w-full items-center justify-between border-b-2 border-b-black bg-white px-6 text-2xl font-extrabold transition-colors duration-500 dark:border-b-white dark:bg-black max-md:w-full xl:h-32">
         <div className="pt-4">
-          <h1 className="left-0 mb-3 items-center justify-center text-center text-3xl font-bold text-black dark:text-white">
+          <h1 className="left-0 mb-3 items-center justify-center text-center text-3xl font-bold text-black dark:text-white xl:text-5xl">
             Banner
-            <span className="text-orange-500 outline-1">Bites</span>
+            <span className="text-orange-500 outline-1 lg:outline-2 xl:outline-8">
+              Bites
+            </span>
           </h1>
         </div>
-        <div className="nav-links mr-6 hidden items-center gap-12 lg:flex">
+        <div className="nav-links mr-6 hidden items-center gap-12 lg:flex xl:gap-16">
           <HomeIcon
-            className="h-6 w-6 cursor-pointer text-black transition-colors duration-500 dark:text-white"
+            className="h-6 w-6 cursor-pointer text-black transition-colors duration-500 dark:text-white xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
             onClick={handleHome}
           />
           <LayoutList
-            className="h-6 w-6 cursor-pointer text-black transition-colors duration-500 dark:text-white"
+            className="h-6 w-6 cursor-pointer text-black transition-colors duration-500 dark:text-white xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
             onClick={handleLayoutClick}
           />
           <DarkModeSwitch
             checked={isDarkMode}
             onChange={toggleDarkMode}
-            size={24}
+            size={useBreakpoint({ default: 24, xl: 32, "2xl": 40 })}
             moonColor="white"
             sunColor="black"
           />

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { SketchPicker } from "react-color";
 import Modal from "../Modal/Modal";
 import { v4 as uuidv4 } from "uuid";
+import StyledAlert from "../StyledAlert";
 
 const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({
@@ -27,6 +28,21 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   const [showBorderColorPicker, setShowBorderColorPicker] = useState(false);
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (message, title = "Alert", type = "info") => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
 
   useEffect(() => {
     if (ad && ad.content) {
@@ -113,7 +129,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Error fetching pre-signed URL:", errorData);
-        alert("Failed to get pre-signed URL");
+        showAlert("Failed to get pre-signed URL");
         return;
       }
 
@@ -144,21 +160,21 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
       }
     } catch (error) {
       console.error("Error uploading file:", error);
-      alert("Error uploading file");
+      showAlert("Error uploading file");
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleSave = () => {
-    const isNewAd = ad.id && ad.id.startsWith('sidebar-');
+    const isNewAd = ad.id && ad.id.startsWith("sidebar-");
     const updatedAd = {
       ...ad,
       content: formData.content,
       styles: formData.styles,
       id: isNewAd ? uuidv4() : ad.id, // Assign new UUID if ad.id is a placeholder
     };
-  
+
     onSave(updatedAd, scheduledTimeState);
     onClose();
   };
@@ -169,10 +185,10 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   return (
     <Modal isOpen={!!ad} onClose={onClose}>
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="!z-[9999] flex h-[80vh] w-full max-w-2xl flex-col rounded-lg bg-white">
+        <div className="!z-[9999] flex h-[80vh] w-full max-w-2xl flex-col rounded-lg border bg-white dark:border-white dark:bg-black">
           {/* Header */}
           <div className="border-b p-6">
-            <h3 className="text-2xl font-semibold">
+            <h3 className="text-2xl font-bold dark:text-white">
               Edit {adType.charAt(0).toUpperCase() + adType.slice(1)} Ad
             </h3>
           </div>
@@ -180,7 +196,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
           {/* Content */}
           <div className="flex-1 space-y-4 overflow-y-auto p-6">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                 Title
               </label>
               <input
@@ -194,7 +210,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                 Description
               </label>
               <textarea
@@ -210,7 +226,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             {adType === "text" && (
               <div className="space-y-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                     Font Family
                   </label>
                   <input
@@ -224,7 +240,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                     Font Size
                   </label>
                   <input
@@ -239,7 +255,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
                 {/* Text Color Picker */}
                 <div className="relative">
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                     Text Color
                   </label>
                   <div
@@ -274,7 +290,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             {(adType === "image" || adType === "video") && (
               <div className="space-y-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                     Upload {adType}
                   </label>
                   <input
@@ -309,7 +325,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
             {/* Border Color */}
             <div className="relative">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                 Border Color
               </label>
               <div
@@ -340,7 +356,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
             {/* Scheduled Time */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
                 Scheduled Time
               </label>
               <input
@@ -353,11 +369,11 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
           </div>
 
           {/* Footer */}
-          <div className="border-t bg-gray-50 p-6">
+          <div className="dark:bg- border-t bg-gray-50 p-6 dark:bg-black">
             <div className="flex justify-end space-x-4">
               <button
                 onClick={onClose}
-                className="rounded-md border px-4 py-2 hover:bg-gray-50"
+                className="rounded-md border px-4 py-2 hover:bg-gray-50 dark:bg-white"
               >
                 Cancel
               </button>
@@ -372,6 +388,13 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
           </div>
         </div>
       </div>
+      <StyledAlert
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
     </Modal>
   );
 };
