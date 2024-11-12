@@ -280,12 +280,12 @@ const fetchLayoutById = async (layoutId) => {
       for (const scheduledAd of scheduledAds) {
         // Correctly access adId from the nested ad object
         const adId = scheduledAd.ad?.adId;
-        console.log(`Fetching Ad details for adId: ${adId}`);
-
         if (!adId) {
           console.error(`ScheduledAd is missing adId for scheduledAd ID: ${scheduledAd.id}`);
           continue; // Skip fetching ad details if adId is missing
         }
+
+        console.log(`Fetching Ad details for adId: ${adId}`);
 
         try {
           const ad = await AdModel.getAdById(adId);

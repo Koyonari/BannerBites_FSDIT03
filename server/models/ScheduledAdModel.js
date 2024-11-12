@@ -8,6 +8,7 @@ const ScheduledAdModel = {
       TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
       Item: {
         gridItemId: `${layoutId}#${gridIndex}`,
+        id: scheduledAd.id,
         scheduledTime: scheduledAd.scheduledTime,
         adId: scheduledAd.ad.adId,
         index: gridIndex,
