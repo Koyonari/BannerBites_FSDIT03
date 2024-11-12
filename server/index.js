@@ -24,6 +24,7 @@ app.use(cors({
   origin: "http://localhost:3000",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 }));
 app.use(express.json({ limit: "10mb" }));
 
@@ -31,6 +32,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use("/api/layouts", layoutRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/tvs", tvRoutes);
+app.use("/api", tvRoutes);
 app.post("/generate-presigned-url", generatePresignedUrlController);
 
 // WebSocket Server Handling
