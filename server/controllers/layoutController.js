@@ -162,6 +162,8 @@ const saveLayout = async (req, res) => {
 };
 
 // Updated updateLayout without transactions
+// controllers/layoutController.js
+
 const updateLayout = async (req, res) => {
   console.log("Request to /api/layouts/:layoutId:", JSON.stringify(req.body, null, 2));
 
@@ -219,7 +221,6 @@ const updateLayout = async (req, res) => {
     return res.status(500).json({ message: "Internal server error." });
   }
 };
-
 
 // Ensure getAllLayouts is included
 const getAllLayouts = async (req, res) => {
