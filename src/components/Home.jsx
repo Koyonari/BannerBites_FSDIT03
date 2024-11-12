@@ -38,33 +38,37 @@ const Hero = () => {
   const HomeIconComponent = icons.navbar[0].icon;
 
   return (
-    <div className="align-center flex h-screen flex-col items-center justify-center bg-white transition-colors duration-200 dark:bg-black">
-      <h1 className="mb-3 text-7xl font-bold text-black dark:text-white">
-        Banner
-        <span className="text-orange-500 outline-3">Bites</span>
-      </h1>
-      <div className="relative flex w-96 justify-center space-x-16 rounded-lg border-2 border-orange-500 bg-white p-6 text-center dark:bg-black">
-        <Link
-          key="home"
-          to={icons.navbar[0].href}
-          className="flex flex-col items-center"
-        >
-          <HomeIconComponent className="h-6 w-6 text-black dark:text-white" />
-        </Link>
+    <div className="flex min-h-screen w-full items-center justify-center bg-white p-4 transition-colors duration-200 dark:bg-black">
+      <div className="flex w-full max-w-lg flex-col items-center dark:bg-black">
+        <h1 className="mb-1 text-center text-7xl font-bold text-black dark:text-white md:text-6xl lg:text-4xl">
+          Banner
+          <span className="text-orange-500 outline-3">Bites</span>
+        </h1>
 
-        <Link
-          key="home"
-          to={icons.navbar[2].href}
-          className="flex flex-col items-center"
-        >
-          <LayoutList className="h-6 w-6 text-black dark:text-white" />
-        </Link>
+        <div className="relative flex h-16 w-full max-w-72 justify-center rounded-lg border-2 border-orange-500 bg-white p-4 dark:bg-black md:p-6">
+          <div className="flex w-full max-w-xs items-center justify-between">
+            <Link
+              to={icons.navbar[0].href}
+              className="flex flex-col items-center transition-opacity hover:opacity-80"
+            >
+              <HomeIconComponent className="h-8 w-8 text-black dark:text-white md:h-6 md:w-6" />
+            </Link>
 
-        <DarkModeSwitch
-          checked={isDarkMode}
-          onChange={toggleDarkMode}
-          size={24}
-        />
+            <Link
+              to={icons.navbar[2].href}
+              className="flex flex-col items-center transition-opacity hover:opacity-80"
+            >
+              <LayoutList className="h-8 w-8 text-black dark:text-white md:h-6 md:w-6" />
+            </Link>
+
+            <DarkModeSwitch
+              checked={isDarkMode}
+              onChange={toggleDarkMode}
+              size={24}
+              className="transition-opacity hover:opacity-80"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
