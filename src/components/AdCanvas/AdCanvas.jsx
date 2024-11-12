@@ -100,11 +100,6 @@ const AdCanvas = () => {
     }
   };
 
-  // Function to close the selector
-  const handleCloseSelector = () => {
-    setIsSelectingLayout(false);
-  };
-
   const handleMoveLeft = () => {
     navigate(-1);
   };
@@ -717,17 +712,9 @@ const AdCanvas = () => {
       : "Click to merge/unmerge selected cells";
 
   return (
-    <div className="ad-canvas flex w-full flex-col items-center justify-center text-center">
-      {isSelectingLayout ? (
-        // Layout Selector Popup
-        <LayoutSelector
-          onSelect={handleSelectLayout}
-          onClose={handleCloseSelector}
-        />
-      ) : (
-        <></>
-      )}
-      <div className="absolute right-4 top-[calc(6rem+1rem)] z-10">
+    <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center text-center">
+      <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
+        {" "}
         <CircleHelp
           className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
             showHelp ? "text-orange-500" : "text-gray-600"
@@ -737,7 +724,7 @@ const AdCanvas = () => {
           onClick={() => setShowHelp(!showHelp)}
         />
       </div>
-      <div className="flex w-full max-w-[80vw] flex-row items-stretch justify-center gap-2">
+      <div className="flex w-full max-w-[75vw] flex-row items-stretch justify-center gap-2 pt-[-2]">
         {/* Decrease Columns button */}
         <div className="group flex flex-col justify-center">
           <div
@@ -933,6 +920,9 @@ const AdCanvas = () => {
         message={alertConfig.message}
         type={alertConfig.type}
       />
+
+      {/* LayoutSelector */}
+      <LayoutSelector onSelect={handleSelectLayout} />
     </div>
   );
 };
