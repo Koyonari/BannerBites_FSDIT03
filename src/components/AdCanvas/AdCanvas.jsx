@@ -626,7 +626,7 @@ const AdCanvas = () => {
     setCurrentAd({ index: actualIndex, scheduledAd });
     setIsEditing(true);
   };
-  
+
   const getMainCellIndex = (hiddenCellIndex) => {
     return gridItems.findIndex((item) => {
       return (
@@ -637,23 +637,21 @@ const AdCanvas = () => {
       );
     });
   };
-  
+
   // Handles saving an updated ad from the modal
   const handleSave = (updatedAdData, updatedScheduledTime) => {
     setGridItems((prevGridItems) => {
       const updatedGrid = [...prevGridItems];
-  
-      // Find the main cell index if the current index is hidden
+
       let mainIndex = currentAd.index;
       if (updatedGrid[mainIndex].hidden) {
         mainIndex = getMainCellIndex(mainIndex);
         if (mainIndex === -1) {
           alert("Could not find the main cell for saving.");
-          return prevGridItems; // Return previous state to prevent errors
+          return prevGridItems;
         }
       }
-  
-      // Proceed to update the main cell without altering its merge properties
+
       const cellToUpdate = { ...updatedGrid[mainIndex] };
       const scheduledAds = cellToUpdate.scheduledAds.map((ad) =>
         ad.id === currentAd.scheduledAd.id
@@ -667,13 +665,13 @@ const AdCanvas = () => {
             }
           : ad,
       );
-  
+
       cellToUpdate.scheduledAds = scheduledAds;
       updatedGrid[mainIndex] = cellToUpdate;
-  
+
       return updatedGrid;
     });
-  
+
     setIsEditing(false);
     setCurrentAd(null);
   };
