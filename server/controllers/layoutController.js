@@ -161,9 +161,7 @@ const saveLayout = async (req, res) => {
   }
 };
 
-// Updated updateLayout without transactions
-// controllers/layoutController.js
-
+// 
 const updateLayout = async (req, res) => {
   console.log("Request to /api/layouts/:layoutId:", JSON.stringify(req.body, null, 2));
 
@@ -176,73 +174,89 @@ const updateLayout = async (req, res) => {
       return res.status(400).json({ message: "Invalid layout data." });
     }
 
+    // Step 1: Fetch existing grid items and scheduled ads
+    const existingGridItems = await GridItemModel.getGridItemsByLayoutId(layoutId);
+    const existingScheduledAds = await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);
+
     const transactItems = [];
 
-    // Update layout
-    transactItems.push({
-      Update: {
-        TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
-        Key: { layoutId },
-        UpdateExpression: "set #name = :name, updatedAt = :updatedAt",
-        ExpressionAttributeNames: {
-          "#name": "name",
+    // Step 2: Prepare Delete commands for existing grid items and scheduled ads
+    existingScheduledAds.forEach((scheduledAd) => {
+      transactItems.push({
+        Delete: {
+          TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+          Key: {
+            gridItemId: scheduledAd.gridItemId,
+            scheduledTime: scheduledAd.scheduledTime,
+          },
         },
-        ExpressionAttributeValues: {
-          ":name": layout.name,
-          ":updatedAt": new Date().toISOString(),
+      });
+    });
+
+    existingGridItems.forEach((gridItem) => {
+      transactItems.push({
+        Delete: {
+          TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+          Key: {
+            layoutId: gridItem.layoutId,
+            index: gridItem.index,
+          },
+        },
+      });
+    });
+
+    // Step 3: Update layout
+    transactItems.push({
+      Put: {
+        TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
+        Item: {
+          layoutId: layout.layoutId,
+          name: layout.name || "Unnamed Layout",
+          rows: layout.rows,
+          columns: layout.columns,
+          updatedAt: new Date().toISOString(),
+          // Include other necessary fields
         },
       },
     });
 
-    // Track unique ads to prevent duplicate saves
     const uniqueAds = new Set();
 
-    // Update grid items and scheduled ads
+    // Step 4: Prepare Put commands for new grid items and scheduled ads
     for (const item of layout.gridItems) {
-      // Update grid item
+      // Add Grid Item
       transactItems.push({
-        Update: {
+        Put: {
           TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
-          Key: { layoutId, index: item.index },
-          UpdateExpression: "set #colSpan = :colSpan, #rowSpan = :rowSpan, #isMerged = :isMerged, #hidden = :hidden",
-          ExpressionAttributeNames: {
-            "#colSpan": "colSpan",
-            "#rowSpan": "rowSpan",
-            "#isMerged": "isMerged",
-            "#hidden": "hidden",
-          },
-          ExpressionAttributeValues: {
-            ":colSpan": item.colSpan,
-            ":rowSpan": item.rowSpan,
-            ":isMerged": item.isMerged,
-            ":hidden": item.hidden,
+          Item: {
+            layoutId: layout.layoutId,
+            index: item.index,
+            ...item,
           },
         },
       });
 
-      // Update scheduled ads
+      // Add Scheduled Ads
       for (const scheduledAd of item.scheduledAds) {
         if (!scheduledAd.ad || !scheduledAd.ad.adId) {
           console.error(`Missing adId for scheduled ad at grid item index ${item.index}`);
           continue;
         }
 
-        // Update scheduled ad
+        // Add Scheduled Ad
         transactItems.push({
-          Update: {
+          Put: {
             TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
-            Key: { gridItemId: `${layoutId}#${item.index}`, scheduledTime: scheduledAd.scheduledTime },
-            UpdateExpression: "set #ad = :ad",
-            ExpressionAttributeNames: {
-              "#ad": "ad",
-            },
-            ExpressionAttributeValues: {
-              ":ad": scheduledAd.ad,
+            Item: {
+              layoutId: layout.layoutId,
+              gridItemId: `${layout.layoutId}#${item.index}`,
+              scheduledTime: scheduledAd.scheduledTime,
+              ...scheduledAd,
             },
           },
         });
 
-        // Save ad if not already saved
+        // Add Ad if not already added
         if (!uniqueAds.has(scheduledAd.ad.adId)) {
           transactItems.push({
             Put: {
@@ -258,15 +272,20 @@ const updateLayout = async (req, res) => {
       }
     }
 
-    // Execute the transaction
-    const transactionCommand = new TransactWriteCommand({
-      TransactItems: transactItems,
-    });
+    // Step 5: Execute the transaction
+    if (transactItems.length > 0) {
+      const transactionCommand = new TransactWriteCommand({
+        TransactItems: transactItems,
+      });
 
-    await dynamoDb.send(transactionCommand);
+      await dynamoDb.send(transactionCommand);
 
-    console.log(`Layout ${layout.layoutId} and related items updated successfully.`);
-    return res.status(200).json({ message: "Layout and related items updated successfully." });
+      console.log(`Layout ${layout.layoutId} and related items updated successfully.`);
+      return res.status(200).json({ message: "Layout and related items updated successfully." });
+    } else {
+      console.error("No valid transaction items to execute.");
+      return res.status(400).json({ message: "No valid items to update." });
+    }
   } catch (error) {
     console.error("Error updating layout and related items:", error);
     return res.status(500).json({ message: "Internal server error." });
