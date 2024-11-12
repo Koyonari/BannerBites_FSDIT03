@@ -252,13 +252,12 @@ const getLayoutById = async (req, res) => {
 
 const fetchLayoutById = async (layoutId) => {
   try {
-    // Step 1: Get layout details
     console.log(`Fetching layout details for layoutId: ${layoutId}`);
     const layout = await LayoutModel.getLayoutById(layoutId);
 
     if (!layout) {
       console.error(`Layout not found for layoutId: ${layoutId}`);
-      return null; // Layout not found
+      return null;
     }
 
     console.log(`Fetched layout: ${JSON.stringify(layout)}`);
@@ -273,23 +272,30 @@ const fetchLayoutById = async (layoutId) => {
     for (const item of gridItems) {
       console.log(`Fetching scheduled ads for grid item index: ${item.index}`);
 
-      const gridItemId = `${layoutId}#${item.index}`; // Ensure this matches schema
+      const gridItemId = `${layoutId}#${item.index}`;
       console.log(`Using gridItemId for GetCommand in ScheduledAds table: ${gridItemId}`);
 
       const scheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemId(gridItemId);
 
       for (const scheduledAd of scheduledAds) {
-        console.log(`Fetching Ad details for adId: ${scheduledAd.adId}`);
-        
+        // Correctly access adId from the nested ad object
+        const adId = scheduledAd.ad?.adId;
+        console.log(`Fetching Ad details for adId: ${adId}`);
+
+        if (!adId) {
+          console.error(`ScheduledAd is missing adId for scheduledAd ID: ${scheduledAd.id}`);
+          continue; // Skip fetching ad details if adId is missing
+        }
+
         try {
-          const ad = await AdModel.getAdById(scheduledAd.adId);
+          const ad = await AdModel.getAdById(adId);
           if (!ad) {
-            console.error(`Ad not found for adId: ${scheduledAd.adId}`);
+            console.error(`Ad not found for adId: ${adId}`);
           } else {
             scheduledAd.ad = ad;
           }
         } catch (error) {
-          console.error(`Error fetching Ad for adId: ${scheduledAd.adId}`, error);
+          console.error(`Error fetching Ad for adId: ${adId}`, error);
         }
       }
 
@@ -300,7 +306,7 @@ const fetchLayoutById = async (layoutId) => {
     return layout; // Return the layout object
   } catch (error) {
     console.error(`Error fetching layout data for layoutId: ${layoutId}`, error);
-    throw error; // Rethrow the error to be handled by the caller
+    throw error;
   }
 };
 
