@@ -58,43 +58,31 @@ const AdCanvas = () => {
 
   useEffect(() => {
     if (selectedLayout) {
-      const totalCells = selectedLayout.rows * selectedLayout.columns;
-      const properlyInitializedGridItems = Array.from({ length: totalCells }, (_, index) => {
-        const item = selectedLayout.gridItems.find((gridItem) => gridItem.index === index);
-        if (item) {
-          return {
-            ...item,
-            scheduledAds: item.scheduledAds.map((scheduledAd) => ({
-              ...scheduledAd,
-              id: scheduledAd.id || uuidv4(),
-              ad: {
-                ...scheduledAd.ad,
-                id: scheduledAd.ad.id || uuidv4(),
-              },
-            })),
-            isMerged: item.isMerged || false,
-            hidden: item.hidden || false,
-            rowSpan: item.rowSpan || 1,
-            colSpan: item.colSpan || 1,
-            mergeDirection: item.mergeDirection || null,
-            selectedCells: item.selectedCells || [],
-          };
-        } else {
-          // Create a default empty item for missing indices
-          return {
-            index,
-            scheduledAds: [],
-            isMerged: false,
-            hidden: false,
-            rowSpan: 1,
-            colSpan: 1,
-          };
-        }
-      });
-  
+      console.log("Retrieved Layout:", selectedLayout); // Log retrieved layout
+      const properlyInitializedGridItems = selectedLayout.gridItems.map(
+        (item) => ({
+          ...item,
+          scheduledAds: item.scheduledAds.map((scheduledAd) => ({
+            ...scheduledAd,
+            id: scheduledAd.id || uuidv4(), // Ensure each scheduledAd has an ID
+            ad: {
+              ...scheduledAd.ad,
+              id: scheduledAd.ad.id || uuidv4(), // Ensure ad has an id
+            },
+          })),
+          isMerged: item.isMerged || false,
+          hidden: item.hidden || false,
+          rowSpan: item.rowSpan || 1,
+          colSpan: item.colSpan || 1,
+          mergeDirection: item.mergeDirection || null,
+          selectedCells: item.selectedCells || [],
+        }),
+      );
+
       setRows(selectedLayout.rows);
       setColumns(selectedLayout.columns);
       setGridItems(properlyInitializedGridItems);
+      console.log("Updated Grid Items State:", properlyInitializedGridItems); // Log updated state
       setIsSelectingLayout(false);
     }
   }, [selectedLayout]);
