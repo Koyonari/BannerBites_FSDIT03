@@ -54,8 +54,8 @@ const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
     <div className="ad-item" style={styles}>
       {type === "text" && (
         <div>
-          <h3>{content.title || "Untitled"}</h3>
-          <p>{content.description || "No description provided."}</p>
+          <h3>{content.title}</h3>
+          <p>{content.description}</p>
         </div>
       )}
       {type === "image" && mediaUrl && (
@@ -65,8 +65,8 @@ const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
             alt={content.title || "Image Ad"}
             style={{ maxWidth: "100%" }}
           />
-          <h3>{content.title || "Untitled"}</h3>
-          <p>{content.description || "No description provided."}</p>
+          <h3>{content.title}</h3>
+          <p>{content.description}</p>
         </div>
       )}
       {type === "video" && mediaUrl && (
@@ -75,8 +75,8 @@ const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-          <h3>{content.title || "Untitled"}</h3>
-          <p>{content.description || "No description provided."}</p>
+          <h3>{content.title}</h3>
+          <p>{content.description}</p>
         </div>
       )}
     </div>
@@ -141,11 +141,7 @@ const AdViewer = ({ layout }) => {
                 gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
                 gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
               }}
-            >
-              <div className="ad-placeholder text-gray-500">
-                No ad to display in this slot
-              </div>
-            </div>
+            ></div>
           );
         }
 
