@@ -127,22 +127,32 @@ const LayoutList = () => {
       );
     };
 
+    const validateLayoutData = (data) => {
+      return data.gridItems.every(
+        (item) =>
+          !item ||
+          item.hidden ||
+          item.scheduledAds.every(
+            (scheduledAd) => scheduledAd && scheduledAd.ad,
+          ),
+      );
+    };
+
     websocketRef.current.onmessage = (event) => {
       try {
         const parsedData = JSON.parse(event.data);
-        console.log("[FRONTEND] Received WebSocket message:", parsedData);
-
         if (
           (parsedData.type === "layoutUpdate" ||
             parsedData.type === "layoutData") &&
           parsedData.data.layoutId === layoutId
         ) {
-          // Update the layout with the received data
-          setSelectedLayout(parsedData.data);
-          console.log(
-            "[FRONTEND] Layout updated via WebSocket:",
-            parsedData.data,
-          );
+          if (validateLayoutData(parsedData.data)) {
+            setSelectedLayout(parsedData.data);
+          } else {
+            console.error(
+              "[WebSocket Update] Invalid layout data received, skipping update.",
+            );
+          }
         }
       } catch (e) {
         console.error("[FRONTEND] Error parsing WebSocket message:", e);

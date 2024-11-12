@@ -162,6 +162,8 @@ const saveLayout = async (req, res) => {
 };
 
 // Updated updateLayout without transactions
+// controllers/layoutController.js
+
 const updateLayout = async (req, res) => {
   console.log("Request to /api/layouts/:layoutId:", JSON.stringify(req.body, null, 2));
 
@@ -174,52 +176,102 @@ const updateLayout = async (req, res) => {
       return res.status(400).json({ message: "Invalid layout data." });
     }
 
-    // Update layout details
-    await LayoutModel.updateLayout(layout);
-    console.log(`Layout ${layout.layoutId} updated successfully.`);
+    const transactItems = [];
 
-    // Delete old Scheduled Ads that are no longer present
-    await ScheduledAdModel.deleteOldScheduledAds(layoutId, layout);
+    // Update layout
+    transactItems.push({
+      Update: {
+        TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
+        Key: { layoutId },
+        UpdateExpression: "set #name = :name, updatedAt = :updatedAt",
+        ExpressionAttributeNames: {
+          "#name": "name",
+        },
+        ExpressionAttributeValues: {
+          ":name": layout.name,
+          ":updatedAt": new Date().toISOString(),
+        },
+      },
+    });
 
     // Track unique ads to prevent duplicate saves
     const uniqueAds = new Set();
 
-    // Save grid items and scheduled ads
+    // Update grid items and scheduled ads
     for (const item of layout.gridItems) {
-      console.log(`Processing Grid Item at index ${item.index}`);
-      // Save or update grid item
-      await GridItemModel.updateGridItem(layout.layoutId, item.index, item);
-      console.log(`Grid item at index ${item.index} updated successfully.`);
+      // Update grid item
+      transactItems.push({
+        Update: {
+          TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+          Key: { layoutId, index: item.index },
+          UpdateExpression: "set #colSpan = :colSpan, #rowSpan = :rowSpan, #isMerged = :isMerged, #hidden = :hidden",
+          ExpressionAttributeNames: {
+            "#colSpan": "colSpan",
+            "#rowSpan": "rowSpan",
+            "#isMerged": "isMerged",
+            "#hidden": "hidden",
+          },
+          ExpressionAttributeValues: {
+            ":colSpan": item.colSpan,
+            ":rowSpan": item.rowSpan,
+            ":isMerged": item.isMerged,
+            ":hidden": item.hidden,
+          },
+        },
+      });
 
-      // Save scheduled ads
+      // Update scheduled ads
       for (const scheduledAd of item.scheduledAds) {
-        if (!scheduledAd.ad || !scheduledAd.ad.adId) { // Use ad.adId
+        if (!scheduledAd.ad || !scheduledAd.ad.adId) {
           console.error(`Missing adId for scheduled ad at grid item index ${item.index}`);
           continue;
         }
 
-        console.log(`Saving Scheduled Ad with id ${scheduledAd.id} and adId ${scheduledAd.ad.adId}`);
-        // Save scheduled ad
-        await ScheduledAdModel.saveScheduledAd(layout.layoutId, item.index, scheduledAd);
-        console.log(`Scheduled ad ${scheduledAd.ad.adId} saved successfully.`);
+        // Update scheduled ad
+        transactItems.push({
+          Update: {
+            TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+            Key: { gridItemId: `${layoutId}#${item.index}`, scheduledTime: scheduledAd.scheduledTime },
+            UpdateExpression: "set #ad = :ad",
+            ExpressionAttributeNames: {
+              "#ad": "ad",
+            },
+            ExpressionAttributeValues: {
+              ":ad": scheduledAd.ad,
+            },
+          },
+        });
 
         // Save ad if not already saved
         if (!uniqueAds.has(scheduledAd.ad.adId)) {
-          console.log(`Saving Ad with adId ${scheduledAd.ad.adId}`);
-          await AdModel.saveAd(scheduledAd.ad);
-          console.log(`Ad ${scheduledAd.ad.adId} saved successfully.`);
+          transactItems.push({
+            Put: {
+              TableName: process.env.DYNAMODB_TABLE_ADS,
+              Item: {
+                adId: scheduledAd.ad.adId,
+                ...scheduledAd.ad,
+              },
+            },
+          });
           uniqueAds.add(scheduledAd.ad.adId);
         }
       }
     }
 
+    // Execute the transaction
+    const transactionCommand = new TransactWriteCommand({
+      TransactItems: transactItems,
+    });
+
+    await dynamoDb.send(transactionCommand);
+
+    console.log(`Layout ${layout.layoutId} and related items updated successfully.`);
     return res.status(200).json({ message: "Layout and related items updated successfully." });
   } catch (error) {
     console.error("Error updating layout and related items:", error);
     return res.status(500).json({ message: "Internal server error." });
   }
 };
-
 
 // Ensure getAllLayouts is included
 const getAllLayouts = async (req, res) => {
@@ -252,13 +304,12 @@ const getLayoutById = async (req, res) => {
 
 const fetchLayoutById = async (layoutId) => {
   try {
-    // Step 1: Get layout details
     console.log(`Fetching layout details for layoutId: ${layoutId}`);
     const layout = await LayoutModel.getLayoutById(layoutId);
 
     if (!layout) {
       console.error(`Layout not found for layoutId: ${layoutId}`);
-      return null; // Layout not found
+      return null;
     }
 
     console.log(`Fetched layout: ${JSON.stringify(layout)}`);
@@ -273,23 +324,30 @@ const fetchLayoutById = async (layoutId) => {
     for (const item of gridItems) {
       console.log(`Fetching scheduled ads for grid item index: ${item.index}`);
 
-      const gridItemId = `${layoutId}#${item.index}`; // Ensure this matches schema
+      const gridItemId = `${layoutId}#${item.index}`;
       console.log(`Using gridItemId for GetCommand in ScheduledAds table: ${gridItemId}`);
 
       const scheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemId(gridItemId);
 
       for (const scheduledAd of scheduledAds) {
-        console.log(`Fetching Ad details for adId: ${scheduledAd.adId}`);
-        
+        // Correctly access adId from the nested ad object
+        const adId = scheduledAd.ad?.adId;
+        if (!adId) {
+          console.error(`ScheduledAd is missing adId for scheduledAd ID: ${scheduledAd.id}`);
+          continue; // Skip fetching ad details if adId is missing
+        }
+
+        console.log(`Fetching Ad details for adId: ${adId}`);
+
         try {
-          const ad = await AdModel.getAdById(scheduledAd.adId);
+          const ad = await AdModel.getAdById(adId);
           if (!ad) {
-            console.error(`Ad not found for adId: ${scheduledAd.adId}`);
+            console.error(`Ad not found for adId: ${adId}`);
           } else {
             scheduledAd.ad = ad;
           }
         } catch (error) {
-          console.error(`Error fetching Ad for adId: ${scheduledAd.adId}`, error);
+          console.error(`Error fetching Ad for adId: ${adId}`, error);
         }
       }
 
@@ -300,7 +358,7 @@ const fetchLayoutById = async (layoutId) => {
     return layout; // Return the layout object
   } catch (error) {
     console.error(`Error fetching layout data for layoutId: ${layoutId}`, error);
-    throw error; // Rethrow the error to be handled by the caller
+    throw error;
   }
 };
 
@@ -310,13 +368,13 @@ const deleteLayout = async (req, res) => {
 
     // Step 1: Fetch related grid items
     const gridItems = await GridItemModel.getGridItemsByLayoutId(layoutId);
-    if (!gridItems) {
+    if (!gridItems || gridItems.length === 0) {
       throw new Error(`No grid items found for layoutId: ${layoutId}`);
     }
 
     // Step 2: Fetch related scheduled ads
     const scheduledAds = await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);
-    if (!scheduledAds) {
+    if (!scheduledAds || scheduledAds.length === 0) {
       throw new Error(`No scheduled ads found for layoutId: ${layoutId}`);
     }
 
@@ -385,14 +443,24 @@ const deleteLayout = async (req, res) => {
     }
 
     // Step 5: Check for any Ads that are no longer referenced and delete them if needed
-    const adIdsToDelete = new Set(scheduledAds.map((ad) => ad.adId));
+    const adIdsToDelete = new Set(scheduledAds.map((ad) => ad.adId).filter(Boolean));
+
     for (const adId of adIdsToDelete) {
-      // Check if the ad is scheduled anywhere else
-      const associatedScheduledAds = await ScheduledAdModel.getScheduledAdsByAdId(adId);
-      if (associatedScheduledAds.length === 0) {
-        // Only delete if no other layouts are using this ad
-        await AdModel.deleteAd(adId);
-        console.log(`Ad ${adId} deleted successfully.`);
+      if (!adId) {
+        console.warn("Encountered scheduledAd with undefined adId. Skipping.");
+        continue;
+      }
+      console.log(`Checking if Ad ${adId} can be deleted.`);
+      try {
+        // Check if the ad is scheduled anywhere else
+        const associatedScheduledAds = await ScheduledAdModel.getScheduledAdsByAdId(adId);
+        if (!associatedScheduledAds || associatedScheduledAds.length === 0) {
+          // Only delete if no other layouts are using this ad
+          await AdModel.deleteAdById(adId); // Correct method name
+          console.log(`Ad ${adId} deleted successfully.`);
+        }
+      } catch (error) {
+        console.error(`Error processing Ad ${adId}:`, error);
       }
     }
 

@@ -2,7 +2,7 @@
 import React from "react";
 
 // Component to represent an individual Ad
-const AdComponent = ({ type, content, styles }) => {
+const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
   let mediaUrl = content.mediaUrl || content.src;
 
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
@@ -16,33 +16,67 @@ const AdComponent = ({ type, content, styles }) => {
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
 
+  // Handle unknown ad types
+  if (type === "unknown") {
+    return (
+      <div className="ad-item" style={styles}>
+        <p className="text-red-500">Unknown ad type</p>
+      </div>
+    );
+  }
+
+  // Handle missing content gracefully
+  if (type === "text" && !content.title && !content.description) {
+    return (
+      <div className="ad-item" style={styles}>
+        <p className="text-gray-500">No content available for text ad</p>
+      </div>
+    );
+  }
+
+  if (type === "image" && !mediaUrl) {
+    return (
+      <div className="ad-item" style={styles}>
+        <p className="text-gray-500">Image source not available</p>
+      </div>
+    );
+  }
+
+  if (type === "video" && !mediaUrl) {
+    return (
+      <div className="ad-item" style={styles}>
+        <p className="text-gray-500">Video source not available</p>
+      </div>
+    );
+  }
+
   return (
     <div className="ad-item" style={styles}>
       {type === "text" && (
         <div>
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3>{content.title || "Untitled"}</h3>
+          <p>{content.description || "No description provided."}</p>
         </div>
       )}
-      {type === "image" && (
+      {type === "image" && mediaUrl && (
         <div>
           <img
             src={mediaUrl}
-            alt={content.title}
+            alt={content.title || "Image Ad"}
             style={{ maxWidth: "100%" }}
           />
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3>{content.title || "Untitled"}</h3>
+          <p>{content.description || "No description provided."}</p>
         </div>
       )}
-      {type === "video" && (
+      {type === "video" && mediaUrl && (
         <div>
           <video autoPlay loop muted playsInline className="w-full">
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3>{content.title || "Untitled"}</h3>
+          <p>{content.description || "No description provided."}</p>
         </div>
       )}
     </div>
@@ -98,25 +132,38 @@ const AdViewer = ({ layout }) => {
           }
         }
 
-        if (!adToDisplay) {
-          return null; // No ad to display in this cell
+        if (!adToDisplay || !adToDisplay.ad) {
+          return (
+            <div
+              key={index}
+              className="grid-cell"
+              style={{
+                gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
+                gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
+                border: "1px solid #ccc",
+                padding: "10px",
+                backgroundColor: "#fafafa",
+              }}
+            >
+              <div className="ad-placeholder text-gray-500">
+                No ad to display in this slot
+              </div>
+            </div>
+          );
         }
 
-        const ad = adToDisplay.ad;
-        const { type, content, styles } = ad;
-
-        const gridRowStart = row + 1; // Convert 0-based to 1-based
-        const gridColumnStart = column + 1;
-        const gridRowEnd = gridRowStart + (rowSpan || 1);
-        const gridColumnEnd = gridColumnStart + (colSpan || 1);
+        const { type, content, styles } = adToDisplay.ad;
 
         return (
           <div
             key={index}
             className="grid-cell"
             style={{
-              gridRow: `${gridRowStart} / ${gridRowEnd}`,
-              gridColumn: `${gridColumnStart} / ${gridColumnEnd}`,
+              gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
+              gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
+              border: "1px solid #ccc",
+              padding: "10px",
+              backgroundColor: "#fafafa",
             }}
           >
             <AdComponent type={type} content={content} styles={styles} />

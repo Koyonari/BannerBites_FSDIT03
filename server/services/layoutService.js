@@ -37,10 +37,21 @@ const fetchLayoutById = async (layoutId) => {
           // Fetch all ads in parallel
           const adsPromises = scheduledAds.map(async (scheduledAd) => {
             try {
-              const ad = await AdModel.getAdById(scheduledAd.adId);
+              const adId = scheduledAd.ad?.adId; // Correct access
+              if (!adId) {
+                console.warn(`ScheduledAd with id: ${scheduledAd.id} is missing 'adId'.`);
+                return { ...scheduledAd, ad: null };
+              }
+
+              const ad = await AdModel.getAdById(adId);
+              if (ad) {
+                console.log(`Attached Ad for scheduledAd ID: ${scheduledAd.id}`);
+              } else {
+                console.warn(`Ad not found for scheduledAd ID: ${scheduledAd.id}, adId: ${adId}`);
+              }
               return { ...scheduledAd, ad };
             } catch (adError) {
-              console.error(`Error fetching adId: ${scheduledAd.adId}`, adError);
+              console.error(`Error fetching adId: ${scheduledAd.adId} for scheduledAd ID: ${scheduledAd.id}`, adError);
               return { ...scheduledAd, ad: null }; // Handle missing ads gracefully
             }
           });
@@ -59,6 +70,7 @@ const fetchLayoutById = async (layoutId) => {
 
     // Assemble the complete layout object
     const completeLayout = { ...layout, gridItems: gridItemsWithAds };
+    console.log(`Complete layout fetched for layoutId: ${layoutId}`, completeLayout);
     return completeLayout;
   } catch (error) {
     console.error(`Error fetching layout data for layoutId: ${layoutId}`, error);
