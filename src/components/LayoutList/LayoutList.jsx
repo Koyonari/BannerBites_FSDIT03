@@ -22,13 +22,6 @@ const LayoutList = () => {
   useEffect(() => {
     fetchLayouts();
 
-    return () => {
-      // Cleanup WebSocket when component unmounts
-      if (websocketRef.current) {
-        websocketRef.current.close();
-      }
-    };
-
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -44,6 +37,11 @@ const LayoutList = () => {
     return () => {
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+
+      // Cleanup WebSocket when component unmounts
+      if (websocketRef.current) {
+        websocketRef.current.close();
+      }
     };
   }, []);
 
@@ -240,13 +238,17 @@ const LayoutList = () => {
                     className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-50 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-100"
                     onClick={() => setShowAllLayouts(!showAllLayouts)}
                   >
-                    <span>
+                    <span
+                      className={`transition-transform duration-300 ease-in-out`}
+                    >
                       {showAllLayouts
                         ? "Show Less"
                         : `Show ${layouts.length - MOBILE_DISPLAY_LIMIT} More`}
                     </span>
                     <svg
-                      className={`h-4 w-4 transform transition-transform ${showAllLayouts ? "rotate-180" : ""}`}
+                      className={`h-4 w-4 transform transition-transform duration-300 ease-in-out ${
+                        showAllLayouts ? "rotate-180" : ""
+                      }`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

@@ -96,7 +96,7 @@ const AdCanvas = () => {
       }
     } catch (error) {
       console.error("Error fetching layout details:", error);
-      alert("Failed to load the layout. Please try again.");
+      showAlert("Failed to load the layout. Please try again.");
     }
   };
 
@@ -547,7 +547,7 @@ const AdCanvas = () => {
             "Content-Type": "application/json",
           },
         });
-        alert("Layout updated successfully!");
+        showAlert("Layout updated successfully!");
       } else {
         // Save a new layout
         await axios.post(`${apiUrl}/api/layouts/save`, cleanedLayout, {
@@ -555,7 +555,7 @@ const AdCanvas = () => {
             "Content-Type": "application/json",
           },
         });
-        alert("Layout saved successfully!");
+        showAlert("Layout saved successfully!");
       }
       setIsNamingLayout(false);
     } catch (error) {
@@ -645,7 +645,7 @@ const AdCanvas = () => {
 
   const handleDeleteLayout = async () => {
     if (!selectedLayout) {
-      alert("No layout is selected for deletion.");
+      showAlert("No layout is selected for deletion.");
       return;
     }
 
@@ -660,7 +660,7 @@ const AdCanvas = () => {
       );
 
       if (response.status === 200) {
-        alert("Layout deleted successfully!");
+        showAlert("Layout deleted successfully!");
         // Reset state after successful deletion
         setSelectedLayout(null);
         setIsSelectingLayout(true); // Go back to layout selection mode
@@ -669,7 +669,7 @@ const AdCanvas = () => {
       }
     } catch (error) {
       console.error("Error deleting layout:", error);
-      alert("Failed to delete layout. Please try again.");
+      showAlert("Failed to delete layout. Please try again.");
     }
   };
 

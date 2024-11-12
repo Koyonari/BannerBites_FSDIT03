@@ -40,7 +40,7 @@ const Hero = () => {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-white p-4 transition-colors duration-200 dark:bg-black">
       <div className="flex w-full max-w-lg flex-col items-center dark:bg-black">
-        <h1 className="mb-1 text-center text-7xl font-bold text-black dark:text-white md:text-6xl lg:text-4xl">
+        <h1 className="lg:text-5x xl:text-6xll mb-1 text-center text-7xl font-bold text-black dark:text-white md:text-7xl">
           Banner
           <span className="text-orange-500 outline-3">Bites</span>
         </h1>

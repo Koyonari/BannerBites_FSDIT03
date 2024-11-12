@@ -8,7 +8,10 @@ const AdComponent = ({ type, content, styles }) => {
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
     const s3Region = content.s3Region || "ap-southeast-1";
     const encodeS3Key = (key) =>
-      key.split("/").map((segment) => encodeURIComponent(segment)).join("/");
+      key
+        .split("/")
+        .map((segment) => encodeURIComponent(segment))
+        .join("/");
     const encodedS3Key = encodeS3Key(content.s3Key);
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
@@ -23,14 +26,18 @@ const AdComponent = ({ type, content, styles }) => {
       )}
       {type === "image" && (
         <div>
-          <img src={mediaUrl} alt={content.title} style={{ maxWidth: "100%" }} />
+          <img
+            src={mediaUrl}
+            alt={content.title}
+            style={{ maxWidth: "100%" }}
+          />
           <h3>{content.title}</h3>
           <p>{content.description}</p>
         </div>
       )}
       {type === "video" && (
         <div>
-          <video controls style={{ width: "100%" }}>
+          <video autoPlay loop muted playsInline className="w-full">
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
@@ -73,16 +80,20 @@ const AdViewer = ({ layout }) => {
           const currentTimeString = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
 
           const availableAds = scheduledAds.filter(
-            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
           );
 
           if (availableAds.length > 0) {
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
-              currentAd.scheduledTime > latestAd.scheduledTime ? currentAd : latestAd
+              currentAd.scheduledTime > latestAd.scheduledTime
+                ? currentAd
+                : latestAd,
             );
           } else {
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
-              currentAd.scheduledTime < nextAd.scheduledTime ? currentAd : nextAd
+              currentAd.scheduledTime < nextAd.scheduledTime
+                ? currentAd
+                : nextAd,
             );
           }
         }
@@ -106,9 +117,6 @@ const AdViewer = ({ layout }) => {
             style={{
               gridRow: `${gridRowStart} / ${gridRowEnd}`,
               gridColumn: `${gridColumnStart} / ${gridColumnEnd}`,
-              border: "1px solid #ccc",
-              padding: "10px",
-              backgroundColor: "#fafafa",
             }}
           >
             <AdComponent type={type} content={content} styles={styles} />
