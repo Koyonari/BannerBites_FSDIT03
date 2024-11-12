@@ -10,7 +10,7 @@ const ScheduledAdModel = {
         gridItemId: `${layoutId}#${gridIndex}`,
         id: scheduledAd.id,
         scheduledTime: scheduledAd.scheduledTime,
-        ad: { // Nesting ad object
+        ad: { //Nested ad object
           adId: scheduledAd.ad.adId,
           type: scheduledAd.ad.type,
           content: scheduledAd.ad.content,

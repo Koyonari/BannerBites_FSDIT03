@@ -176,45 +176,96 @@ const updateLayout = async (req, res) => {
       return res.status(400).json({ message: "Invalid layout data." });
     }
 
-    // Update layout details
-    await LayoutModel.updateLayout(layout);
-    console.log(`Layout ${layout.layoutId} updated successfully.`);
+    const transactItems = [];
 
-    // Delete old Scheduled Ads that are no longer present
-    await ScheduledAdModel.deleteOldScheduledAds(layoutId, layout);
+    // Update layout
+    transactItems.push({
+      Update: {
+        TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
+        Key: { layoutId },
+        UpdateExpression: "set #name = :name, updatedAt = :updatedAt",
+        ExpressionAttributeNames: {
+          "#name": "name",
+        },
+        ExpressionAttributeValues: {
+          ":name": layout.name,
+          ":updatedAt": new Date().toISOString(),
+        },
+      },
+    });
 
     // Track unique ads to prevent duplicate saves
     const uniqueAds = new Set();
 
-    // Save grid items and scheduled ads
+    // Update grid items and scheduled ads
     for (const item of layout.gridItems) {
-      console.log(`Processing Grid Item at index ${item.index}`);
-      // Save or update grid item
-      await GridItemModel.updateGridItem(layout.layoutId, item.index, item);
-      console.log(`Grid item at index ${item.index} updated successfully.`);
+      // Update grid item
+      transactItems.push({
+        Update: {
+          TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+          Key: { layoutId, index: item.index },
+          UpdateExpression: "set #colSpan = :colSpan, #rowSpan = :rowSpan, #isMerged = :isMerged, #hidden = :hidden",
+          ExpressionAttributeNames: {
+            "#colSpan": "colSpan",
+            "#rowSpan": "rowSpan",
+            "#isMerged": "isMerged",
+            "#hidden": "hidden",
+          },
+          ExpressionAttributeValues: {
+            ":colSpan": item.colSpan,
+            ":rowSpan": item.rowSpan,
+            ":isMerged": item.isMerged,
+            ":hidden": item.hidden,
+          },
+        },
+      });
 
-      // Save scheduled ads
+      // Update scheduled ads
       for (const scheduledAd of item.scheduledAds) {
-        if (!scheduledAd.ad || !scheduledAd.ad.adId) { // Use ad.adId
+        if (!scheduledAd.ad || !scheduledAd.ad.adId) {
           console.error(`Missing adId for scheduled ad at grid item index ${item.index}`);
           continue;
         }
 
-        console.log(`Saving Scheduled Ad with id ${scheduledAd.id} and adId ${scheduledAd.ad.adId}`);
-        // Save scheduled ad
-        await ScheduledAdModel.saveScheduledAd(layout.layoutId, item.index, scheduledAd);
-        console.log(`Scheduled ad ${scheduledAd.ad.adId} saved successfully.`);
+        // Update scheduled ad
+        transactItems.push({
+          Update: {
+            TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+            Key: { gridItemId: `${layoutId}#${item.index}`, scheduledTime: scheduledAd.scheduledTime },
+            UpdateExpression: "set #ad = :ad",
+            ExpressionAttributeNames: {
+              "#ad": "ad",
+            },
+            ExpressionAttributeValues: {
+              ":ad": scheduledAd.ad,
+            },
+          },
+        });
 
         // Save ad if not already saved
         if (!uniqueAds.has(scheduledAd.ad.adId)) {
-          console.log(`Saving Ad with adId ${scheduledAd.ad.adId}`);
-          await AdModel.saveAd(scheduledAd.ad);
-          console.log(`Ad ${scheduledAd.ad.adId} saved successfully.`);
+          transactItems.push({
+            Put: {
+              TableName: process.env.DYNAMODB_TABLE_ADS,
+              Item: {
+                adId: scheduledAd.ad.adId,
+                ...scheduledAd.ad,
+              },
+            },
+          });
           uniqueAds.add(scheduledAd.ad.adId);
         }
       }
     }
 
+    // Execute the transaction
+    const transactionCommand = new TransactWriteCommand({
+      TransactItems: transactItems,
+    });
+
+    await dynamoDb.send(transactionCommand);
+
+    console.log(`Layout ${layout.layoutId} and related items updated successfully.`);
     return res.status(200).json({ message: "Layout and related items updated successfully." });
   } catch (error) {
     console.error("Error updating layout and related items:", error);
