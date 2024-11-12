@@ -58,31 +58,51 @@ const AdCanvas = () => {
 
   useEffect(() => {
     if (selectedLayout) {
-      console.log("Retrieved Layout:", selectedLayout); // Log retrieved layout
-      const properlyInitializedGridItems = selectedLayout.gridItems.map(
-        (item) => ({
-          ...item,
-          scheduledAds: item.scheduledAds.map((scheduledAd) => ({
-            ...scheduledAd,
-            id: scheduledAd.id || uuidv4(), // Ensure each scheduledAd has an ID
-            ad: {
-              ...scheduledAd.ad,
-              id: scheduledAd.ad.id || uuidv4(), // Ensure ad has an id
-            },
-          })),
-          isMerged: item.isMerged || false,
-          hidden: item.hidden || false,
-          rowSpan: item.rowSpan || 1,
-          colSpan: item.colSpan || 1,
-          mergeDirection: item.mergeDirection || null,
-          selectedCells: item.selectedCells || [],
-        }),
-      );
-
+      console.log("Retrieved Layout:", selectedLayout);
+  
+      const totalCells = selectedLayout.rows * selectedLayout.columns;
+  
+      const newGridItems = Array.from({ length: totalCells }, (_, index) => {
+        const item = selectedLayout.gridItems.find((gi) => gi.index === index);
+  
+        if (item) {
+          return {
+            ...item,
+            scheduledAds: item.scheduledAds.map((scheduledAd) => ({
+              ...scheduledAd,
+              id: scheduledAd.id || uuidv4(),
+              ad: {
+                ...scheduledAd.ad,
+                id: scheduledAd.ad.adId || uuidv4(),
+              },
+            })),
+            isMerged: item.isMerged || false,
+            hidden: item.hidden || false,
+            rowSpan: item.rowSpan || 1,
+            colSpan: item.colSpan || 1,
+            mergeDirection: item.mergeDirection || null,
+            selectedCells: item.selectedCells || [],
+          };
+        } else {
+          return {
+            index,
+            row: Math.floor(index / selectedLayout.columns),
+            column: index % selectedLayout.columns,
+            scheduledAds: [],
+            isMerged: false,
+            hidden: false,
+            rowSpan: 1,
+            colSpan: 1,
+            mergeDirection: null,
+            selectedCells: [],
+          };
+        }
+      });
+  
       setRows(selectedLayout.rows);
       setColumns(selectedLayout.columns);
-      setGridItems(properlyInitializedGridItems);
-      console.log("Updated Grid Items State:", properlyInitializedGridItems); // Log updated state
+      setGridItems(newGridItems);
+      console.log("Updated Grid Items State:", newGridItems);
       setIsSelectingLayout(false);
     }
   }, [selectedLayout]);
@@ -560,49 +580,59 @@ const AdCanvas = () => {
 
   const cleanLayoutJSON = (layout) => {
     const { rows, columns, gridItems } = layout;
-
-    const filteredItems = gridItems
-      .map((item, index) => {
-        if (!item || item.hidden) return null;
-
-        const row = Math.floor(index / columns);
-        const column = index % columns;
-
-        return {
-          index,
-          row,
-          column,
-          scheduledAds: item.scheduledAds.map((scheduledAd) => {
-            const ad = scheduledAd.ad;
-            const isNewAd = ad.id && ad.id.startsWith("sidebar-");
-            const adData = {
-              adId: isNewAd ? uuidv4() : ad.adId, // Ensure `adId` is a UUID
-              type: ad.type.toLowerCase(),
-              content: { ...ad.content },
-              styles: { ...ad.styles },
-            };
-            return {
-              id: scheduledAd.id,
-              scheduledTime: scheduledAd.scheduledTime,
-              ad: adData,
-            };
-          }),
-          isMerged: item.isMerged,
-          rowSpan: item.rowSpan,
-          colSpan: item.colSpan,
-          mergeDirection: item.mergeDirection,
-          selectedCells: item.selectedCells,
-          hidden: item.hidden,
-        };
-      })
-      .filter((item) => item !== null); // Remove null entries
-
+    const totalCells = rows * columns;
+    const cleanedGridItems = [];
+  
+    for (let index = 0; index < totalCells; index++) {
+      const item = gridItems[index] || {
+        index,
+        row: Math.floor(index / columns),
+        column: index % columns,
+        scheduledAds: [],
+        isMerged: false,
+        hidden: false,
+        rowSpan: 1,
+        colSpan: 1,
+        mergeDirection: null,
+        selectedCells: [],
+      };
+  
+      const cleanedItem = {
+        index,
+        row: item.row,
+        column: item.column,
+        scheduledAds: (item.scheduledAds || []).map((scheduledAd) => {
+          const ad = scheduledAd.ad;
+          const isNewAd = ad.id && ad.id.startsWith("sidebar-");
+          const adData = {
+            adId: isNewAd ? uuidv4() : ad.adId,
+            type: ad.type.toLowerCase(),
+            content: { ...ad.content },
+            styles: { ...ad.styles },
+          };
+          return {
+            id: scheduledAd.id,
+            scheduledTime: scheduledAd.scheduledTime,
+            ad: adData,
+          };
+        }),
+        isMerged: item.isMerged,
+        rowSpan: item.rowSpan,
+        colSpan: item.colSpan,
+        mergeDirection: item.mergeDirection,
+        selectedCells: item.selectedCells,
+        hidden: item.hidden,
+      };
+  
+      cleanedGridItems.push(cleanedItem);
+    }
+  
     return {
-      layoutId: layout.layoutId, // Ensure layoutId is included
-      name: layout.name, // Include name if necessary
+      layoutId: layout.layoutId,
+      name: layout.name,
       rows,
       columns,
-      gridItems: filteredItems,
+      gridItems: cleanedGridItems,
     };
   };
 
