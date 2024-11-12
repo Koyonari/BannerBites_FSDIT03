@@ -655,15 +655,17 @@ const AdCanvas = () => {
     setGridItems((prevGridItems) => {
       const updatedGrid = [...prevGridItems];
   
+      // Find the main cell index if the current index is hidden
       let mainIndex = currentAd.index;
       if (updatedGrid[mainIndex].hidden) {
         mainIndex = getMainCellIndex(mainIndex);
         if (mainIndex === -1) {
           alert("Could not find the main cell for saving.");
-          return prevGridItems;
+          return prevGridItems; // Return previous state to prevent errors
         }
       }
   
+      // Proceed to update the main cell without altering its merge properties
       const cellToUpdate = { ...updatedGrid[mainIndex] };
       const scheduledAds = cellToUpdate.scheduledAds.map((ad) =>
         ad.id === currentAd.scheduledAd.id
@@ -675,7 +677,7 @@ const AdCanvas = () => {
               },
               scheduledTime: updatedScheduledTime,
             }
-          : ad
+          : ad,
       );
   
       cellToUpdate.scheduledAds = scheduledAds;
