@@ -62,69 +62,59 @@ const AdViewer = ({ layout }) => {
         height: "100%",
       }}
     >
-  {gridItems.map((item, index) => {
-  if (!item || item.hidden) return null; // Skip null or hidden items
+      {gridItems.map((item) => {
+        if (!item || item.hidden) return null; // Skip null or hidden items
 
-  const { row, column, scheduledAds, rowSpan, colSpan } = item;
+        const { index, row, column, scheduledAds, rowSpan, colSpan } = item;
 
-  let adToDisplay = null;
+        let adToDisplay = null;
 
-  if (scheduledAds && scheduledAds.length > 0) {
-    const currentTimeString = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
+        if (scheduledAds && scheduledAds.length > 0) {
+          const currentTimeString = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
 
-    const availableAds = scheduledAds.filter(
-      (scheduledAd) => scheduledAd && scheduledAd.scheduledTime <= currentTimeString
-    );
+          const availableAds = scheduledAds.filter(
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
+          );
 
-    if (availableAds.length > 0) {
-      adToDisplay = availableAds.reduce((latestAd, currentAd) =>
-        currentAd.scheduledTime > latestAd.scheduledTime ? currentAd : latestAd
-      );
-    } else {
-      adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
-        currentAd.scheduledTime < nextAd.scheduledTime ? currentAd : nextAd
-      );
-    }
-  }
+          if (availableAds.length > 0) {
+            adToDisplay = availableAds.reduce((latestAd, currentAd) =>
+              currentAd.scheduledTime > latestAd.scheduledTime ? currentAd : latestAd
+            );
+          } else {
+            adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
+              currentAd.scheduledTime < nextAd.scheduledTime ? currentAd : nextAd
+            );
+          }
+        }
 
-  // Check if we have a valid ad to display
-  if (!adToDisplay || !adToDisplay.ad) {
-    console.warn(`No valid ad to display for grid item at index ${index}`);
-    return null; // No ad to display in this cell
-  }
+        if (!adToDisplay) {
+          return null; // No ad to display in this cell
+        }
 
-  const ad = adToDisplay.ad;
+        const ad = adToDisplay.ad;
+        const { type, content, styles } = ad;
 
-  // Add another safeguard to prevent destructuring null/undefined values
-  if (!ad || !ad.type || !ad.content) {
-    console.warn(`Skipping rendering due to invalid ad at index ${index}`);
-    return null;
-  }
+        const gridRowStart = row + 1; // Convert 0-based to 1-based
+        const gridColumnStart = column + 1;
+        const gridRowEnd = gridRowStart + (rowSpan || 1);
+        const gridColumnEnd = gridColumnStart + (colSpan || 1);
 
-  const { type, content, styles } = ad;
-
-  // Compute grid positions
-  const gridRowStart = row + 1; // Convert 0-based to 1-based
-  const gridColumnStart = column + 1;
-  const gridRowEnd = gridRowStart + (rowSpan || 1);
-  const gridColumnEnd = gridColumnStart + (colSpan || 1);
-
-  return (
-    <div
-      key={index}
-      className="grid-cell"
-      style={{
-        gridRow: `${gridRowStart} / ${gridRowEnd}`,
-        gridColumn: `${gridColumnStart} / ${gridColumnEnd}`,
-        border: "1px solid #ccc",
-        padding: "10px",
-        backgroundColor: "#fafafa",
-      }}
-    >
-      <AdComponent type={type} content={content} styles={styles} />
-    </div>
-  );
-})}
+        return (
+          <div
+            key={index}
+            className="grid-cell"
+            style={{
+              gridRow: `${gridRowStart} / ${gridRowEnd}`,
+              gridColumn: `${gridColumnStart} / ${gridColumnEnd}`,
+              border: "1px solid #ccc",
+              padding: "10px",
+              backgroundColor: "#fafafa",
+            }}
+          >
+            <AdComponent type={type} content={content} styles={styles} />
+          </div>
+        );
+      })}
     </div>
   );
 };
