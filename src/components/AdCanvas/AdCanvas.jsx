@@ -626,7 +626,7 @@ const AdCanvas = () => {
     setCurrentAd({ index: actualIndex, scheduledAd });
     setIsEditing(true);
   };
-  
+
   const getMainCellIndex = (hiddenCellIndex) => {
     return gridItems.findIndex((item) => {
       return (
@@ -637,12 +637,12 @@ const AdCanvas = () => {
       );
     });
   };
-  
+
   // Handles saving an updated ad from the modal
   const handleSave = (updatedAdData, updatedScheduledTime) => {
     setGridItems((prevGridItems) => {
       const updatedGrid = [...prevGridItems];
-  
+
       let mainIndex = currentAd.index;
       if (updatedGrid[mainIndex].hidden) {
         mainIndex = getMainCellIndex(mainIndex);
@@ -651,7 +651,7 @@ const AdCanvas = () => {
           return prevGridItems;
         }
       }
-  
+
       const cellToUpdate = { ...updatedGrid[mainIndex] };
       const scheduledAds = cellToUpdate.scheduledAds.map((ad) =>
         ad.id === currentAd.scheduledAd.id
@@ -663,15 +663,15 @@ const AdCanvas = () => {
               },
               scheduledTime: updatedScheduledTime,
             }
-          : ad
+          : ad,
       );
-  
+
       cellToUpdate.scheduledAds = scheduledAds;
       updatedGrid[mainIndex] = cellToUpdate;
-  
+
       return updatedGrid;
     });
-  
+
     setIsEditing(false);
     setCurrentAd(null);
   };
