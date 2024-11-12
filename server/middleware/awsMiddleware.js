@@ -18,22 +18,26 @@ const WebSocket = require("ws");
  * @param {object} updatedData - The updated layout data.
  */
 const broadcastLayoutUpdate = (layoutId, updatedData) => {
-  // Remove closed or invalid WebSocket clients
-  clients.forEach((clientData, clientWs) => {
-    if (clientWs.readyState !== WebSocket.OPEN) {
-      console.log("[BACKEND] Removing client due to closed or invalid WebSocket.");
-      clients.delete(clientWs);
+  if (!updatedData || !updatedData.gridItems) {
+    console.error(`[Backend] Invalid layout data for layoutId: ${layoutId}`);
+    return;
+  }
+
+  // Filter out gridItems that have invalid scheduled ads
+  updatedData.gridItems = updatedData.gridItems.map(item => {
+    if (item && item.scheduledAds) {
+      item.scheduledAds = item.scheduledAds.filter(scheduledAd => scheduledAd && scheduledAd.ad && scheduledAd.ad.adId);
     }
+    return item;
   });
 
-  // Broadcast to valid clients listening to the specified layoutId
   clients.forEach((clientData, clientWs) => {
     if (clientData.layoutId === layoutId && clientWs.readyState === WebSocket.OPEN) {
       try {
         clientWs.send(JSON.stringify({ type: "layoutUpdate", data: updatedData }));
-        console.log(`[BACKEND] Broadcasted layout update to client for layoutId: ${layoutId}`);
+        console.log(`[Backend] Broadcasted layout update for layoutId: ${layoutId}`);
       } catch (error) {
-        console.error(`[BACKEND] Error broadcasting to client for layoutId: ${layoutId}`, error);
+        console.error(`[Backend] Error broadcasting to client for layoutId: ${layoutId}`, error);
       }
     }
   });
