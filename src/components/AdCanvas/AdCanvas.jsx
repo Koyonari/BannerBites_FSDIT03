@@ -601,14 +601,58 @@ const handleLayoutNameSave = async (name) => {
 
   // Opens the modal for editing a specific ad
   const handleEdit = (index, scheduledAd) => {
-    setCurrentAd({ index, scheduledAd });
+    let actualIndex = index;
+    if (gridItems[index].hidden) {
+      actualIndex = gridItems.findIndex((item) => {
+        return (
+          !item.hidden &&
+          item.isMerged &&
+          item.selectedCells &&
+          item.selectedCells.includes(index)
+        );
+      });
+      if (actualIndex === -1) {
+        alert("Could not find the main cell for editing.");
+        return;
+      }
+    }
+    setCurrentAd({ index: actualIndex, scheduledAd });
     setIsEditing(true);
   };
-
+  
+  const getMainCellIndex = (hiddenCellIndex) => {
+    return gridItems.findIndex((item) => {
+      return (
+        !item.hidden &&
+        item.isMerged &&
+        item.selectedCells &&
+        item.selectedCells.includes(hiddenCellIndex)
+      );
+    });
+  };
+  
   // Handles saving an updated ad from the modal
   const handleSave = (updatedAdData, updatedScheduledTime) => {
     const updatedGrid = [...gridItems];
-    const scheduledAds = updatedGrid[currentAd.index].scheduledAds;
+  
+    // Find the main cell index if the current index is hidden
+    let mainIndex = currentAd.index;
+    if (updatedGrid[mainIndex].hidden) {
+      mainIndex = updatedGrid.findIndex((item) => {
+        return (
+          !item.hidden &&
+          item.isMerged &&
+          item.selectedCells &&
+          item.selectedCells.includes(mainIndex)
+        );
+      });
+      if (mainIndex === -1) {
+        alert("Could not find the main cell for saving.");
+        return;
+      }
+    }
+  
+    const scheduledAds = updatedGrid[mainIndex].scheduledAds;
     const adIndex = scheduledAds.findIndex(
       (ad) => ad.id === currentAd.scheduledAd.id,
     );
@@ -618,12 +662,12 @@ const handleLayoutNameSave = async (name) => {
         ...scheduledAds[adIndex],
         ad: {
           ...scheduledAds[adIndex].ad,
-          ...updatedAdData, 
+          ...updatedAdData,
           id: existingAdId || uuidv4(),
         },
         scheduledTime: updatedScheduledTime,
       };
-      updatedGrid[currentAd.index].scheduledAds = scheduledAds;
+      updatedGrid[mainIndex].scheduledAds = scheduledAds;
       setGridItems(updatedGrid);
     }
     setIsEditing(false);
@@ -785,6 +829,7 @@ const handleLayoutNameSave = async (name) => {
                     totalCells={totalCells}
                     onUnmerge={handleUnmerge}
                     showHelp={showHelp}
+                    getMainCellIndex={getMainCellIndex}
                   />
                 );
               })}
