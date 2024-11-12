@@ -8,15 +8,14 @@ const Login = () => {
   const [error, setError] = useState('');
   const [role, setRole] = useState('Operator'); // Track selected role
   const navigate = useNavigate(); // Navigate to home when "X" is clicked
-
   const handleLogin = async (e) => {
     e.preventDefault();
-
+  
     if (!username || !password) {
       alert('Please enter both username and password');
       return;
     }
-
+  
     try {
       const response = await fetch("http://localhost:5000/api/login", {
         method: "POST",
@@ -26,20 +25,21 @@ const Login = () => {
         body: JSON.stringify({ username, password, role }), // Include role in the request
         credentials: "include"
       });
-
+  
       if (!response.ok) {
         throw new Error('Invalid username or password');
       }
-
+  
       const data = await response.json();
-      localStorage.setItem("authToken", data.token); // Store the token
-
+  
       alert(`Logged in successfully as ${role} - ${username}`);
       navigate('/'); // Redirect to home page after showing alert
     } catch (err) {
       setError(err.message);
     }
   };
+  
+ 
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

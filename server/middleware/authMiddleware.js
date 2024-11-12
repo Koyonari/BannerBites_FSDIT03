@@ -12,14 +12,23 @@ const verifyPassword = async (password, hashedPassword) => {
 };
 
 // Authenticate user
-const authenticateUser = async (username, password) => {
-  const user = await getUserByUsername(username);
-  if (user && await verifyPassword(password, user.password)) {
-    return jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  } else {
-    throw new Error('Invalid credentials');
-  }
-};
+const authenticateUser = async (username, password, role) => {
+    const user = await getUserByUsername(username);
+    
+    // Check if the user exists and verify the password
+    if (user && await verifyPassword(password, user.password)) {
+      // Ensure the user has the selected role
+      if (user.roles && user.roles[role] && user.roles[role].N === '2001' && role === 'Admin' || user.roles[role] && user.roles[role].N === '2002' && role === 'Operator') {
+        // Issue the token with the correct role
+        return jwt.sign({ username: user.username, role: role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      } else {
+        throw new Error('User does not have the correct role');
+      }
+    } else {
+      throw new Error('Invalid credentials');
+    }
+  };
+  
 
 const verifyToken = (req, res, next) => {
   const token = req.cookies.authToken;
