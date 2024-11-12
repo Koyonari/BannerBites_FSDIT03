@@ -489,7 +489,6 @@ const AdCanvas = () => {
   };
 
   // Handles removing ads from a grid cell
-  // Handles removing ads from a grid cell
   const handleRemove = (index, scheduledAd) => {
     // Create a deep copy of the gridItems state to prevent accidental state mutation
     const updatedGrid = gridItems.map((item) => ({
@@ -641,43 +640,40 @@ const AdCanvas = () => {
   
   // Handles saving an updated ad from the modal
   const handleSave = (updatedAdData, updatedScheduledTime) => {
-    const updatedGrid = [...gridItems];
+    setGridItems((prevGridItems) => {
+      const updatedGrid = [...prevGridItems];
   
-    // Find the main cell index if the current index is hidden
-    let mainIndex = currentAd.index;
-    if (updatedGrid[mainIndex].hidden) {
-      mainIndex = updatedGrid.findIndex((item) => {
-        return (
-          !item.hidden &&
-          item.isMerged &&
-          item.selectedCells &&
-          item.selectedCells.includes(mainIndex)
-        );
-      });
-      if (mainIndex === -1) {
-        alert("Could not find the main cell for saving.");
-        return;
+      // Find the main cell index if the current index is hidden
+      let mainIndex = currentAd.index;
+      if (updatedGrid[mainIndex].hidden) {
+        mainIndex = getMainCellIndex(mainIndex);
+        if (mainIndex === -1) {
+          alert("Could not find the main cell for saving.");
+          return prevGridItems; // Return previous state to prevent errors
+        }
       }
-    }
   
-    const scheduledAds = updatedGrid[mainIndex].scheduledAds;
-    const adIndex = scheduledAds.findIndex(
-      (ad) => ad.id === currentAd.scheduledAd.id,
-    );
-    if (adIndex !== -1) {
-      const existingAdId = scheduledAds[adIndex].ad.id;
-      scheduledAds[adIndex] = {
-        ...scheduledAds[adIndex],
-        ad: {
-          ...scheduledAds[adIndex].ad,
-          ...updatedAdData,
-          id: existingAdId || uuidv4(),
-        },
-        scheduledTime: updatedScheduledTime,
-      };
-      updatedGrid[mainIndex].scheduledAds = scheduledAds;
-      setGridItems(updatedGrid);
-    }
+      // Proceed to update the main cell without altering its merge properties
+      const cellToUpdate = { ...updatedGrid[mainIndex] };
+      const scheduledAds = cellToUpdate.scheduledAds.map((ad) =>
+        ad.id === currentAd.scheduledAd.id
+          ? {
+              ...ad,
+              ad: {
+                ...ad.ad,
+                ...updatedAdData,
+              },
+              scheduledTime: updatedScheduledTime,
+            }
+          : ad,
+      );
+  
+      cellToUpdate.scheduledAds = scheduledAds;
+      updatedGrid[mainIndex] = cellToUpdate;
+  
+      return updatedGrid;
+    });
+  
     setIsEditing(false);
     setCurrentAd(null);
   };
