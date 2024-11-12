@@ -269,7 +269,7 @@ const GridCell = ({
   return (
     <div
       ref={drop}
-      className={`grid-cell relative box-border flex flex-col gap-2 bg-white p-2 transition-transform duration-200 ease-in-out hover:bg-orange-50 hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-orange-300 ${isOver ? "bg-orange-50 outline-orange-300" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
+      className={`grid-cell relative box-border flex flex-col gap-2 border border-gray-300 bg-white p-2 transition-transform duration-200 ease-in-out hover:bg-orange-50 hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-orange-300 ${isOver ? "bg-orange-50 outline-orange-300" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
       style={{
         gridRow: item?.rowSpan ? `span ${item.rowSpan}` : "auto",
         gridColumn: item?.colSpan ? `span ${item.colSpan}` : "auto",

@@ -140,9 +140,6 @@ const AdViewer = ({ layout }) => {
               style={{
                 gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
                 gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
-                border: "1px solid #ccc",
-                padding: "10px",
-                backgroundColor: "#fafafa",
               }}
             >
               <div className="ad-placeholder text-gray-500">
@@ -161,9 +158,6 @@ const AdViewer = ({ layout }) => {
             style={{
               gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
               gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
-              border: "1px solid #ccc",
-              padding: "10px",
-              backgroundColor: "#fafafa",
             }}
           >
             <AdComponent type={type} content={content} styles={styles} />
