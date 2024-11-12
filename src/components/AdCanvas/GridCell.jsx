@@ -51,6 +51,7 @@ const GridCell = ({
   showHelp,
   selectedMergedCells = [],
   onSelectMerged,
+  getMainCellIndex,
 }) => {
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -90,15 +91,24 @@ const GridCell = ({
     }
   };
 
-  const handleRemove = (e) => {
-    e.stopPropagation();
-    if (adToDisplay) {
-      onRemove(index, adToDisplay);
-    }
-  };
-
   const handleEdit = (e) => {
     e.stopPropagation();
+    let cellIndex = index;
+
+    // If the cell is hidden, find the main cell index
+    if (item.hidden) {
+      if (typeof getMainCellIndex === "function") {
+        cellIndex = getMainCellIndex(index);
+        if (cellIndex === -1) {
+          alert("Could not find the main cell for editing.");
+          return;
+        }
+      } else {
+        alert("Cannot edit a hidden cell.");
+        return;
+      }
+    }
+
     if (adToDisplay) {
       const adToEdit = {
         ...adToDisplay,
@@ -110,9 +120,33 @@ const GridCell = ({
             : adToDisplay.ad.type,
         },
       };
-      onEdit(index, adToEdit);
+      onEdit(cellIndex, adToEdit);
     }
   };
+
+  // Similarly, adjust handleRemove if necessary
+  const handleRemove = (e) => {
+    e.stopPropagation();
+    let cellIndex = index;
+
+    if (item.hidden) {
+      if (typeof getMainCellIndex === "function") {
+        cellIndex = getMainCellIndex(index);
+        if (cellIndex === -1) {
+          alert("Could not find the main cell for removing.");
+          return;
+        }
+      } else {
+        alert("Cannot remove from a hidden cell.");
+        return;
+      }
+    }
+
+    if (adToDisplay) {
+      onRemove(cellIndex, adToDisplay);
+    }
+  };
+
 
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
