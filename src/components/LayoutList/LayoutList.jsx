@@ -96,15 +96,14 @@ const LayoutList = () => {
 
       // Fetch the initial layout data
       const response = await fetch(
-        `http://localhost:5000/api/layouts/${layoutId}`,
+        `http://localhost:5000/api/layouts/${layoutId}`
       );
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch layout details for layoutId: ${layoutId}`,
+          `Failed to fetch layout details for layoutId: ${layoutId}`
         );
       }
       const data = await response.json();
-      console.log("[LayoutList] Fetched layout data:", data);
       setSelectedLayout(data);
 
       // Set up WebSocket connection for real-time updates
@@ -121,38 +120,19 @@ const LayoutList = () => {
     websocketRef.current = new WebSocket("ws://localhost:5000");
 
     websocketRef.current.onopen = () => {
-      console.log("[FRONTEND] Connected to WebSocket server");
-      websocketRef.current.send(
-        JSON.stringify({ type: "subscribe", layoutId }),
-      );
-    };
-
-    const validateLayoutData = (data) => {
-      return data.gridItems.every(
-        (item) =>
-          !item ||
-          item.hidden ||
-          item.scheduledAds.every(
-            (scheduledAd) => scheduledAd && scheduledAd.ad,
-          ),
-      );
+      websocketRef.current.send(JSON.stringify({ type: "subscribe", layoutId }));
     };
 
     websocketRef.current.onmessage = (event) => {
       try {
         const parsedData = JSON.parse(event.data);
+
         if (
           (parsedData.type === "layoutUpdate" ||
             parsedData.type === "layoutData") &&
           parsedData.data.layoutId === layoutId
         ) {
-          if (validateLayoutData(parsedData.data)) {
-            setSelectedLayout(parsedData.data);
-          } else {
-            console.error(
-              "[WebSocket Update] Invalid layout data received, skipping update.",
-            );
-          }
+          setSelectedLayout(parsedData.data);
         }
       } catch (e) {
         console.error("[FRONTEND] Error parsing WebSocket message:", e);
@@ -160,20 +140,12 @@ const LayoutList = () => {
     };
 
     websocketRef.current.onclose = (event) => {
-      console.log(
-        "[FRONTEND] WebSocket connection closed. Reason:",
-        event.reason,
-      );
       if (
         pendingLayoutIdRef.current === layoutId &&
         reconnectAttemptsRef.current < 5
       ) {
-        // Attempt to reconnect only if this layoutId is still active and attempts are below threshold
         reconnectAttemptsRef.current += 1;
         setTimeout(() => {
-          console.log(
-            `[FRONTEND] Reconnecting to WebSocket server... Attempt #${reconnectAttemptsRef.current}`,
-          );
           establishWebSocketConnection(layoutId);
         }, 5000);
       }
@@ -242,34 +214,12 @@ const LayoutList = () => {
                     {layout.name || `Layout ${layout.layoutId}`}
                   </button>
                 ))}
-
                 {hasMoreLayouts && (
                   <button
                     className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-50 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-100"
                     onClick={() => setShowAllLayouts(!showAllLayouts)}
                   >
-                    <span
-                      className={`transition-transform duration-300 ease-in-out`}
-                    >
-                      {showAllLayouts
-                        ? "Show Less"
-                        : `Show ${layouts.length - MOBILE_DISPLAY_LIMIT} More`}
-                    </span>
-                    <svg
-                      className={`h-4 w-4 transform transition-transform duration-300 ease-in-out ${
-                        showAllLayouts ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
+                    <span>{showAllLayouts ? "Show Less" : `Show More`}</span>
                   </button>
                 )}
               </div>

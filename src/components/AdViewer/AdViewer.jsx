@@ -2,7 +2,7 @@
 import React from "react";
 
 // Component to represent an individual Ad
-const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
+const AdComponent = ({ type, content, styles }) => {
   let mediaUrl = content.mediaUrl || content.src;
 
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
@@ -16,67 +16,70 @@ const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
 
-  // Handle unknown ad types
-  if (type === "unknown") {
-    return (
-      <div className="ad-item" style={styles}>
-        <p className="text-red-500">Unknown ad type</p>
-      </div>
-    );
-  }
-
-  // Handle missing content gracefully
-  if (type === "text" && !content.title && !content.description) {
-    return (
-      <div className="ad-item" style={styles}>
-        <p className="text-gray-500">No content available for text ad</p>
-      </div>
-    );
-  }
-
-  if (type === "image" && !mediaUrl) {
-    return (
-      <div className="ad-item" style={styles}>
-        <p className="text-gray-500">Image source not available</p>
-      </div>
-    );
-  }
-
-  if (type === "video" && !mediaUrl) {
-    return (
-      <div className="ad-item" style={styles}>
-        <p className="text-gray-500">Video source not available</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="ad-item" style={styles}>
+    <div
+      className="ad-item"
+      style={{
+        ...styles,
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
       {type === "text" && (
-        <div>
+        <div style={{ textAlign: "center" }}>
           <h3>{content.title}</h3>
           <p>{content.description}</p>
         </div>
       )}
-      {type === "image" && mediaUrl && (
-        <div>
+      {type === "image" && (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
           <img
             src={mediaUrl}
-            alt={content.title || "Image Ad"}
-            style={{ maxWidth: "100%" }}
+            alt={content.title}
+            style={{
+              objectFit: "contain",
+              maxWidth: "100%",
+              maxHeight: "100%",
+            }}
           />
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
         </div>
       )}
-      {type === "video" && mediaUrl && (
-        <div>
-          <video autoPlay loop muted playsInline className="w-full">
+      {type === "video" && (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              maxWidth: "100%",
+              maxHeight: "100%",
+              objectFit: "contain",
+            }}
+          >
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
         </div>
       )}
     </div>
@@ -103,57 +106,101 @@ const AdViewer = ({ layout }) => {
         height: "100%",
       }}
     >
-      {gridItems.map((item) => {
-        if (!item || item.hidden) return null; // Skip null or hidden items
+      {gridItems.map((item, index) => {
+        // Ensure that each cell occupies its space
+        const { scheduledAds, rowSpan, colSpan, isMerged, hidden } = item;
 
-        const { index, row, column, scheduledAds, rowSpan, colSpan } = item;
+        // Empty cells or hidden cells should still occupy space
+        if (!scheduledAds || scheduledAds.length === 0) {
+          return (
+            <div
+              key={index}
+              className="grid-cell"
+              style={{
+                gridRow: `span ${rowSpan || 1}`,
+                gridColumn: `span ${colSpan || 1}`,
+                border: "1px dashed #ccc",
+              }}
+            />
+          );
+        }
 
+        if (hidden) {
+          return (
+            <div
+              key={index}
+              className="grid-cell"
+              style={{
+                gridRow: `span ${rowSpan || 1}`,
+                gridColumn: `span ${colSpan || 1}`,
+                border: "1px dashed #ccc",
+                visibility: "hidden",
+              }}
+            />
+          );
+        }
+
+        // Determine which ad to display
         let adToDisplay = null;
 
         if (scheduledAds && scheduledAds.length > 0) {
-          const currentTimeString = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
+          const currentTimeString = `${new Date()
+            .getHours()
+            .toString()
+            .padStart(2, "0")}:${new Date()
+            .getMinutes()
+            .toString()
+            .padStart(2, "0")}`; // Format as "HH:mm"
 
           const availableAds = scheduledAds.filter(
-            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
           );
 
           if (availableAds.length > 0) {
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
               currentAd.scheduledTime > latestAd.scheduledTime
                 ? currentAd
-                : latestAd,
+                : latestAd
             );
           } else {
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
               currentAd.scheduledTime < nextAd.scheduledTime
                 ? currentAd
-                : nextAd,
+                : nextAd
             );
           }
         }
 
-        if (!adToDisplay || !adToDisplay.ad) {
+        if (!adToDisplay) {
           return (
             <div
               key={index}
               className="grid-cell"
               style={{
-                gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
-                gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
+                gridRow: `span ${rowSpan || 1}`,
+                gridColumn: `span ${colSpan || 1}`,
+                border: "1px dashed #ccc",
               }}
-            ></div>
+            />
           );
         }
 
-        const { type, content, styles } = adToDisplay.ad;
+        const ad = adToDisplay.ad;
+        const { type, content, styles } = ad;
 
+        // Ensure the content of merged cells is centered
         return (
           <div
             key={index}
             className="grid-cell"
             style={{
-              gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
-              gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
+              gridRow: `span ${rowSpan || 1}`,
+              gridColumn: `span ${colSpan || 1}`,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "hidden",
+              border: "1px solid #ddd", // Adding border for better visibility of the cells
             }}
           >
             <AdComponent type={type} content={content} styles={styles} />
