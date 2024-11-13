@@ -200,6 +200,7 @@ const saveLayout = async (req, res) => {
   }
 };
 
+// Function to update layout and related items
 const updateLayout = async (req, res) => {
   console.log("Request to /api/layouts/:layoutId:", JSON.stringify(req.body, null, 2));
 
@@ -281,36 +282,45 @@ const updateLayout = async (req, res) => {
       if (existingGridItemMap.has(item.index)) {
         // Fetch the corresponding existing item and compare
         const existingItem = existingGridItemMap.get(item.index);
-        if (item.isMerged !== existingItem.isMerged ||
-            item.rowSpan !== existingItem.rowSpan ||
-            item.colSpan !== existingItem.colSpan ||
-            item.hidden !== existingItem.hidden ||
-            JSON.stringify(item.selectedCells) !== JSON.stringify(existingItem.selectedCells)) {
-          // Add an UpdateCommand to the batch if there are differences
-          allTransactItems.push({
-            Update: {
-              TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
-              Key: { layoutId, index: item.index },
-              UpdateExpression: "set #colSpan = :colSpan, #rowSpan = :rowSpan, #isMerged = :isMerged, #hidden = :hidden, #mergeDirection = :mergeDirection, #selectedCells = :selectedCells",
-              ExpressionAttributeNames: {
-                "#colSpan": "colSpan",
-                "#rowSpan": "rowSpan",
-                "#isMerged": "isMerged",
-                "#hidden": "hidden",
-                "#mergeDirection": "mergeDirection",
-                "#selectedCells": "selectedCells",
-              },
-              ExpressionAttributeValues: {
-                ":colSpan": item.colSpan,
-                ":rowSpan": item.rowSpan,
-                ":isMerged": item.isMerged,
-                ":hidden": item.hidden,
-                ":mergeDirection": item.mergeDirection,
-                ":selectedCells": item.selectedCells,
-              },
-            },
-          });
+
+        const expressionAttributes = {
+          ":colSpan": item.colSpan,
+          ":rowSpan": item.rowSpan,
+          ":isMerged": item.isMerged,
+          ":hidden": item.hidden,
+        };
+
+        const expressionAttributeNames = {
+          "#colSpan": "colSpan",
+          "#rowSpan": "rowSpan",
+          "#isMerged": "isMerged",
+          "#hidden": "hidden",
+        };
+
+        let updateExpression = "set #colSpan = :colSpan, #rowSpan = :rowSpan, #isMerged = :isMerged, #hidden = :hidden";
+
+        if (item.mergeDirection !== undefined) {
+          updateExpression += ", #mergeDirection = :mergeDirection";
+          expressionAttributes[":mergeDirection"] = item.mergeDirection;
+          expressionAttributeNames["#mergeDirection"] = "mergeDirection";
         }
+
+        if (item.selectedCells && item.selectedCells.length > 0) {
+          updateExpression += ", #selectedCells = :selectedCells";
+          expressionAttributes[":selectedCells"] = item.selectedCells;
+          expressionAttributeNames["#selectedCells"] = "selectedCells";
+        }
+
+        // Add an UpdateCommand to the batch if there are differences
+        allTransactItems.push({
+          Update: {
+            TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+            Key: { layoutId, index: item.index },
+            UpdateExpression: updateExpression,
+            ExpressionAttributeNames: expressionAttributeNames,
+            ExpressionAttributeValues: expressionAttributes,
+          },
+        });
       } else {
         // If the grid item does not exist, add a PutCommand
         allTransactItems.push({
