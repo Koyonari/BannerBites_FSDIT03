@@ -1,11 +1,28 @@
 import React, { useState } from "react";
 import { X, Calendar } from "lucide-react";
 
-const ScheduleModal = ({ ad, onSave, onClose }) => {
+const ScheduleModal = ({ ad, onSave, onClose, existingScheduledTimes }) => {
   const [scheduledTime, setScheduledTime] = useState("00:00");
+  const [error, setError] = useState("");
 
+  // Handle Save button click
   const handleSave = () => {
-    onSave(scheduledTime);
+    if (!existingScheduledTimes.includes(scheduledTime)) {
+      onSave(scheduledTime);
+    }
+  };
+
+  // Handle time change and validation
+  const handleTimeChange = (e) => {
+    const newTime = e.target.value;
+    setScheduledTime(newTime);
+
+    // Check if the selected time is already scheduled
+    if (existingScheduledTimes.includes(newTime)) {
+      setError("This time slot is already scheduled. Please choose another time.");
+    } else {
+      setError(""); // Clear the error if the time is valid
+    }
   };
 
   return (
@@ -43,10 +60,17 @@ const ScheduleModal = ({ ad, onSave, onClose }) => {
             <input
               type="time"
               value={scheduledTime}
-              onChange={(e) => setScheduledTime(e.target.value)}
-              className="block w-full rounded-md border-2 p-2 focus:border-orange-500 focus:outline-none focus:ring-2"
+              onChange={handleTimeChange}
+              className={`block w-full rounded-md border-2 p-2 focus:outline-none focus:ring-2 ${
+                error ? "border-red-500 focus:border-red-500" : "focus:border-orange-500"
+              }`}
             />
           </label>
+          {error && (
+            <p className="mt-2 text-sm text-red-500">
+              {error}
+            </p>
+          )}
         </div>
 
         {/* Footer */}
@@ -59,7 +83,10 @@ const ScheduleModal = ({ ad, onSave, onClose }) => {
           </button>
           <button
             onClick={handleSave}
-            className="rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            disabled={!!error}
+            className={`rounded-md px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 ${
+              error ? "bg-gray-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
+            }`}
           >
             <b>Schedule</b>
           </button>

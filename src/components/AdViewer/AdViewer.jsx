@@ -1,8 +1,8 @@
-// src/components/AdViewer/AdViewer.jsx
-import React from "react";
+import React, { useEffect } from "react";
+import WebFont from "webfontloader";
 
 // Component to represent an individual Ad
-const AdComponent = ({ type, content, styles }) => {
+const AdComponent = ({ type, content, styles = {} }) => {
   let mediaUrl = content.mediaUrl || content.src;
 
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
@@ -16,12 +16,39 @@ const AdComponent = ({ type, content, styles }) => {
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
 
+  // Load Google Font if fontFamily is specified
+  useEffect(() => {
+    if (styles.font) {
+      WebFont.load({
+        google: {
+          families: [styles.font],
+        },
+      });
+    }
+  }, [styles.font]);
+
+  const adStyles = {
+    fontFamily: styles.font,
+    fontSize: styles.fontSize,
+    color: styles.textColor,
+    borderColor: styles.borderColor,
+    borderStyle: 'solid',
+    borderWidth: styles.borderColor ? '2px' : '0px',
+    padding: '10px',
+    boxSizing: 'border-box',
+    ...styles,
+  };
+
   return (
-    <div className="ad-item" style={styles}>
+    <div className="ad-item" style={adStyles}>
       {type === "text" && (
         <div>
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3 style={{ fontFamily: styles.font, color: styles.textColor }}>
+            {content.title}
+          </h3>
+          <p style={{ fontFamily: styles.font, color: styles.textColor }}>
+            {content.description}
+          </p>
         </div>
       )}
       {type === "image" && (
@@ -29,20 +56,35 @@ const AdComponent = ({ type, content, styles }) => {
           <img
             src={mediaUrl}
             alt={content.title}
-            style={{ maxWidth: "100%" }}
+            style={{ maxWidth: "100%", borderColor: styles.borderColor }}
           />
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3 style={{ fontFamily: styles.font, color: styles.textColor }}>
+            {content.title}
+          </h3>
+          <p style={{ fontFamily: styles.font, color: styles.textColor }}>
+            {content.description}
+          </p>
         </div>
       )}
       {type === "video" && (
         <div>
-          <video autoPlay loop muted playsInline className="w-full">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full"
+            style={{ borderColor: styles.borderColor }}
+          >
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3 style={{ fontFamily: styles.font, color: styles.textColor }}>
+            {content.title}
+          </h3>
+          <p style={{ fontFamily: styles.font, color: styles.textColor }}>
+            {content.description}
+          </p>
         </div>
       )}
     </div>
@@ -145,7 +187,7 @@ const AdViewer = ({ layout }) => {
             style={{
               gridRow: `span ${rowSpan || 1}`,
               gridColumn: `span ${colSpan || 1}`,
-              border: "none",
+              border: styles?.borderColor ? `2px solid ${styles.borderColor}` : 'none',
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
