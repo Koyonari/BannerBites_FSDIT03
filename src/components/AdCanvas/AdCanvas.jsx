@@ -59,12 +59,12 @@ const AdCanvas = () => {
   useEffect(() => {
     if (selectedLayout) {
       console.log("Retrieved Layout:", selectedLayout);
-  
+
       const totalCells = selectedLayout.rows * selectedLayout.columns;
-  
+
       const newGridItems = Array.from({ length: totalCells }, (_, index) => {
         const item = selectedLayout.gridItems.find((gi) => gi.index === index);
-  
+
         if (item) {
           return {
             ...item,
@@ -98,7 +98,7 @@ const AdCanvas = () => {
           };
         }
       });
-  
+
       setRows(selectedLayout.rows);
       setColumns(selectedLayout.columns);
       setGridItems(newGridItems);
@@ -582,7 +582,7 @@ const AdCanvas = () => {
     const { rows, columns, gridItems } = layout;
     const totalCells = rows * columns;
     const cleanedGridItems = [];
-  
+
     for (let index = 0; index < totalCells; index++) {
       const item = gridItems[index] || {
         index,
@@ -596,7 +596,7 @@ const AdCanvas = () => {
         mergeDirection: null,
         selectedCells: [],
       };
-  
+
       const cleanedItem = {
         index,
         row: item.row,
@@ -623,10 +623,10 @@ const AdCanvas = () => {
         selectedCells: item.selectedCells,
         hidden: item.hidden,
       };
-  
+
       cleanedGridItems.push(cleanedItem);
     }
-  
+
     return {
       layoutId: layout.layoutId,
       name: layout.name,
@@ -649,7 +649,7 @@ const AdCanvas = () => {
         );
       });
       if (actualIndex === -1) {
-        alert("Could not find the main cell for editing.");
+        showAlert("Could not find the main cell for editing.");
         return;
       }
     }
@@ -677,7 +677,7 @@ const AdCanvas = () => {
       if (updatedGrid[mainIndex].hidden) {
         mainIndex = getMainCellIndex(mainIndex);
         if (mainIndex === -1) {
-          alert("Could not find the main cell for saving.");
+          showAlert("Could not find the main cell for saving.");
           return prevGridItems;
         }
       }
@@ -704,36 +704,6 @@ const AdCanvas = () => {
 
     setIsEditing(false);
     setCurrentAd(null);
-  };
-
-  const handleDeleteLayout = async () => {
-    if (!selectedLayout) {
-      showAlert("No layout is selected for deletion.");
-      return;
-    }
-
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this layout?",
-    );
-    if (!confirmDelete) return;
-
-    try {
-      const response = await axios.delete(
-        `${apiUrl}/api/layouts/${selectedLayout.layoutId}`,
-      );
-
-      if (response.status === 200) {
-        showAlert("Layout deleted successfully!");
-        // Reset state after successful deletion
-        setSelectedLayout(null);
-        setIsSelectingLayout(true); // Go back to layout selection mode
-      } else {
-        throw new Error(`Failed to delete layout: ${response.statusText}`);
-      }
-    } catch (error) {
-      console.error("Error deleting layout:", error);
-      showAlert("Failed to delete layout. Please try again.");
-    }
   };
 
   // Tooltip styles
@@ -780,7 +750,7 @@ const AdCanvas = () => {
       : "Click to merge/unmerge selected cells";
 
   return (
-    <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center text-center">
+    <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center pt-[10vh] text-center">
       <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
         <CircleHelp
           className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
@@ -931,13 +901,6 @@ const AdCanvas = () => {
           onClick={handleOpenSelector}
           className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
         />
-        {/* Delete Button */}
-        <button
-          onClick={handleDeleteLayout}
-          className="h-8 w-16 rounded-lg bg-red-500 py-1.5 text-white hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
-        >
-          Delete Layout
-        </button>
       </div>
 
       {/* Tooltip components */}
