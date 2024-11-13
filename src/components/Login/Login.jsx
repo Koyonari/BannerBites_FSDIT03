@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import StyledAlert from "../StyledAlert";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -7,12 +8,27 @@ const Login = () => {
   const [error, setError] = useState("");
   const [role, setRole] = useState("Operator"); // Track selected role
   const navigate = useNavigate(); // Navigate to home when "X" is clicked
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (message, title = "Alert", type = "info") => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
     if (!username || !password) {
-      alert("Please enter both username and password");
+      showAlert("Please enter both username and password");
       return;
     }
 
@@ -30,7 +46,7 @@ const Login = () => {
         throw new Error("Invalid username or password");
       }
 
-      alert(`Logged in successfully as ${role} - ${username}`);
+      showAlert(`Logged in successfully as ${role} - ${username}`);
       navigate("/"); // Redirect to home page after showing alert
     } catch (err) {
       setError(err.message);
@@ -109,6 +125,13 @@ const Login = () => {
 
         {error && <p className="mt-4 text-red-500">{error}</p>}
       </div>
+      <StyledAlert
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
     </div>
   );
 };
