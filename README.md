@@ -12,7 +12,19 @@
 
 # BannerBites
 
+### Introduction
 BannerBites is a web application for managing advertisements dynamically with real-time updates. The project utilizes a React.js frontend, a Node.js backend, and AWS DynamoDB/S3 Bucket for data storage with WebSocket support.
+
+### Objective
+In recent years, the advertising industry has undergone significant
+ transformation driven by advancements in technology and shifts in
+ consumer behavior. The rise of smart TVs and streaming platforms
+ has changed how audiences consume content, leading to a surge in
+ over-the-top (OTT) media services. This has opened new avenues for
+ advertisers to reach audiences through interactive and targeted ads.
+
+ ### Features
+
 
 ## Project Structure
 

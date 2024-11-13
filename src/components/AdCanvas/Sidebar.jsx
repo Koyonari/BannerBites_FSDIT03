@@ -11,7 +11,7 @@ const Sidebar = ({ showHelp }) => {
           data-tooltip-id="sidebar-tooltip"
           data-tooltip-content="Drag & drop element to add to grid"
           key={`container-${index}`}
-          className="flex flex-1 justify-center border-none lg:mb-4 lg:flex-none last:lg:mb-0"
+          className="flex flex-1 justify-center rounded-lg border-none transition-colors hover:bg-orange-500 hover:text-white lg:mb-4 lg:flex-none last:lg:mb-0"
         >
           <AdComponent id={`sidebar-${ad.type}-${index}`} type={ad.type} />
         </div>

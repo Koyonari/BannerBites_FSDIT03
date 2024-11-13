@@ -9,7 +9,7 @@ const TVModel = {
       TableName: tableName,
     };
     const command = new DescribeTableCommand(params);
-    const data = await dynamoDbClient.send(command);
+    const data = await dynamoDb.send(command);
     const index = data.Table.GlobalSecondaryIndexes.find(
       (i) => i.IndexName === indexName
     );
