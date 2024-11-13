@@ -1,21 +1,21 @@
 import React, { useState } from "react";
-import {useNavigate } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [role, setRole] = useState('Operator'); // Track selected role
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [role, setRole] = useState("Operator"); // Track selected role
   const navigate = useNavigate(); // Navigate to home when "X" is clicked
+
   const handleLogin = async (e) => {
     e.preventDefault();
-  
+
     if (!username || !password) {
-      alert('Please enter both username and password');
+      alert("Please enter both username and password");
       return;
     }
-  
+
     try {
       const response = await fetch("http://localhost:5000/api/login", {
         method: "POST",
@@ -23,48 +23,51 @@ const Login = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ username, password, role }), // Include role in the request
-        credentials: "include"
+        credentials: "include",
       });
-  
+
       if (!response.ok) {
-        throw new Error('Invalid username or password');
+        throw new Error("Invalid username or password");
       }
-  
-      const data = await response.json();
-  
+
       alert(`Logged in successfully as ${role} - ${username}`);
-      navigate('/'); // Redirect to home page after showing alert
+      navigate("/"); // Redirect to home page after showing alert
     } catch (err) {
       setError(err.message);
     }
   };
-  
- 
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-20 border border-gray-300 rounded-lg relative bg-white shadow-lg">
-        
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-black">
+      <div className="relative w-full max-w-md rounded-lg border border-gray-300 bg-white p-20 shadow-lg dark:bg-black">
         {/* Close button */}
         <button
-          onClick={() => navigate('/')}
-          className="absolute top-4 right-4 p-1 border border-gray-300 text-gray-500 hover:text-black"
+          onClick={() => navigate("/")}
+          className="absolute right-4 top-4 p-1 text-gray-500 hover:text-black dark:hover:text-white"
         >
           ✖
         </button>
 
-        {/* Unified Role Selection Tab */}
-        <div className="flex justify-center mb-6">
-          <div className="flex border border-gray-300 rounded-md overflow-hidden">
+        {/* Selection Tab with transition */}
+        <div className="mb-6 flex w-full justify-center">
+          <div className="flex overflow-hidden rounded-md border border-gray-300">
             <button
-              onClick={() => setRole('Operator')}
-              className={`px-4 py-2 font-semibold ${role === 'Operator' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              onClick={() => setRole("Operator")}
+              className={`px-4 py-2 font-semibold transition-colors duration-300 ${
+                role === "Operator"
+                  ? "bg-orange-500 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
             >
               Operator
             </button>
             <button
-              onClick={() => setRole('Admin')}
-              className={`px-4 py-2 font-semibold ${role === 'Admin' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              onClick={() => setRole("Admin")}
+              className={`px-4 py-2 font-semibold transition-colors duration-300 ${
+                role === "Admin"
+                  ? "bg-orange-500 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
             >
               Admin
             </button>
@@ -81,7 +84,7 @@ const Login = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
+              className="w-full rounded-md border border-gray-300 px-4 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
           <div>
@@ -93,19 +96,18 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
+              className="w-full rounded-md border border-gray-300 px-4 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
           <button
             type="submit"
-            className="w-full py-2 bg-orange-500 text-white font-semibold rounded-md hover:bg-orange-600"
-            //onClick={() => navigate('/')}
+            className="w-full rounded-md bg-orange-500 py-2 font-semibold text-white hover:bg-orange-600"
           >
             Login
           </button>
         </form>
 
-        {error && <p className="text-red-500 mt-4">{error}</p>}
+        {error && <p className="mt-4 text-red-500">{error}</p>}
       </div>
     </div>
   );
