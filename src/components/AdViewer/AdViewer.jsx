@@ -1,3 +1,4 @@
+// src/components/AdViewer/AdViewer.jsx
 import React, { useEffect } from "react";
 import WebFont from "webfontloader";
 
@@ -69,6 +70,7 @@ const AdComponent = ({ type, content, styles = {} }) => {
       {type === "video" && (
         <div>
           <video
+            key={mediaUrl} // Add a unique key to the video element
             autoPlay
             loop
             muted
@@ -126,6 +128,7 @@ const AdViewer = ({ layout }) => {
           hidden,
           isMerged,
           selectedCells,
+          adStyles = {},
         } = item;
 
         // Skip rendering if the cell is hidden
@@ -196,7 +199,12 @@ const AdViewer = ({ layout }) => {
             }}
           >
             {adToDisplay && (
-              <AdComponent type={type} content={content} styles={styles} />
+              <AdComponent
+                key={adToDisplay.id} // Add a unique key to the AdComponent
+                type={type}
+                content={content}
+                styles={styles}
+              />
             )}
           </div>
         );
