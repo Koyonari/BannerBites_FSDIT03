@@ -782,7 +782,6 @@ const AdCanvas = () => {
   return (
     <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center text-center">
       <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
-        {" "}
         <CircleHelp
           className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
             showHelp ? "text-orange-500" : "text-gray-600"
