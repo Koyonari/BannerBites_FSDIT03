@@ -7,6 +7,9 @@ const dotenv = require("dotenv");
 const layoutRoutes = require("./routes/layoutRoutes");
 const locationRoutes = require("./routes/locationRoutes");
 const tvRoutes = require("./routes/tvRoutes");
+const authRoutes = require("./routes/authRoutes");
+
+
 const { layoutUpdatesCache, addClient, removeClient, broadcastToClients } = require("./state");
 const { generatePresignedUrlController, fetchLayoutById } = require("./controllers/layoutController");
 const { listenToDynamoDbStreams } = require("./middleware/awsMiddleware");
@@ -24,6 +27,7 @@ app.use(cors({
   origin: "http://localhost:3000",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 }));
 app.use(express.json({ limit: "10mb" }));
 
@@ -31,6 +35,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use("/api/layouts", layoutRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/tvs", tvRoutes);
+app.use("/api", authRoutes);
 app.post("/generate-presigned-url", generatePresignedUrlController);
 
 // WebSocket Server Handling

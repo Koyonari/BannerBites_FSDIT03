@@ -6,24 +6,18 @@ import TVSelector from "../TVSelector";
 import AssignLayoutToTV from "../AssignLayoutToTV";
 import { MoveLeft } from "lucide-react";
 
-const sortOptions = [
-  { value: "alpha", label: "Sort by Alphabetical" },
-  { value: "date", label: "Sort by Date" },
-];
+const sortOptions = [{ value: "alpha", label: "Sort by Alphabetical" }];
 
 const Card = ({ title, date, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="card relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-orange-500 bg-gray-400 text-center text-black transition-all duration-300 ease-in-out hover:-translate-y-2 hover:bg-orange-600 hover:shadow-xl dark:bg-black dark:text-white sm:h-full lg:h-[35vh] lg:w-[28vw] xl:border-4"
+      className="card relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-orange-500 bg-gray-300 text-center text-black transition-all duration-300 ease-in-out hover:-translate-y-2 hover:bg-orange-600 hover:text-white hover:shadow-xl dark:bg-black dark:text-white sm:h-full lg:h-[35vh] lg:w-[28vw] xl:border-4"
     >
       <div>
         <h1 className="text-md px-6 py-4 font-bold sm:text-xl md:px-2 lg:text-2xl 2xl:text-4xl">
           {title}
         </h1>
-        <p className="text-md sm:text-md px-6 py-4 text-sm md:px-2 lg:text-xl 2xl:text-2xl">
-          Date Created: {date}
-        </p>
       </div>
     </div>
   );
