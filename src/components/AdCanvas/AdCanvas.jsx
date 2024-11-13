@@ -495,7 +495,16 @@ const AdCanvas = () => {
       styles: item.styles || {},
     };
 
-    setCurrentScheduleAd({ item: normalizedItem, index });
+    // Extract existing scheduledTimes for the target grid cell
+    const existingScheduledTimes = gridItems[index].scheduledAds.map(
+      (ad) => ad.scheduledTime,
+    );
+
+    setCurrentScheduleAd({
+      item: normalizedItem,
+      index,
+      existingScheduledTimes,
+    });
     setIsScheduling(true);
   };
 
@@ -505,15 +514,15 @@ const AdCanvas = () => {
       showAlert("Failed to schedule the ad. Missing content information.");
       return;
     }
-  
+
     const updatedGrid = [...gridItems];
     const gridItemId = `${selectedLayout.layoutId}#${index}`;
-  
+
     // Check if a ScheduledAd with the same scheduledTime already exists
     const existingAdIndex = updatedGrid[index].scheduledAds.findIndex(
-      (ad) => ad.scheduledTime === scheduledTime
+      (ad) => ad.scheduledTime === scheduledTime,
     );
-  
+
     if (existingAdIndex !== -1) {
       // Update the existing ScheduledAd
       updatedGrid[index].scheduledAds[existingAdIndex] = {
@@ -537,7 +546,7 @@ const AdCanvas = () => {
       };
       updatedGrid[index].scheduledAds.push(scheduledAd);
     }
-  
+
     setGridItems(updatedGrid);
     setIsScheduling(false);
     setCurrentScheduleAd(null);
@@ -549,26 +558,26 @@ const AdCanvas = () => {
       ...item,
       scheduledAds: item.scheduledAds ? [...item.scheduledAds] : [],
     }));
-  
+
     const cell = updatedGrid[index];
-  
+
     if (cell.scheduledAds && cell.scheduledAds.length > 0) {
       updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
         (ad) =>
           !(
             ad.gridItemId === scheduledAd.gridItemId &&
             ad.scheduledTime === scheduledAd.scheduledTime
-          )
+          ),
       );
     }
-  
+
     // If no scheduledAds remain and the cell is merged, unmerge it
     if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
       const cellsToUnmerge =
         cell.selectedCells && cell.selectedCells.length > 0
           ? cell.selectedCells
           : [index];
-  
+
       cellsToUnmerge.forEach((idx) => {
         updatedGrid[idx] = {
           scheduledAds: [],
@@ -579,10 +588,10 @@ const AdCanvas = () => {
         };
       });
     }
-  
+
     setGridItems(updatedGrid);
   };
-  
+
   // Function to save editing or saving
   const handleLayoutNameSave = async (name) => {
     try {
@@ -618,7 +627,7 @@ const AdCanvas = () => {
     const { rows, columns, gridItems, layoutId } = layout;
     const totalCells = rows * columns;
     const cleanedGridItems = [];
-  
+
     for (let index = 0; index < totalCells; index++) {
       const item = gridItems[index] || {
         index,
@@ -632,7 +641,7 @@ const AdCanvas = () => {
         mergeDirection: null,
         selectedCells: [],
       };
-  
+
       const cleanedItem = {
         index,
         row: item.row,
@@ -660,10 +669,10 @@ const AdCanvas = () => {
         selectedCells: item.selectedCells,
         hidden: item.hidden,
       };
-  
+
       cleanedGridItems.push(cleanedItem);
     }
-  
+
     return {
       layoutId: layout.layoutId,
       name: layout.name,
@@ -720,6 +729,24 @@ const AdCanvas = () => {
       }
 
       const cellToUpdate = { ...updatedGrid[mainIndex] };
+
+      // Check for duplicate scheduledTime, excluding the current ad being edited
+      const duplicateAdIndex = cellToUpdate.scheduledAds.findIndex(
+        (ad) =>
+          ad.scheduledTime === updatedScheduledTime &&
+          ad.id !== currentAd.scheduledAd.id,
+      );
+
+      if (duplicateAdIndex !== -1) {
+        showAlert(
+          `Another scheduled ad at "${updatedScheduledTime}" already exists in this grid cell.`,
+          "Duplicate Scheduled Time",
+          "warning",
+        );
+        return prevGridItems;
+      }
+
+      // Update the scheduledAd
       const scheduledAds = cellToUpdate.scheduledAds.map((ad) =>
         ad.id === currentAd.scheduledAd.id
           ? {
@@ -786,7 +813,6 @@ const AdCanvas = () => {
       ? "Click to merge/unmerge selected cells"
       : "Click to merge/unmerge selected cells";
 
-  
   return (
     <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center pt-[10vh] text-center">
       {/* Example Title */}
@@ -986,12 +1012,16 @@ const AdCanvas = () => {
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
           ad={currentScheduleAd.item}
+          existingScheduledTimes={currentScheduleAd.existingScheduledTimes}
           onSave={(scheduledDateTime) =>
             handleScheduleSave(
               currentScheduleAd.item,
               scheduledDateTime,
               currentScheduleAd.index,
             )
+          }
+          onError={(message) =>
+            showAlert(message, "Duplicate Scheduled Time", "warning")
           }
           onClose={() => {
             setIsScheduling(false);
@@ -1001,9 +1031,7 @@ const AdCanvas = () => {
       )}
       <StyledAlert
         isOpen={alertConfig.isOpen}
-        onClose={() =>
-          setAlertConfig((prev) => ({ ...prev, isOpen: false }))
-        }
+        onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
         title={alertConfig.title}
         message={alertConfig.message}
         type={alertConfig.type}

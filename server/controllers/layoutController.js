@@ -176,35 +176,21 @@ const updateLayout = async (req, res) => {
       return res.status(400).json({ message: "Invalid layout data." });
     }
 
-    // Step 1: Fetch existing scheduled ads
-    const existingGridItems = await GridItemModel.getGridItemsByLayoutId(layoutId);
-    const existingScheduledAds = existingGridItems.flatMap(item =>
-      item.scheduledAds.map(ad => ({
-        ...ad,
-        gridItemId: `${layoutId}#${item.index}`,
-        scheduledTime: ad.scheduledTime,
-      }))
-    );
-
-    // Step 2: Prepare updated scheduled ads from the request with gridItemId assigned
-    const updatedScheduledAds = updatedLayout.gridItems.flatMap(item =>
-      item.scheduledAds.map(ad => ({
-        ...ad,
-        gridItemId: `${layoutId}#${item.index}`, // Assign gridItemId based on layoutId and gridItem index
-        scheduledTime: ad.scheduledTime, // Ensure scheduledTime is present
-      }))
-    );
-
-    // Step 3: Identify scheduled ads to delete
-    const adsToDelete = existingScheduledAds.filter(existingAd => {
-      return !updatedScheduledAds.some(updatedAd => 
-        updatedAd.gridItemId === existingAd.gridItemId &&
-        updatedAd.scheduledTime === existingAd.scheduledTime
-      );
+    // Step 1: Clean and validate scheduledAds for uniqueness per grid cell
+    const cleanedGridItems = updatedLayout.gridItems.map((item) => {
+      const scheduledTimes = new Set();
+      item.scheduledAds.forEach((ad) => {
+        if (scheduledTimes.has(ad.scheduledTime)) {
+          throw new Error(
+            `Duplicate scheduledTime "${ad.scheduledTime}" found in grid cell index ${item.index}.`
+          );
+        }
+        scheduledTimes.add(ad.scheduledTime);
+      });
+      return item;
     });
 
-    // Step 4: Identify scheduled ads to add or update
-    const adsToAddOrUpdate = updatedScheduledAds;
+    // Proceed with transaction logic only if validation passes
 
     const allTransactItems = [];
     const uniqueAds = new Set(); // Track unique adIds
@@ -230,7 +216,7 @@ const updateLayout = async (req, res) => {
     });
 
     // Update grid items and handle scheduled ads
-    for (const item of updatedLayout.gridItems) {
+    for (const item of cleanedGridItems) {
       // Only process non-hidden grid items
       if (item.hidden === true) continue;
 
@@ -265,19 +251,6 @@ const updateLayout = async (req, res) => {
         if (!scheduledAd.gridItemId || !scheduledAd.scheduledTime) {
           console.error("ScheduledAd is missing gridItemId or scheduledTime:", scheduledAd);
           return res.status(400).json({ message: "ScheduledAd is missing gridItemId or scheduledTime." });
-        }
-
-        // Avoid duplicate Put operations for the same (gridItemId, scheduledTime)
-        const scheduledAdKey = `${scheduledAd.gridItemId}#${scheduledAd.scheduledTime}`;
-        if (allTransactItems.some(item => {
-          if (item.Put && item.Put.TableName === process.env.DYNAMODB_TABLE_SCHEDULEDADS) {
-            const existingItem = item.Put.Item;
-            return `${existingItem.gridItemId}#${existingItem.scheduledTime}` === scheduledAdKey;
-          }
-          return false;
-        })) {
-          console.warn(`Duplicate ScheduledAd detected for ${scheduledAdKey}. Skipping.`);
-          continue; // Skip duplicate
         }
 
         // Add or update scheduled ad
@@ -380,7 +353,7 @@ const updateLayout = async (req, res) => {
 
   } catch (error) {
     console.error("Error updating layout and related items:", error);
-    return res.status(500).json({ message: "Internal server error." });
+    return res.status(400).json({ message: error.message });
   }
 };
 
