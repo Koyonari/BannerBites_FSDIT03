@@ -79,11 +79,13 @@ const ScheduledAdModel = {
       },
     };
     const command = new DeleteCommand(params);
+    console.log(`Attempting to delete scheduled ad with params: ${JSON.stringify(params)}`);
     try {
-      await dynamoDb.send(command);
+      const response = await dynamoDb.send(command);
       console.log(
         `Scheduled ad with gridItemId ${gridItemId} and scheduledTime ${scheduledTime} deleted successfully.`,
       );
+      console.log('Deletion response:', response);
     } catch (error) {
       console.error(
         `Error deleting scheduled ad with gridItemId ${gridItemId} and scheduledTime ${scheduledTime}:`,
@@ -92,7 +94,7 @@ const ScheduledAdModel = {
       throw error;
     }
   },
-
+  
   deleteScheduledAdsByLayoutId: async (layoutId) => {
     const scheduledAds =
       await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);
