@@ -17,69 +17,32 @@ const AdComponent = ({ type, content, styles }) => {
   }
 
   return (
-    <div
-      className="ad-item"
-      style={{
-        ...styles,
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <div className="ad-item" style={styles}>
       {type === "text" && (
-        <div style={{ textAlign: "center" }}>
+        <div>
           <h3>{content.title}</h3>
           <p>{content.description}</p>
         </div>
       )}
       {type === "image" && (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+        <div>
           <img
             src={mediaUrl}
             alt={content.title}
-            style={{
-              objectFit: "contain",
-              maxWidth: "100%",
-              maxHeight: "100%",
-            }}
+            style={{ maxWidth: "100%" }}
           />
+          <h3>{content.title}</h3>
+          <p>{content.description}</p>
         </div>
       )}
       {type === "video" && (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              objectFit: "contain",
-            }}
-          >
+        <div>
+          <video autoPlay loop muted playsInline className="w-full">
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
+          <h3>{content.title}</h3>
+          <p>{content.description}</p>
         </div>
       )}
     </div>
@@ -107,42 +70,24 @@ const AdViewer = ({ layout }) => {
       }}
     >
       {gridItems.map((item, index) => {
-        // Ensure that each cell occupies its space
-        const { scheduledAds, rowSpan, colSpan, isMerged, hidden } = item;
+        if (!item) return null;
 
-        // Empty cells or hidden cells should still occupy space
-        if (!scheduledAds || scheduledAds.length === 0) {
-          return (
-            <div
-              key={index}
-              className="grid-cell"
-              style={{
-                gridRow: `span ${rowSpan || 1}`,
-                gridColumn: `span ${colSpan || 1}`,
-                border: "1px dashed #ccc",
-              }}
-            />
-          );
-        }
+        const {
+          rowSpan,
+          colSpan,
+          scheduledAds,
+          hidden,
+          isMerged,
+          selectedCells,
+        } = item;
 
+        // Skip rendering if the cell is hidden
         if (hidden) {
-          return (
-            <div
-              key={index}
-              className="grid-cell"
-              style={{
-                gridRow: `span ${rowSpan || 1}`,
-                gridColumn: `span ${colSpan || 1}`,
-                border: "1px dashed #ccc",
-                visibility: "hidden",
-              }}
-            />
-          );
+          return null;
         }
 
-        // Determine which ad to display
+        // Determine if there's an ad to display in this cell
         let adToDisplay = null;
-
         if (scheduledAds && scheduledAds.length > 0) {
           const currentTimeString = `${new Date()
             .getHours()
@@ -171,24 +116,23 @@ const AdViewer = ({ layout }) => {
           }
         }
 
-        if (!adToDisplay) {
+        // If no ad is available and the cell is not merged, render an empty cell
+        if (!adToDisplay && !isMerged) {
           return (
             <div
               key={index}
-              className="grid-cell"
               style={{
                 gridRow: `span ${rowSpan || 1}`,
                 gridColumn: `span ${colSpan || 1}`,
-                border: "1px dashed #ccc",
               }}
             />
           );
         }
 
-        const ad = adToDisplay.ad;
-        const { type, content, styles } = ad;
+        // Determine the correct ad to display
+        const ad = adToDisplay ? adToDisplay.ad : null;
+        const { type, content, styles } = ad || {};
 
-        // Ensure the content of merged cells is centered
         return (
           <div
             key={index}
@@ -196,14 +140,16 @@ const AdViewer = ({ layout }) => {
             style={{
               gridRow: `span ${rowSpan || 1}`,
               gridColumn: `span ${colSpan || 1}`,
-              display: "flex",
-              justifyContent: "center",
+              border: adToDisplay ? "1px solid #ddd" : "none",
+              display: hidden ? "none" : "flex",
               alignItems: "center",
+              justifyContent: "center",
               overflow: "hidden",
-              border: "1px solid #ddd", // Adding border for better visibility of the cells
             }}
           >
-            <AdComponent type={type} content={content} styles={styles} />
+            {adToDisplay && (
+              <AdComponent type={type} content={content} styles={styles} />
+            )}
           </div>
         );
       })}
