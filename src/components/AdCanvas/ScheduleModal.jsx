@@ -1,40 +1,11 @@
-// ScheduleModal.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { X, Calendar } from "lucide-react";
 
-const ScheduleModal = ({ ad, onSave, onClose, existingScheduledTimes = [] }) => {
-  const [scheduledTime, setScheduledTime] = useState("");
-  const [error, setError] = useState("");
-
-  // Reset error when modal opens or scheduledTime changes
-  useEffect(() => {
-    setError("");
-  }, [scheduledTime]);
+const ScheduleModal = ({ ad, onSave, onClose }) => {
+  const [scheduledTime, setScheduledTime] = useState("00:00");
 
   const handleSave = () => {
-    if (!scheduledTime) {
-      setError("Please select a time.");
-      return;
-    }
-
-    if (existingScheduledTimes.includes(scheduledTime)) {
-      setError(`The time "${scheduledTime}" is already scheduled.`);
-      return;
-    }
-
-    // If no errors, proceed to save
     onSave(scheduledTime);
-  };
-
-  const handleTimeChange = (e) => {
-    const selectedTime = e.target.value;
-    setScheduledTime(selectedTime);
-
-    if (existingScheduledTimes.includes(selectedTime)) {
-      setError(`The time "${selectedTime}" is already scheduled.`);
-    } else {
-      setError("");
-    }
   };
 
   return (
@@ -58,7 +29,6 @@ const ScheduleModal = ({ ad, onSave, onClose, existingScheduledTimes = [] }) => 
           <button
             onClick={onClose}
             className="rounded-full p-1 hover:bg-gray-100"
-            aria-label="Close modal"
           >
             <X className="h-5 w-5 text-gray-500 dark:text-white hover:dark:text-black" />
           </button>
@@ -73,20 +43,10 @@ const ScheduleModal = ({ ad, onSave, onClose, existingScheduledTimes = [] }) => 
             <input
               type="time"
               value={scheduledTime}
-              onChange={handleTimeChange}
-              className={`block w-full rounded-md border-2 p-2 focus:border-orange-500 focus:outline-none focus:ring-2 ${
-                error
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-200"
-                  : ""
-              }`}
-              required
+              onChange={(e) => setScheduledTime(e.target.value)}
+              className="block w-full rounded-md border-2 p-2 focus:border-orange-500 focus:outline-none focus:ring-2"
             />
           </label>
-          {error && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-              {error}
-            </p>
-          )}
         </div>
 
         {/* Footer */}
@@ -99,12 +59,7 @@ const ScheduleModal = ({ ad, onSave, onClose, existingScheduledTimes = [] }) => 
           </button>
           <button
             onClick={handleSave}
-            disabled={!scheduledTime || error}
-            className={`rounded-md px-4 py-2 text-sm font-medium text-white ${
-              !scheduledTime || error
-                ? "bg-orange-300 cursor-not-allowed"
-                : "bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            }`}
+            className="rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           >
             <b>Schedule</b>
           </button>

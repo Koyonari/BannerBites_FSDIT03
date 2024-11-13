@@ -6,7 +6,6 @@ const ScheduledAdModel = require("../models/ScheduledAdModel");
 const AdModel = require("../models/AdModel");
 const { generatePresignedUrl } = require("../services/s3Service");
 const { dynamoDb } = require("../middleware/awsClients");
-const MAX_TRANSACTION_OPERATIONS = 25;
 
 const generatePresignedUrlController = async (req, res) => {
   const { fileName, contentType } = req.body;
@@ -162,120 +161,88 @@ const saveLayout = async (req, res) => {
   }
 };
 
-// Layout update with transactions
+// 
 const updateLayout = async (req, res) => {
   console.log("Request to /api/layouts/:layoutId:", JSON.stringify(req.body, null, 2));
 
   try {
     const { layoutId } = req.params;
-    const updatedLayout = req.body;
+    const layout = req.body;
 
-    // Validate layout data
-    if (!updatedLayout || !updatedLayout.layoutId || updatedLayout.layoutId !== layoutId) {
-      console.error("Invalid layout data received:", updatedLayout);
+    if (!layout || !layout.layoutId || layout.layoutId !== layoutId) {
+      console.error("Invalid layout data received:", layout);
       return res.status(400).json({ message: "Invalid layout data." });
     }
 
-    // Step 1: Clean and validate scheduledAds for uniqueness per grid cell
-    const cleanedGridItems = updatedLayout.gridItems.map((item) => {
-      const scheduledTimes = new Set();
-      item.scheduledAds.forEach((ad) => {
-        if (scheduledTimes.has(ad.scheduledTime)) {
-          throw new Error(
-            `Duplicate scheduledTime "${ad.scheduledTime}" found in grid cell index ${item.index}.`
-          );
-        }
-        scheduledTimes.add(ad.scheduledTime);
-      });
-      return item;
-    });
+    const transactItems = [];
 
-    // Proceed with transaction logic only if validation passes
-
-    const allTransactItems = [];
-    const uniqueAds = new Set(); // Track unique adIds
-
-    // Update layout attributes
-    allTransactItems.push({
+    // Update layout
+    transactItems.push({
       Update: {
         TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
         Key: { layoutId },
-        UpdateExpression: "set #name = :name, updatedAt = :updatedAt, #rows = :rows, #columns = :columns",
+        UpdateExpression: "set #name = :name, updatedAt = :updatedAt",
         ExpressionAttributeNames: {
           "#name": "name",
-          "#rows": "rows",
-          "#columns": "columns",
         },
         ExpressionAttributeValues: {
-          ":name": updatedLayout.name,
+          ":name": layout.name,
           ":updatedAt": new Date().toISOString(),
-          ":rows": updatedLayout.rows,
-          ":columns": updatedLayout.columns,
         },
       },
     });
 
-    // Update grid items and handle scheduled ads
-    for (const item of cleanedGridItems) {
-      // Only process non-hidden grid items
-      if (item.hidden === true) continue;
+    // Track unique ads to prevent duplicate saves
+    const uniqueAds = new Set();
 
+    // Update grid items and scheduled ads
+    for (const item of layout.gridItems) {
       // Update grid item
-      allTransactItems.push({
+      transactItems.push({
         Update: {
           TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
           Key: { layoutId, index: item.index },
-          UpdateExpression: "set #colSpan = :colSpan, #rowSpan = :rowSpan, #isMerged = :isMerged, #hidden = :hidden, #mergeDirection = :mergeDirection, #selectedCells = :selectedCells",
+          UpdateExpression: "set #colSpan = :colSpan, #rowSpan = :rowSpan, #isMerged = :isMerged, #hidden = :hidden",
           ExpressionAttributeNames: {
             "#colSpan": "colSpan",
             "#rowSpan": "rowSpan",
             "#isMerged": "isMerged",
             "#hidden": "hidden",
-            "#mergeDirection": "mergeDirection",
-            "#selectedCells": "selectedCells",
           },
           ExpressionAttributeValues: {
             ":colSpan": item.colSpan,
             ":rowSpan": item.rowSpan,
             ":isMerged": item.isMerged,
             ":hidden": item.hidden,
-            ":mergeDirection": item.mergeDirection,
-            ":selectedCells": item.selectedCells,
           },
         },
       });
 
-      // Handle scheduled ads within grid items
+      // Update scheduled ads
       for (const scheduledAd of item.scheduledAds) {
-        // Validation: Ensure gridItemId and scheduledTime are present
-        if (!scheduledAd.gridItemId || !scheduledAd.scheduledTime) {
-          console.error("ScheduledAd is missing gridItemId or scheduledTime:", scheduledAd);
-          return res.status(400).json({ message: "ScheduledAd is missing gridItemId or scheduledTime." });
+        if (!scheduledAd.ad || !scheduledAd.ad.adId) {
+          console.error(`Missing adId for scheduled ad at grid item index ${item.index}`);
+          continue;
         }
 
-        // Add or update scheduled ad
-        allTransactItems.push({
-          Put: {
+        // Update scheduled ad
+        transactItems.push({
+          Update: {
             TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
-            Item: {
-              gridItemId: scheduledAd.gridItemId, // Composite Partition Key
-              scheduledTime: scheduledAd.scheduledTime, // Composite Sort Key
-              id: scheduledAd.id, // Unique Identifier (attribute)
-              ad: {
-                adId: scheduledAd.ad.adId,
-                type: scheduledAd.ad.type,
-                content: scheduledAd.ad.content,
-                styles: scheduledAd.ad.styles,
-              },
-              layoutId: layoutId,
-              index: item.index, // Reference to gridItem index
+            Key: { gridItemId: `${layoutId}#${item.index}`, scheduledTime: scheduledAd.scheduledTime },
+            UpdateExpression: "set #ad = :ad",
+            ExpressionAttributeNames: {
+              "#ad": "ad",
+            },
+            ExpressionAttributeValues: {
+              ":ad": scheduledAd.ad,
             },
           },
         });
 
-        // Add or update the Ad in Ads table only if it's not already processed
+        // Save ad if not already saved
         if (!uniqueAds.has(scheduledAd.ad.adId)) {
-          allTransactItems.push({
+          transactItems.push({
             Put: {
               TableName: process.env.DYNAMODB_TABLE_ADS,
               Item: {
@@ -289,71 +256,18 @@ const updateLayout = async (req, res) => {
       }
     }
 
-    // Handle deletions
-    for (const adToDelete of adsToDelete) {
-      // Validation: Ensure gridItemId and scheduledTime are present
-      if (!adToDelete.gridItemId || !adToDelete.scheduledTime) {
-        console.error("Ad to delete is missing gridItemId or scheduledTime:", adToDelete);
-        return res.status(400).json({ message: "Ad to delete is missing gridItemId or scheduledTime." });
-      }
+    // Execute the transaction
+    const transactionCommand = new TransactWriteCommand({
+      TransactItems: transactItems,
+    });
 
-      allTransactItems.push({
-        Delete: {
-          TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
-          Key: {
-            gridItemId: adToDelete.gridItemId,
-            scheduledTime: adToDelete.scheduledTime,
-          },
-        },
-      });
-    }
+    await dynamoDb.send(transactionCommand);
 
-    // **Debugging Step**: Log allTransactItems to identify duplicates or missing keys
-    console.log("All Transaction Items: ", JSON.stringify(allTransactItems, null, 2));
-
-    // Step 5: Batch the transaction items into multiple TransactWriteCommands
-    const batchedTransactItems = [];
-    let currentBatch = [];
-
-    for (const transactItem of allTransactItems) {
-      if (currentBatch.length >= MAX_TRANSACTION_OPERATIONS) {
-        batchedTransactItems.push([...currentBatch]);
-        currentBatch = [];
-      }
-      currentBatch.push(transactItem);
-    }
-
-    if (currentBatch.length > 0) {
-      batchedTransactItems.push([...currentBatch]);
-    }
-
-    // **Debugging Step**: Log the number of batches
-    console.log(`Total Batches: ${batchedTransactItems.length}`);
-
-    // Step 6: Execute each batch sequentially
-    for (let i = 0; i < batchedTransactItems.length; i++) {
-      const batch = batchedTransactItems[i];
-      console.log(`Executing Batch ${i + 1} with ${batch.length} operations.`);
-
-      const transactionCommand = new TransactWriteCommand({
-        TransactItems: batch,
-      });
-
-      try {
-        await dynamoDb.send(transactionCommand);
-        console.log(`Batch ${i + 1} executed successfully.`);
-      } catch (error) {
-        console.error(`Error executing Batch ${i + 1}:`, error);
-        return res.status(500).json({ message: `Failed to execute batch ${i + 1}.` });
-      }
-    }
-
-    console.log(`All batches executed successfully for layout ${layoutId}.`);
+    console.log(`Layout ${layout.layoutId} and related items updated successfully.`);
     return res.status(200).json({ message: "Layout and related items updated successfully." });
-
   } catch (error) {
     console.error("Error updating layout and related items:", error);
-    return res.status(400).json({ message: error.message });
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 

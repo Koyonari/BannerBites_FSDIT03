@@ -12,8 +12,6 @@ import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
 import LayoutSelector from "../AdViewer/LayoutSelector";
-import WebFont from "webfontloader";
-
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const AdCanvas = () => {
@@ -41,10 +39,6 @@ const AdCanvas = () => {
   const [isScheduling, setIsScheduling] = useState(false);
   const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
   const [isNamingLayout, setIsNamingLayout] = useState(false);
-  const [fontStyles, setFontStyles] = useState({
-    titleFontFamily: "Montserrat",
-    descriptionFontFamily: "Roboto",
-  });
   const [alertConfig, setAlertConfig] = useState({
     isOpen: false,
     title: "",
@@ -61,18 +55,6 @@ const AdCanvas = () => {
   };
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Load Google Fonts based on fontStyles
-    WebFont.load({
-      google: {
-        families: [
-          fontStyles.titleFontFamily,
-          fontStyles.descriptionFontFamily,
-        ],
-      },
-    });
-  }, [fontStyles.titleFontFamily, fontStyles.descriptionFontFamily]);
 
   useEffect(() => {
     if (selectedLayout) {
@@ -495,58 +477,32 @@ const AdCanvas = () => {
       styles: item.styles || {},
     };
 
-    // Extract existing scheduledTimes for the target grid cell
-    const existingScheduledTimes = gridItems[index].scheduledAds.map(
-      (ad) => ad.scheduledTime,
-    );
-
-    setCurrentScheduleAd({
-      item: normalizedItem,
-      index,
-      existingScheduledTimes,
-    });
+    setCurrentScheduleAd({ item: normalizedItem, index });
     setIsScheduling(true);
   };
 
   const handleScheduleSave = (adItem, scheduledTime, index) => {
+    // Validate that adItem has a content property
     if (!adItem.content) {
       console.error("AdItem is missing the 'content' property:", adItem);
       showAlert("Failed to schedule the ad. Missing content information.");
       return;
     }
-
     const updatedGrid = [...gridItems];
-    const gridItemId = `${selectedLayout.layoutId}#${index}`;
 
-    // Check if a ScheduledAd with the same scheduledTime already exists
-    const existingAdIndex = updatedGrid[index].scheduledAds.findIndex(
-      (ad) => ad.scheduledTime === scheduledTime,
-    );
+    // Check if the adItem is from the sidebar (i.e., has a placeholder ID)
+    const isNewAd = adItem.id && adItem.id.startsWith("sidebar-");
 
-    if (existingAdIndex !== -1) {
-      // Update the existing ScheduledAd
-      updatedGrid[index].scheduledAds[existingAdIndex] = {
-        ...updatedGrid[index].scheduledAds[existingAdIndex],
-        ad: {
-          ...adItem,
-          adId: adItem.adId || uuidv4(),
-        },
-        scheduledTime,
-      };
-    } else {
-      // Add a new ScheduledAd with a unique id
-      const scheduledAd = {
-        id: uuidv4(), // Assign a unique ID
-        gridItemId: gridItemId,
-        scheduledTime,
-        ad: {
-          ...adItem,
-          adId: adItem.adId || uuidv4(),
-        },
-      };
-      updatedGrid[index].scheduledAds.push(scheduledAd);
-    }
-
+    // Assign a new UUID if it's a new ad from the sidebar
+    const scheduledAd = {
+      id: uuidv4(),
+      ad: {
+        ...adItem,
+        adId: isNewAd ? uuidv4() : adItem.adId || uuidv4(), // Ensure `adId` is assigned for new ads
+      },
+      scheduledTime,
+    };
+    updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
     setIsScheduling(false);
     setCurrentScheduleAd(null);
@@ -554,24 +510,22 @@ const AdCanvas = () => {
 
   // Handles removing ads from a grid cell
   const handleRemove = (index, scheduledAd) => {
+    // Create a deep copy of the gridItems state to prevent accidental state mutation
     const updatedGrid = gridItems.map((item) => ({
       ...item,
-      scheduledAds: item.scheduledAds ? [...item.scheduledAds] : [],
+      scheduledAds: item.scheduledAds ? [...item.scheduledAds] : [], // Ensure each scheduledAds is properly cloned
     }));
 
     const cell = updatedGrid[index];
 
+    // Check if the scheduledAd has a unique identifier to remove the specific one
     if (cell.scheduledAds && cell.scheduledAds.length > 0) {
       updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
-        (ad) =>
-          !(
-            ad.gridItemId === scheduledAd.gridItemId &&
-            ad.scheduledTime === scheduledAd.scheduledTime
-          ),
+        (ad) => ad.id !== scheduledAd.id,
       );
     }
 
-    // If no scheduledAds remain and the cell is merged, unmerge it
+    // Ensure that the removal logic properly considers the updated state of scheduledAds
     if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
       const cellsToUnmerge =
         cell.selectedCells && cell.selectedCells.length > 0
@@ -589,6 +543,7 @@ const AdCanvas = () => {
       });
     }
 
+    // Update the state with the new grid configuration
     setGridItems(updatedGrid);
   };
 
@@ -624,7 +579,7 @@ const AdCanvas = () => {
   };
 
   const cleanLayoutJSON = (layout) => {
-    const { rows, columns, gridItems, layoutId } = layout;
+    const { rows, columns, gridItems } = layout;
     const totalCells = rows * columns;
     const cleanedGridItems = [];
 
@@ -658,7 +613,6 @@ const AdCanvas = () => {
           return {
             id: scheduledAd.id,
             scheduledTime: scheduledAd.scheduledTime,
-            gridItemId: `${layoutId}#${index}`, // Assign gridItemId here
             ad: adData,
           };
         }),
@@ -729,24 +683,6 @@ const AdCanvas = () => {
       }
 
       const cellToUpdate = { ...updatedGrid[mainIndex] };
-
-      // Check for duplicate scheduledTime, excluding the current ad being edited
-      const duplicateAdIndex = cellToUpdate.scheduledAds.findIndex(
-        (ad) =>
-          ad.scheduledTime === updatedScheduledTime &&
-          ad.id !== currentAd.scheduledAd.id,
-      );
-
-      if (duplicateAdIndex !== -1) {
-        showAlert(
-          `Another scheduled ad at "${updatedScheduledTime}" already exists in this grid cell.`,
-          "Duplicate Scheduled Time",
-          "warning",
-        );
-        return prevGridItems;
-      }
-
-      // Update the scheduledAd
       const scheduledAds = cellToUpdate.scheduledAds.map((ad) =>
         ad.id === currentAd.scheduledAd.id
           ? {
@@ -815,23 +751,6 @@ const AdCanvas = () => {
 
   return (
     <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center pt-[10vh] text-center">
-      {/* Example Title */}
-      <h2
-        className="layout-title mb-4"
-        style={{ fontFamily: fontStyles.titleFontFamily }}
-      >
-        Ad Canvas Layout
-      </h2>
-
-      {/* Example Description */}
-      <p
-        className="layout-description mb-6"
-        style={{ fontFamily: fontStyles.descriptionFontFamily }}
-      >
-        Customize your ad layout by selecting and arranging grid cells.
-      </p>
-
-      {/* Rest of your AdCanvas component */}
       <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
         <CircleHelp
           className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
@@ -1012,16 +931,12 @@ const AdCanvas = () => {
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
           ad={currentScheduleAd.item}
-          existingScheduledTimes={currentScheduleAd.existingScheduledTimes}
           onSave={(scheduledDateTime) =>
             handleScheduleSave(
               currentScheduleAd.item,
               scheduledDateTime,
               currentScheduleAd.index,
             )
-          }
-          onError={(message) =>
-            showAlert(message, "Duplicate Scheduled Time", "warning")
           }
           onClose={() => {
             setIsScheduling(false);
