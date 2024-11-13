@@ -615,10 +615,10 @@ const AdCanvas = () => {
   };
 
   const cleanLayoutJSON = (layout) => {
-    const { rows, columns, gridItems } = layout;
+    const { rows, columns, gridItems, layoutId } = layout;
     const totalCells = rows * columns;
     const cleanedGridItems = [];
-
+  
     for (let index = 0; index < totalCells; index++) {
       const item = gridItems[index] || {
         index,
@@ -632,7 +632,7 @@ const AdCanvas = () => {
         mergeDirection: null,
         selectedCells: [],
       };
-
+  
       const cleanedItem = {
         index,
         row: item.row,
@@ -649,6 +649,7 @@ const AdCanvas = () => {
           return {
             id: scheduledAd.id,
             scheduledTime: scheduledAd.scheduledTime,
+            gridItemId: `${layoutId}#${index}`, // Assign gridItemId here
             ad: adData,
           };
         }),
@@ -659,10 +660,10 @@ const AdCanvas = () => {
         selectedCells: item.selectedCells,
         hidden: item.hidden,
       };
-
+  
       cleanedGridItems.push(cleanedItem);
     }
-
+  
     return {
       layoutId: layout.layoutId,
       name: layout.name,
