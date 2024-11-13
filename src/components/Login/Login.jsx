@@ -46,7 +46,7 @@ const Login = () => {
         throw new Error("Invalid username or password");
       }
 
-      showAlert(`Logged in successfully as ${role} - ${username}`);
+      alert(`Logged in successfully as ${role} - ${username}`);
       navigate("/"); // Redirect to home page after showing alert
     } catch (err) {
       setError(err.message);
