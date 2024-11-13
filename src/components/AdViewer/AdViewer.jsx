@@ -2,7 +2,7 @@
 import React from "react";
 
 // Component to represent an individual Ad
-const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
+const AdComponent = ({ type, content, styles }) => {
   let mediaUrl = content.mediaUrl || content.src;
 
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
@@ -16,40 +16,6 @@ const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
 
-  // Handle unknown ad types
-  if (type === "unknown") {
-    return (
-      <div className="ad-item" style={styles}>
-        <p className="text-red-500">Unknown ad type</p>
-      </div>
-    );
-  }
-
-  // Handle missing content gracefully
-  if (type === "text" && !content.title && !content.description) {
-    return (
-      <div className="ad-item" style={styles}>
-        <p className="text-gray-500">No content available for text ad</p>
-      </div>
-    );
-  }
-
-  if (type === "image" && !mediaUrl) {
-    return (
-      <div className="ad-item" style={styles}>
-        <p className="text-gray-500">Image source not available</p>
-      </div>
-    );
-  }
-
-  if (type === "video" && !mediaUrl) {
-    return (
-      <div className="ad-item" style={styles}>
-        <p className="text-gray-500">Video source not available</p>
-      </div>
-    );
-  }
-
   return (
     <div className="ad-item" style={styles}>
       {type === "text" && (
@@ -58,18 +24,18 @@ const AdComponent = ({ type = "unknown", content = {}, styles = {} }) => {
           <p>{content.description}</p>
         </div>
       )}
-      {type === "image" && mediaUrl && (
+      {type === "image" && (
         <div>
           <img
             src={mediaUrl}
-            alt={content.title || "Image Ad"}
+            alt={content.title}
             style={{ maxWidth: "100%" }}
           />
           <h3>{content.title}</h3>
           <p>{content.description}</p>
         </div>
       )}
-      {type === "video" && mediaUrl && (
+      {type === "video" && (
         <div>
           <video autoPlay loop muted playsInline className="w-full">
             <source src={mediaUrl} type="video/mp4" />
@@ -101,17 +67,40 @@ const AdViewer = ({ layout }) => {
         gap: "10px",
         width: "100%",
         height: "100%",
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
       }}
     >
-      {gridItems.map((item) => {
-        if (!item || item.hidden) return null; // Skip null or hidden items
+      {gridItems.map((item, index) => {
+        if (!item) return null;
 
-        const { index, row, column, scheduledAds, rowSpan, colSpan } = item;
+        const {
+          rowSpan,
+          colSpan,
+          scheduledAds,
+          hidden,
+          isMerged,
+          selectedCells,
+        } = item;
 
+        // Skip rendering if the cell is hidden
+        if (hidden) {
+          return null;
+        }
+
+        // Determine if there's an ad to display in this cell
         let adToDisplay = null;
-
         if (scheduledAds && scheduledAds.length > 0) {
-          const currentTimeString = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`; // Format as "HH:mm"
+          const currentTimeString = `${new Date()
+            .getHours()
+            .toString()
+            .padStart(2, "0")}:${new Date()
+            .getMinutes()
+            .toString()
+            .padStart(2, "0")}`; // Format as "HH:mm"
 
           const availableAds = scheduledAds.filter(
             (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
@@ -132,31 +121,41 @@ const AdViewer = ({ layout }) => {
           }
         }
 
-        if (!adToDisplay || !adToDisplay.ad) {
+        // If no ad is available and the cell is not merged, render an empty cell
+        if (!adToDisplay && !isMerged) {
           return (
             <div
               key={index}
-              className="grid-cell"
               style={{
-                gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
-                gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
+                gridRow: `span ${rowSpan || 1}`,
+                gridColumn: `span ${colSpan || 1}`,
               }}
-            ></div>
+            />
           );
         }
 
-        const { type, content, styles } = adToDisplay.ad;
+        // Determine the correct ad to display
+        const ad = adToDisplay ? adToDisplay.ad : null;
+        const { type, content, styles } = ad || {};
 
         return (
           <div
             key={index}
             className="grid-cell"
             style={{
-              gridRow: `${row + 1} / ${row + 1 + (rowSpan || 1)}`,
-              gridColumn: `${column + 1} / ${column + 1 + (colSpan || 1)}`,
+              gridRow: `span ${rowSpan || 1}`,
+              gridColumn: `span ${colSpan || 1}`,
+              border: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+              position: "relative",
             }}
           >
-            <AdComponent type={type} content={content} styles={styles} />
+            {adToDisplay && (
+              <AdComponent type={type} content={content} styles={styles} />
+            )}
           </div>
         );
       })}
