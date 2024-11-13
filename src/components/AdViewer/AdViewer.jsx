@@ -67,6 +67,11 @@ const AdViewer = ({ layout }) => {
         gap: "10px",
         width: "100%",
         height: "100%",
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
       }}
     >
       {gridItems.map((item, index) => {
@@ -98,20 +103,20 @@ const AdViewer = ({ layout }) => {
             .padStart(2, "0")}`; // Format as "HH:mm"
 
           const availableAds = scheduledAds.filter(
-            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
           );
 
           if (availableAds.length > 0) {
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
               currentAd.scheduledTime > latestAd.scheduledTime
                 ? currentAd
-                : latestAd
+                : latestAd,
             );
           } else {
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
               currentAd.scheduledTime < nextAd.scheduledTime
                 ? currentAd
-                : nextAd
+                : nextAd,
             );
           }
         }
@@ -140,11 +145,12 @@ const AdViewer = ({ layout }) => {
             style={{
               gridRow: `span ${rowSpan || 1}`,
               gridColumn: `span ${colSpan || 1}`,
-              border: adToDisplay ? "1px solid #ddd" : "none",
-              display: hidden ? "none" : "flex",
+              border: "none",
+              display: "flex",
               alignItems: "center",
               justifyContent: "center",
               overflow: "hidden",
+              position: "relative",
             }}
           >
             {adToDisplay && (

@@ -96,11 +96,11 @@ const LayoutList = () => {
 
       // Fetch the initial layout data
       const response = await fetch(
-        `http://localhost:5000/api/layouts/${layoutId}`
+        `http://localhost:5000/api/layouts/${layoutId}`,
       );
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch layout details for layoutId: ${layoutId}`
+          `Failed to fetch layout details for layoutId: ${layoutId}`,
         );
       }
       const data = await response.json();
@@ -120,7 +120,9 @@ const LayoutList = () => {
     websocketRef.current = new WebSocket("ws://localhost:5000");
 
     websocketRef.current.onopen = () => {
-      websocketRef.current.send(JSON.stringify({ type: "subscribe", layoutId }));
+      websocketRef.current.send(
+        JSON.stringify({ type: "subscribe", layoutId }),
+      );
     };
 
     websocketRef.current.onmessage = (event) => {
@@ -227,7 +229,7 @@ const LayoutList = () => {
           </div>
           <div className="flex-1 md:ml-8">
             <div
-              className="relative flex h-[500px] items-center justify-center rounded-lg border-8 border-gray-800 bg-black p-4 shadow-lg md:h-full md:min-h-[600px]"
+              className="relative flex h-[500px] items-center justify-center rounded-lg border-8 border-gray-800 p-4 md:h-full md:min-h-[600px]"
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
             >
@@ -250,7 +252,7 @@ const LayoutList = () => {
               )}
               <div
                 ref={previewRef}
-                className={`h-full w-full overflow-hidden rounded-lg bg-white shadow-inner ${
+                className={`h-full w-full overflow-hidden rounded-lg bg-white ${
                   isFullscreen ? "flex items-center justify-center" : ""
                 }`}
               >
