@@ -54,19 +54,18 @@ const ScheduledAdModel = {
     const data = await dynamoDb.send(command);
     return data.Items;
   },
-
+  
   getScheduledAdsByAdId: async (adId) => {
     const params = {
       TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
-      IndexName: "AdIdIndex", // Ensure this matches the index name created in the table
-      KeyConditionExpression: "adId = :adId",
+      FilterExpression: "ad.adId = :adId",
       ExpressionAttributeValues: {
         ":adId": adId,
       },
       ProjectionExpression: "layoutId, gridItemId, scheduledTime",
     };
 
-    const command = new QueryCommand(params);
+    const command = new ScanCommand(params);
     const data = await dynamoDb.send(command);
     return data.Items;
   },

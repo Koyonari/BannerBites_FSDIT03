@@ -582,7 +582,7 @@ const AdCanvas = () => {
   
     setGridItems(updatedGrid);
   };
-
+  
   // Function to save editing or saving
   const handleLayoutNameSave = async (name) => {
     try {
