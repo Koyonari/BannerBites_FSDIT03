@@ -947,19 +947,22 @@ const AdCanvas = () => {
       )}
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
-          ad={currentScheduleAd.item}
-          onSave={(scheduledDateTime) =>
-            handleScheduleSave(
-              currentScheduleAd.item,
-              scheduledDateTime,
-              currentScheduleAd.index,
-            )
-          }
-          onClose={() => {
-            setIsScheduling(false);
-            setCurrentScheduleAd(null);
-          }}
-        />
+        ad={currentScheduleAd.item}
+        onSave={(scheduledDateTime) =>
+          handleScheduleSave(
+            currentScheduleAd.item,
+            scheduledDateTime,
+            currentScheduleAd.index,
+          )
+        }
+        onClose={() => {
+          setIsScheduling(false);
+          setCurrentScheduleAd(null);
+        }}
+        existingScheduledTimes={
+          gridItems[currentScheduleAd.index]?.scheduledAds.map(ad => ad.scheduledTime) || []
+        }
+      />
       )}
       <StyledAlert
         isOpen={alertConfig.isOpen}
