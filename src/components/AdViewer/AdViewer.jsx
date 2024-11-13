@@ -1,8 +1,10 @@
 // src/components/AdViewer/AdViewer.jsx
 import React from "react";
+import { useEffect } from "react";
+import WebFont from "webfontloader";
 
 // Component to represent an individual Ad
-const AdComponent = ({ type, content, styles }) => {
+const AdComponent = ({ type, content, styles = {} }) => {
   let mediaUrl = content.mediaUrl || content.src;
 
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
@@ -16,12 +18,23 @@ const AdComponent = ({ type, content, styles }) => {
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
 
+  // Load Google Font if fontFamily is specified
+  useEffect(() => {
+    if (styles.fontFamily) {
+      WebFont.load({
+        google: {
+          families: [styles.fontFamily],
+        },
+      });
+    }
+  }, [styles.fontFamily]);
+
   return (
     <div className="ad-item" style={styles}>
       {type === "text" && (
         <div>
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3 style={{ fontFamily: styles.fontFamily }}>{content.title}</h3>
+          <p style={{ fontFamily: styles.fontFamily }}>{content.description}</p>
         </div>
       )}
       {type === "image" && (
@@ -31,8 +44,8 @@ const AdComponent = ({ type, content, styles }) => {
             alt={content.title}
             style={{ maxWidth: "100%" }}
           />
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3 style={{ fontFamily: styles.fontFamily }}>{content.title}</h3>
+          <p style={{ fontFamily: styles.fontFamily }}>{content.description}</p>
         </div>
       )}
       {type === "video" && (
@@ -41,8 +54,8 @@ const AdComponent = ({ type, content, styles }) => {
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-          <h3>{content.title}</h3>
-          <p>{content.description}</p>
+          <h3 style={{ fontFamily: styles.fontFamily }}>{content.title}</h3>
+          <p style={{ fontFamily: styles.fontFamily }}>{content.description}</p>
         </div>
       )}
     </div>

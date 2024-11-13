@@ -161,7 +161,7 @@ const saveLayout = async (req, res) => {
   }
 };
 
-// 
+// Layout update with transactions
 const updateLayout = async (req, res) => {
   console.log("Request to /api/layouts/:layoutId:", JSON.stringify(req.body, null, 2));
 
@@ -225,6 +225,12 @@ const updateLayout = async (req, res) => {
           continue;
         }
 
+        // Ensure scheduledAd has a valid id
+        if (!scheduledAd.id) {
+          console.error(`Missing id for scheduled ad at grid item index ${item.index}`);
+          continue;
+        }
+
         // Update scheduled ad
         transactItems.push({
           Update: {
@@ -246,7 +252,7 @@ const updateLayout = async (req, res) => {
             Put: {
               TableName: process.env.DYNAMODB_TABLE_ADS,
               Item: {
-                adId: scheduledAd.ad.adId,
+                adId: scheduledAd.ad.adId, // Assuming adId is the partition key
                 ...scheduledAd.ad,
               },
             },
@@ -257,14 +263,19 @@ const updateLayout = async (req, res) => {
     }
 
     // Execute the transaction
-    const transactionCommand = new TransactWriteCommand({
-      TransactItems: transactItems,
-    });
+    if (transactItems.length > 0) {
+      const transactionCommand = new TransactWriteCommand({
+        TransactItems: transactItems,
+      });
 
-    await dynamoDb.send(transactionCommand);
+      await dynamoDb.send(transactionCommand);
 
-    console.log(`Layout ${layout.layoutId} and related items updated successfully.`);
-    return res.status(200).json({ message: "Layout and related items updated successfully." });
+      console.log(`Layout ${layout.layoutId} and related items updated successfully.`);
+      return res.status(200).json({ message: "Layout and related items updated successfully." });
+    } else {
+      console.error("No valid transaction items to execute.");
+      return res.status(400).json({ message: "No valid items to save." });
+    }
   } catch (error) {
     console.error("Error updating layout and related items:", error);
     return res.status(500).json({ message: "Internal server error." });
