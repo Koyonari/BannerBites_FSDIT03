@@ -59,13 +59,27 @@ const AdCanvas = () => {
   useEffect(() => {
     if (selectedLayout) {
       console.log("Retrieved Layout:", selectedLayout);
-
+  
       const totalCells = selectedLayout.rows * selectedLayout.columns;
-
+  
       const newGridItems = Array.from({ length: totalCells }, (_, index) => {
         const item = selectedLayout.gridItems.find((gi) => gi.index === index);
-
+  
         if (item) {
+          // If the item is not merged, remove merge-related attributes
+          if (!item.isMerged) {
+            return {
+              ...item,
+              isMerged: false,
+              hidden: false,
+              rowSpan: 1,
+              colSpan: 1,
+              mergeDirection: null,
+              selectedCells: [],
+            };
+          }
+  
+          // If the item is merged, retain the necessary merge attributes
           return {
             ...item,
             scheduledAds: item.scheduledAds.map((scheduledAd) => ({
@@ -98,7 +112,7 @@ const AdCanvas = () => {
           };
         }
       });
-
+  
       setRows(selectedLayout.rows);
       setColumns(selectedLayout.columns);
       setGridItems(newGridItems);
@@ -461,6 +475,9 @@ const AdCanvas = () => {
           hidden: false,
           rowSpan: 1,
           colSpan: 1,
+          // Remove merge-related properties to prevent issues with DynamoDB or other state inconsistencies
+          mergeDirection: null,
+          selectedCells: [],
         };
       });
     }
@@ -930,19 +947,22 @@ const AdCanvas = () => {
       )}
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
-          ad={currentScheduleAd.item}
-          onSave={(scheduledDateTime) =>
-            handleScheduleSave(
-              currentScheduleAd.item,
-              scheduledDateTime,
-              currentScheduleAd.index,
-            )
-          }
-          onClose={() => {
-            setIsScheduling(false);
-            setCurrentScheduleAd(null);
-          }}
-        />
+        ad={currentScheduleAd.item}
+        onSave={(scheduledDateTime) =>
+          handleScheduleSave(
+            currentScheduleAd.item,
+            scheduledDateTime,
+            currentScheduleAd.index,
+          )
+        }
+        onClose={() => {
+          setIsScheduling(false);
+          setCurrentScheduleAd(null);
+        }}
+        existingScheduledTimes={
+          gridItems[currentScheduleAd.index]?.scheduledAds.map(ad => ad.scheduledTime) || []
+        }
+      />
       )}
       <StyledAlert
         isOpen={alertConfig.isOpen}
