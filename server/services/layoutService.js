@@ -15,68 +15,67 @@ const { ScanCommand } = require("@aws-sdk/lib-dynamodb");
  */
 const fetchLayoutById = async (layoutId) => {
   try {
-    // Step 1: Get layout details
+    console.log(`Fetching layout details for layoutId: ${layoutId}`);
+    
+    // Step 1: Fetch layout from LayoutModel
     const layout = await LayoutModel.getLayoutById(layoutId);
-
     if (!layout) {
-      console.warn(`Layout not found for layoutId: ${layoutId}`);
+      console.error(`Layout not found for layoutId: ${layoutId}`);
       return null;
     }
+    console.log(`Fetched layout: ${JSON.stringify(layout)}`);
 
-    // Step 2: Get grid items
+    // Step 2: Fetch all GridItems related to this layout
     const gridItems = await GridItemModel.getGridItemsByLayoutId(layoutId);
+    if (!gridItems || gridItems.length === 0) {
+      console.error(`No grid items found for layoutId: ${layoutId}`);
+    }
 
-    // Step 3: Get scheduled ads and ad details for each grid item
-    const gridItemsWithAds = await Promise.all(
-      gridItems.map(async (item) => {
-        try {
-          const scheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemId(
-            `${layoutId}#${item.index}`
-          );
+    // Step 3: Gather all gridItemIds to fetch related scheduled ads
+    const gridItemIds = gridItems.map((item) => `${layoutId}#${item.index}`);
+    const scheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemIds(gridItemIds);
 
-          // Fetch all ads in parallel
-          const adsPromises = scheduledAds.map(async (scheduledAd) => {
-            try {
-              const adId = scheduledAd.ad?.adId; // Correct access
-              if (!adId) {
-                console.warn(`ScheduledAd with id: ${scheduledAd.id} is missing 'adId'.`);
-                return { ...scheduledAd, ad: null };
-              }
+    // Step 4: Collect unique adIds from scheduledAds to batch fetch ad details
+    const adIdsSet = new Set();
+    scheduledAds.forEach((scheduledAd) => {
+      if (scheduledAd.adId) {
+        adIdsSet.add(scheduledAd.adId);
+      }
+    });
+    const adIds = Array.from(adIdsSet);
 
-              const ad = await AdModel.getAdById(adId);
-              if (ad) {
-                console.log(`Attached Ad for scheduledAd ID: ${scheduledAd.id}`);
-              } else {
-                console.warn(`Ad not found for scheduledAd ID: ${scheduledAd.id}, adId: ${adId}`);
-              }
-              return { ...scheduledAd, ad };
-            } catch (adError) {
-              console.error(`Error fetching adId: ${scheduledAd.adId} for scheduledAd ID: ${scheduledAd.id}`, adError);
-              return { ...scheduledAd, ad: null }; // Handle missing ads gracefully
-            }
-          });
+    // Step 5: Fetch ads from Ads table
+    const ads = await AdModel.getAdsByIds(adIds);
+    console.log(`Fetched ads: ${JSON.stringify(ads)}`); // Add debug statement here
+    const adsMap = new Map(ads.map((ad) => [ad.adId, ad]));
 
-          const scheduledAdsWithDetails = await Promise.all(adsPromises);
-          return { ...item, scheduledAds: scheduledAdsWithDetails };
-        } catch (scheduledAdsError) {
-          console.error(
-            `Error fetching scheduledAds for gridItemId: ${layoutId}#${item.index}`,
-            scheduledAdsError
-          );
-          return { ...item, scheduledAds: [] }; // Handle missing scheduledAds gracefully
+    // Step 6: Populate scheduledAds in grid items with ad details
+    for (const item of gridItems) {
+      item.scheduledAds = scheduledAds.filter((scheduledAd) => scheduledAd.gridItemId === item.gridItemId);
+
+      item.scheduledAds.forEach((scheduledAd) => {
+        if (scheduledAd.adId) {
+          const adDetails = adsMap.get(scheduledAd.adId);
+          scheduledAd.ad = {
+            adId: scheduledAd.adId,
+            ...(adDetails ? { content: adDetails.content, styles: adDetails.styles, type: adDetails.type } : {}),
+          };
+        } else {
+          scheduledAd.ad = null;
         }
-      })
-    );
+      });
+    }
 
-    // Assemble the complete layout object
-    const completeLayout = { ...layout, gridItems: gridItemsWithAds };
-    console.log(`Complete layout fetched for layoutId: ${layoutId}`, completeLayout);
-    return completeLayout;
+    // Step 7: Attach grid items back to the layout
+    layout.gridItems = gridItems;
+
+    return layout;
   } catch (error) {
     console.error(`Error fetching layout data for layoutId: ${layoutId}`, error);
-    throw error; // Rethrow the error to be handled by the caller
+    throw error;
   }
 };
+
 
 /**
 * Map adId to layoutIds.

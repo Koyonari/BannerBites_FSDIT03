@@ -1,6 +1,7 @@
 // models/AdModel.js
-const { PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, BatchGetCommand } = require("@aws-sdk/lib-dynamodb");
 const { dynamoDb } = require("../middleware/awsClients");
+const tableName = process.env.DYNAMODB_TABLE_ADS;
 
 const AdModel = {
   // Function to retrieve an ad by adId
@@ -30,6 +31,34 @@ const AdModel = {
     } catch (error) {
       console.error(`Error fetching Ad with adId: ${adId}`, error);
       throw error; // Rethrow the error to be handled by the caller
+    }
+  },
+
+  // Function to retrieve all ads
+  getAdsByIds: async (adIds) => {
+    if (!adIds || adIds.length === 0) {
+      return [];
+    }
+
+    try {
+      const keys = adIds.map((adId) => ({ adId }));
+
+      const params = {
+        RequestItems: {
+          [process.env.DYNAMODB_TABLE_ADS]: {
+            Keys: keys,
+          },
+        },
+      };
+
+      const command = new BatchGetCommand(params);
+      const response = await dynamoDb.send(command);
+
+      const ads = response.Responses[process.env.DYNAMODB_TABLE_ADS];
+      return ads || [];
+    } catch (error) {
+      console.error(`Error fetching ads by adIds: ${adIds}`, error);
+      throw error;
     }
   },
 
