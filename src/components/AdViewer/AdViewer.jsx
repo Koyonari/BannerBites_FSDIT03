@@ -69,6 +69,7 @@ const AdComponent = ({ type, content, styles = {} }) => {
       {type === "video" && (
         <div>
           <video
+            key={mediaUrl} // Added key prop for real-time communication
             autoPlay
             loop
             muted
