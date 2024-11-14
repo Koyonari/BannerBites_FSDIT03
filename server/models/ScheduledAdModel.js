@@ -12,10 +12,10 @@ const ScheduledAdModel = {
     const params = {
       TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
       Item: {
-        gridItemId: `${layoutId}#${gridIndex}`,
-        id: scheduledAd.id,
-        scheduledTime: scheduledAd.scheduledTime,
-        ad: { //Nested ad object
+        gridItemId: `${layoutId}#${gridIndex}`, // Composite key that acts as the primary key
+        id: scheduledAd.id, // Unique identifier for the scheduled ad
+        scheduledTime: scheduledAd.scheduledTime, // Composite sort key
+        ad: { //Nested ad object 
           adId: scheduledAd.ad.adId,
           type: scheduledAd.ad.type,
           content: scheduledAd.ad.content,
@@ -54,19 +54,18 @@ const ScheduledAdModel = {
     const data = await dynamoDb.send(command);
     return data.Items;
   },
-
+  
   getScheduledAdsByAdId: async (adId) => {
     const params = {
       TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
-      IndexName: "AdIdIndex", // Ensure this matches the index name created in the table
-      KeyConditionExpression: "adId = :adId",
+      FilterExpression: "ad.adId = :adId",
       ExpressionAttributeValues: {
         ":adId": adId,
       },
       ProjectionExpression: "layoutId, gridItemId, scheduledTime",
     };
 
-    const command = new QueryCommand(params);
+    const command = new ScanCommand(params);
     const data = await dynamoDb.send(command);
     return data.Items;
   },
@@ -80,11 +79,13 @@ const ScheduledAdModel = {
       },
     };
     const command = new DeleteCommand(params);
+    console.log(`Attempting to delete scheduled ad with params: ${JSON.stringify(params)}`);
     try {
-      await dynamoDb.send(command);
+      const response = await dynamoDb.send(command);
       console.log(
         `Scheduled ad with gridItemId ${gridItemId} and scheduledTime ${scheduledTime} deleted successfully.`,
       );
+      console.log('Deletion response:', response);
     } catch (error) {
       console.error(
         `Error deleting scheduled ad with gridItemId ${gridItemId} and scheduledTime ${scheduledTime}:`,
@@ -93,7 +94,7 @@ const ScheduledAdModel = {
       throw error;
     }
   },
-
+  
   deleteScheduledAdsByLayoutId: async (layoutId) => {
     const scheduledAds =
       await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);

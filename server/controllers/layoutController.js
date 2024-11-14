@@ -7,6 +7,8 @@ const AdModel = require("../models/AdModel");
 const { generatePresignedUrl } = require("../services/s3Service");
 const { dynamoDb } = require("../middleware/awsClients");
 
+MAX_TRANSACTION_OPERATIONS = 25;
+
 const generatePresignedUrlController = async (req, res) => {
   const { fileName, contentType } = req.body;
 
@@ -47,7 +49,6 @@ const saveLayout = async (req, res) => {
   try {
     const layout = req.body;
 
-    // Validate layout data
     if (!layout || !layout.layoutId) {
       console.error("Invalid layout data received:", layout);
       return res.status(400).json({ message: "Invalid layout data." });
@@ -55,41 +56,42 @@ const saveLayout = async (req, res) => {
 
     const transactItems = [];
     const uniqueAds = new Set();
+    const uniqueGridItems = new Set();
 
-    // Step 1: Add the Layout (Ensure keys match the table schema)
     transactItems.push({
       Put: {
         TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
         Item: {
-          layoutId: layout.layoutId, // Assuming layoutId is the partition key
+          layoutId: layout.layoutId,
           ...layout,
         },
       },
     });
 
-    // Step 2: Add Grid Items and Scheduled Ads
     for (const item of layout.gridItems) {
       console.log(`Processing Grid Item at index ${item.index}`);
 
-      // Ensure that gridItem key is defined properly
       if (item.index === undefined) {
         console.error(`Missing index for grid item at layoutId: ${layout.layoutId}`);
         continue;
       }
 
-      // Add Grid Item
-      transactItems.push({
-        Put: {
-          TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
-          Item: {
-            layoutId: layout.layoutId, // Assuming layoutId is the partition key
-            index: item.index,         // Assuming index is the sort key
-            ...item,
+      // Ensure only unique grid items are added
+      const gridItemKey = `${layout.layoutId}#${item.index}`;
+      if (!uniqueGridItems.has(gridItemKey)) {
+        transactItems.push({
+          Put: {
+            TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+            Item: {
+              layoutId: layout.layoutId,
+              index: item.index,
+              ...item,
+            },
           },
-        },
-      });
+        });
+        uniqueGridItems.add(gridItemKey);
+      }
 
-      // Add Scheduled Ads
       for (const scheduledAd of item.scheduledAds) {
         if (!scheduledAd.ad || !scheduledAd.ad.adId) {
           console.error(
@@ -102,9 +104,18 @@ const saveLayout = async (req, res) => {
           `Adding Scheduled Ad with id ${scheduledAd.id} and adId ${scheduledAd.ad.adId}`,
         );
 
-        // Ensure scheduledAd key is defined properly
         if (!scheduledAd.id) {
           console.error(`Missing id for scheduled ad at grid item index ${item.index}`);
+          continue;
+        }
+
+        if (!scheduledAd.gridItemId) {
+          scheduledAd.gridItemId = `${layout.layoutId}#${item.index}`;
+          console.log(`Assigned gridItemId for scheduled ad: ${scheduledAd.gridItemId}`);
+        }
+
+        if (!scheduledAd.scheduledTime) {
+          console.error(`Missing scheduledTime for scheduled ad at grid item index ${item.index}`);
           continue;
         }
 
@@ -112,22 +123,21 @@ const saveLayout = async (req, res) => {
           Put: {
             TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
             Item: {
-              layoutId: layout.layoutId,           // Assuming layoutId is part of the key
-              gridItemId: `${layout.layoutId}#${item.index}`, // Assuming this is the partition key or composite key
-              scheduledTime: scheduledAd.scheduledTime, // Assuming this is a necessary attribute
+              layoutId: layout.layoutId,
+              gridItemId: scheduledAd.gridItemId,
+              scheduledTime: scheduledAd.scheduledTime,
               ...scheduledAd,
             },
           },
         });
 
-        // Add Ad if not already added (Ensure the keys are properly set)
         if (!uniqueAds.has(scheduledAd.ad.adId)) {
           console.log(`Adding Ad with adId ${scheduledAd.ad.adId}`);
           transactItems.push({
             Put: {
               TableName: process.env.DYNAMODB_TABLE_ADS,
               Item: {
-                adId: scheduledAd.ad.adId, // Assuming adId is the partition key
+                adId: scheduledAd.ad.adId,
                 ...scheduledAd.ad,
               },
             },
@@ -137,13 +147,42 @@ const saveLayout = async (req, res) => {
       }
     }
 
-    // Step 3: Execute Transaction
     if (transactItems.length > 0) {
-      const transactionCommand = new TransactWriteCommand({
-        TransactItems: transactItems,
-      });
+      // Batch the transaction items to avoid multiple operations on the same item in a single transaction
+      const batchedTransactItems = [];
+      let currentBatch = [];
 
-      await dynamoDb.send(transactionCommand);
+      for (const transactItem of transactItems) {
+        if (currentBatch.length >= MAX_TRANSACTION_OPERATIONS) {
+          batchedTransactItems.push([...currentBatch]);
+          currentBatch = [];
+        }
+        currentBatch.push(transactItem);
+      }
+
+      if (currentBatch.length > 0) {
+        batchedTransactItems.push([...currentBatch]);
+      }
+
+      console.log(`Total Batches: ${batchedTransactItems.length}`);
+
+      // Execute each batch sequentially
+      for (let i = 0; i < batchedTransactItems.length; i++) {
+        const batch = batchedTransactItems[i];
+        console.log(`Executing Batch ${i + 1} with ${batch.length} operations.`);
+
+        const transactionCommand = new TransactWriteCommand({
+          TransactItems: batch,
+        });
+
+        try {
+          await dynamoDb.send(transactionCommand);
+          console.log(`Batch ${i + 1} executed successfully.`);
+        } catch (error) {
+          console.error(`Error executing Batch ${i + 1}:`, error);
+          return res.status(500).json({ message: `Failed to execute batch ${i + 1}.` });
+        }
+      }
 
       console.log(
         `Layout ${layout.layoutId} and related items saved successfully.`,
@@ -161,88 +200,173 @@ const saveLayout = async (req, res) => {
   }
 };
 
-// 
+// Function to update layout and related items
 const updateLayout = async (req, res) => {
   console.log("Request to /api/layouts/:layoutId:", JSON.stringify(req.body, null, 2));
 
   try {
     const { layoutId } = req.params;
-    const layout = req.body;
+    const updatedLayout = req.body;
 
-    if (!layout || !layout.layoutId || layout.layoutId !== layoutId) {
-      console.error("Invalid layout data received:", layout);
+    if (!updatedLayout || !updatedLayout.layoutId || updatedLayout.layoutId !== layoutId) {
+      console.error("Invalid layout data received:", updatedLayout);
       return res.status(400).json({ message: "Invalid layout data." });
     }
 
-    const transactItems = [];
+    // Fetch current grid items and scheduled ads
+    const existingGridItems = await GridItemModel.getGridItemsByLayoutId(layoutId);
+    const existingGridItemMap = new Map(existingGridItems.map(item => [item.index, item]));
+    const currentScheduledAds = await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);
 
-    // Update layout
-    transactItems.push({
+    // Track scheduled ads to delete
+    const adsToDelete = [];
+
+    // Step 1: Clean and validate scheduledAds for uniqueness per grid cell
+    const cleanedGridItems = updatedLayout.gridItems.map((item) => {
+      const scheduledTimes = new Set();
+      item.scheduledAds.forEach((ad) => {
+        if (scheduledTimes.has(ad.scheduledTime)) {
+          throw new Error(
+            `Duplicate scheduledTime "${ad.scheduledTime}" found in grid cell index ${item.index}.`
+          );
+        }
+        scheduledTimes.add(ad.scheduledTime);
+
+        if (!ad.gridItemId) {
+          ad.gridItemId = `${layoutId}#${item.index}`;
+        }
+      });
+      return item;
+    });
+
+    // Step 2: Compare current scheduled ads with updated scheduled ads to determine deletions
+    const updatedScheduledAdsMap = new Map();
+    cleanedGridItems.forEach(item => {
+      item.scheduledAds.forEach(ad => {
+        updatedScheduledAdsMap.set(ad.gridItemId + '#' + ad.scheduledTime, ad);
+      });
+    });
+
+    currentScheduledAds.forEach(currentAd => {
+      const key = currentAd.gridItemId + '#' + currentAd.scheduledTime;
+      if (!updatedScheduledAdsMap.has(key)) {
+        adsToDelete.push(currentAd);
+      }
+    });
+
+    const allTransactItems = [];
+    const uniqueAds = new Set(); // Track unique adIds
+
+    // Step 3: Update layout attributes
+    allTransactItems.push({
       Update: {
         TableName: process.env.DYNAMODB_TABLE_LAYOUTS,
         Key: { layoutId },
-        UpdateExpression: "set #name = :name, updatedAt = :updatedAt",
+        UpdateExpression: "set #name = :name, updatedAt = :updatedAt, #rows = :rows, #columns = :columns",
         ExpressionAttributeNames: {
           "#name": "name",
+          "#rows": "rows",
+          "#columns": "columns",
         },
         ExpressionAttributeValues: {
-          ":name": layout.name,
+          ":name": updatedLayout.name,
           ":updatedAt": new Date().toISOString(),
+          ":rows": updatedLayout.rows,
+          ":columns": updatedLayout.columns,
         },
       },
     });
 
-    // Track unique ads to prevent duplicate saves
-    const uniqueAds = new Set();
+    // Step 4: Update grid items and handle scheduled ads
+    for (const item of cleanedGridItems) {
+      if (existingGridItemMap.has(item.index)) {
+        // Fetch the corresponding existing item and compare
+        const existingItem = existingGridItemMap.get(item.index);
 
-    // Update grid items and scheduled ads
-    for (const item of layout.gridItems) {
-      // Update grid item
-      transactItems.push({
-        Update: {
-          TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
-          Key: { layoutId, index: item.index },
-          UpdateExpression: "set #colSpan = :colSpan, #rowSpan = :rowSpan, #isMerged = :isMerged, #hidden = :hidden",
-          ExpressionAttributeNames: {
-            "#colSpan": "colSpan",
-            "#rowSpan": "rowSpan",
-            "#isMerged": "isMerged",
-            "#hidden": "hidden",
-          },
-          ExpressionAttributeValues: {
-            ":colSpan": item.colSpan,
-            ":rowSpan": item.rowSpan,
-            ":isMerged": item.isMerged,
-            ":hidden": item.hidden,
-          },
-        },
-      });
+        const expressionAttributes = {
+          ":colSpan": item.colSpan,
+          ":rowSpan": item.rowSpan,
+          ":isMerged": item.isMerged,
+          ":hidden": item.hidden,
+        };
 
-      // Update scheduled ads
+        const expressionAttributeNames = {
+          "#colSpan": "colSpan",
+          "#rowSpan": "rowSpan",
+          "#isMerged": "isMerged",
+          "#hidden": "hidden",
+        };
+
+        let updateExpression = "set #colSpan = :colSpan, #rowSpan = :rowSpan, #isMerged = :isMerged, #hidden = :hidden";
+
+        if (item.mergeDirection !== undefined) {
+          updateExpression += ", #mergeDirection = :mergeDirection";
+          expressionAttributes[":mergeDirection"] = item.mergeDirection;
+          expressionAttributeNames["#mergeDirection"] = "mergeDirection";
+        }
+
+        if (item.selectedCells && item.selectedCells.length > 0) {
+          updateExpression += ", #selectedCells = :selectedCells";
+          expressionAttributes[":selectedCells"] = item.selectedCells;
+          expressionAttributeNames["#selectedCells"] = "selectedCells";
+        }
+
+        // Add an UpdateCommand to the batch if there are differences
+        allTransactItems.push({
+          Update: {
+            TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+            Key: { layoutId, index: item.index },
+            UpdateExpression: updateExpression,
+            ExpressionAttributeNames: expressionAttributeNames,
+            ExpressionAttributeValues: expressionAttributes,
+          },
+        });
+      } else {
+        // If the grid item does not exist, add a PutCommand
+        allTransactItems.push({
+          Put: {
+            TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+            Item: {
+              layoutId: layoutId,
+              index: item.index,
+              ...item,
+            },
+          },
+        });
+      }
+
+      // Add or update scheduled ads
       for (const scheduledAd of item.scheduledAds) {
-        if (!scheduledAd.ad || !scheduledAd.ad.adId) {
-          console.error(`Missing adId for scheduled ad at grid item index ${item.index}`);
+        if (scheduledAd === null) {
+          continue; // Allow scheduled ads to be null (i.e., skipped during update)
+        }
+
+        if (!scheduledAd.gridItemId || !scheduledAd.scheduledTime) {
+          console.error("ScheduledAd is missing gridItemId or scheduledTime:", scheduledAd);
           continue;
         }
 
-        // Update scheduled ad
-        transactItems.push({
-          Update: {
+        allTransactItems.push({
+          Put: {
             TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
-            Key: { gridItemId: `${layoutId}#${item.index}`, scheduledTime: scheduledAd.scheduledTime },
-            UpdateExpression: "set #ad = :ad",
-            ExpressionAttributeNames: {
-              "#ad": "ad",
-            },
-            ExpressionAttributeValues: {
-              ":ad": scheduledAd.ad,
+            Item: {
+              gridItemId: scheduledAd.gridItemId,
+              scheduledTime: scheduledAd.scheduledTime,
+              id: scheduledAd.id,
+              ad: scheduledAd.ad ? {
+                adId: scheduledAd.ad.adId,
+                type: scheduledAd.ad.type,
+                content: scheduledAd.ad.content,
+                styles: scheduledAd.ad.styles,
+              } : null,
+              layoutId: layoutId,
+              index: item.index,
             },
           },
         });
 
-        // Save ad if not already saved
-        if (!uniqueAds.has(scheduledAd.ad.adId)) {
-          transactItems.push({
+        if (scheduledAd.ad && !uniqueAds.has(scheduledAd.ad.adId)) {
+          allTransactItems.push({
             Put: {
               TableName: process.env.DYNAMODB_TABLE_ADS,
               Item: {
@@ -256,18 +380,61 @@ const updateLayout = async (req, res) => {
       }
     }
 
-    // Execute the transaction
-    const transactionCommand = new TransactWriteCommand({
-      TransactItems: transactItems,
-    });
+    // Step 5: Handle deletions of removed scheduled ads
+    for (const adToDelete of adsToDelete) {
+      allTransactItems.push({
+        Delete: {
+          TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+          Key: {
+            gridItemId: adToDelete.gridItemId,
+            scheduledTime: adToDelete.scheduledTime,
+          },
+        },
+      });
+    }
 
-    await dynamoDb.send(transactionCommand);
+    // Step 6: Batch the transaction items into multiple TransactWriteCommands
+    const batchedTransactItems = [];
+    let currentBatch = [];
 
-    console.log(`Layout ${layout.layoutId} and related items updated successfully.`);
+    for (const transactItem of allTransactItems) {
+      if (currentBatch.length >= MAX_TRANSACTION_OPERATIONS) {
+        batchedTransactItems.push([...currentBatch]);
+        currentBatch = [];
+      }
+      currentBatch.push(transactItem);
+    }
+
+    if (currentBatch.length > 0) {
+      batchedTransactItems.push([...currentBatch]);
+    }
+
+    console.log(`Total Batches: ${batchedTransactItems.length}`);
+
+    // Step 7: Execute each batch sequentially
+    for (let i = 0; i < batchedTransactItems.length; i++) {
+      const batch = batchedTransactItems[i];
+      console.log(`Executing Batch ${i + 1} with ${batch.length} operations.`);
+
+      const transactionCommand = new TransactWriteCommand({
+        TransactItems: batch,
+      });
+
+      try {
+        await dynamoDb.send(transactionCommand);
+        console.log(`Batch ${i + 1} executed successfully.`);
+      } catch (error) {
+        console.error(`Error executing Batch ${i + 1}:`, error);
+        return res.status(500).json({ message: `Failed to execute batch ${i + 1}.` });
+      }
+    }
+
+    console.log(`All batches executed successfully for layout ${layoutId}.`);
     return res.status(200).json({ message: "Layout and related items updated successfully." });
+
   } catch (error) {
     console.error("Error updating layout and related items:", error);
-    return res.status(500).json({ message: "Internal server error." });
+    return res.status(400).json({ message: error.message });
   }
 };
 

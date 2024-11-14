@@ -3,6 +3,7 @@ import { useDrop } from "react-dnd";
 import { Tooltip } from "react-tooltip";
 import AdListPopup from "./AdListPopup";
 import { CircleMinus, View, Pencil } from "lucide-react";
+import StyledAlert from "../StyledAlert";
 
 const Checkbox = ({ checked, onChange, className, showHelp }) => (
   <div
@@ -65,15 +66,30 @@ const GridCell = ({
   );
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
 
   const togglePopup = (e) => {
     e.stopPropagation();
     setIsPopupOpen(!isPopupOpen);
   };
 
+  const showAlert = (message, title = "Alert", type = "info") => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
+
   // Check if this cell is selected
   const isCellSelected = item?.isMerged
-    ? selectedMergedCells.includes(index)
+    ? selectedMergedCells.includes(index) || isSelected
     : isSelected;
 
   const handleCheckboxChange = (checked) => {
@@ -83,8 +99,8 @@ const GridCell = ({
       }
 
       if (item.isMerged && typeof onSelectMerged === "function") {
-        // Always call onSelectMerged for merged cells, regardless of current selection state
-        onSelectMerged(index);
+        // Toggle merged cell selection, affecting all cells within the merge
+        onSelectMerged(index, checked);
       } else if (typeof onSelect === "function") {
         onSelect(index);
       }
@@ -100,11 +116,11 @@ const GridCell = ({
       if (typeof getMainCellIndex === "function") {
         cellIndex = getMainCellIndex(index);
         if (cellIndex === -1) {
-          alert("Could not find the main cell for editing.");
+          showAlert("Could not find the main cell for editing.");
           return;
         }
       } else {
-        alert("Cannot edit a hidden cell.");
+        showAlert("Cannot edit a hidden cell.");
         return;
       }
     }
@@ -124,7 +140,6 @@ const GridCell = ({
     }
   };
 
-  // Similarly, adjust handleRemove if necessary
   const handleRemove = (e) => {
     e.stopPropagation();
     let cellIndex = index;
@@ -133,11 +148,11 @@ const GridCell = ({
       if (typeof getMainCellIndex === "function") {
         cellIndex = getMainCellIndex(index);
         if (cellIndex === -1) {
-          alert("Could not find the main cell for removing.");
+          showAlert("Could not find the main cell for removing.");
           return;
         }
       } else {
-        alert("Cannot remove from a hidden cell.");
+        showAlert("Cannot remove from a hidden cell.");
         return;
       }
     }
@@ -146,7 +161,6 @@ const GridCell = ({
       onRemove(cellIndex, adToDisplay);
     }
   };
-
 
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -278,6 +292,9 @@ const GridCell = ({
   const selectionClass = isSelectionMode && !item?.hidden ? "selectable" : "";
   const selectedClass = isCellSelected ? "selected" : "";
 
+  console.log("index", index);
+  console.log("isCellSelected", isCellSelected);
+
   if (item?.hidden) {
     return null;
   }
@@ -354,6 +371,14 @@ const GridCell = ({
           onRemove={(scheduledAd) => onRemove(index, scheduledAd)}
         />
       )}
+
+      <StyledAlert
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
     </div>
   );
 };
