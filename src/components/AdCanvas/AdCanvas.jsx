@@ -145,15 +145,9 @@ const AdCanvas = () => {
   };
 
   const resizeGrid = (newRows, newColumns) => {
-    if (isSavedLayout) {
-      showAlert(
-        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
-      );
-      return;
-    }
-    
     // Calculate the new total number of cells
     const newTotalCells = newRows * newColumns;
+
     // Create a new grid with the updated number of cells
     const updatedGrid = Array.from({ length: newTotalCells }, (_, index) => ({
       scheduledAds: [],
@@ -161,26 +155,37 @@ const AdCanvas = () => {
       hidden: false,
       rowSpan: 1,
       colSpan: 1,
+      index, // Include the index property to keep track of each cell position
     }));
-    
+
     // Loop through the existing grid and map each cell to the new grid
     for (let i = 0; i < gridItems.length; i++) {
       const currentItem = gridItems[i];
       const currentRow = Math.floor(i / columns);
       const currentCol = i % columns;
-  
-      // Map the old position to the new grid layout
+
+      // Map the old position to the new grid layout if it fits
       if (currentRow < newRows && currentCol < newColumns) {
         const newIndex = currentRow * newColumns + currentCol;
+
+        // Copy over the properties from the existing item
         updatedGrid[newIndex] = {
-          ...updatedGrid[newIndex], // Keep default properties for new cells
-          ...currentItem, // Copy properties from the old cell
+          ...updatedGrid[newIndex], // Keep new properties if any (e.g., default scheduledAds)
+          ...currentItem, // Overwrite with current item properties
+          index: newIndex, // Update the index
         };
-  
-        // Update merged properties if the cell was part of a merge
+
+        // Handle merged cells
         if (currentItem.isMerged && !currentItem.hidden) {
-          const newRowSpan = Math.min(currentItem.rowSpan, newRows - currentRow);
-          const newColSpan = Math.min(currentItem.colSpan, newColumns - currentCol);
+          const newRowSpan = Math.min(
+            currentItem.rowSpan,
+            newRows - currentRow,
+          );
+          const newColSpan = Math.min(
+            currentItem.colSpan,
+            newColumns - currentCol,
+          );
+
           updatedGrid[newIndex] = {
             ...updatedGrid[newIndex],
             rowSpan: newRowSpan,
@@ -188,12 +193,13 @@ const AdCanvas = () => {
             isMerged: true,
             hidden: false,
           };
-  
+
           // Update hidden cells that are part of the merged group
           for (let r = 0; r < newRowSpan; r++) {
             for (let c = 0; c < newColSpan; c++) {
               if (r !== 0 || c !== 0) {
-                const hiddenIndex = (currentRow + r) * newColumns + (currentCol + c);
+                const hiddenIndex =
+                  (currentRow + r) * newColumns + (currentCol + c);
                 if (hiddenIndex < newTotalCells) {
                   updatedGrid[hiddenIndex] = {
                     ...updatedGrid[hiddenIndex],
@@ -207,64 +213,50 @@ const AdCanvas = () => {
             }
           }
         }
+
+        // Update the selectedCells for merged cells to reflect new indices
+        if (currentItem.selectedCells && currentItem.isMerged) {
+          updatedGrid[newIndex].selectedCells = currentItem.selectedCells
+            .map((idx) => {
+              const oldRow = Math.floor(idx / columns);
+              const oldCol = idx % columns;
+              if (oldRow < newRows && oldCol < newColumns) {
+                return oldRow * newColumns + oldCol;
+              }
+              return null;
+            })
+            .filter((idx) => idx !== null);
+        }
       }
     }
-  
-    // Update state
+
+    // Update the state with the newly calculated grid
     setRows(newRows);
     setColumns(newColumns);
     setGridItems(updatedGrid);
   };
 
   const increaseRows = () => {
-    if (isSavedLayout) {
-      showAlert(
-        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
-      );
-      return;
-    }
     const newRows = rows + 1;
-    setRows(newRows);
     resizeGrid(newRows, columns);
   };
 
   const decreaseRows = () => {
-    if (isSavedLayout) {
-      showAlert(
-        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
-      );
-      return;
-    }
     if (rows > 1) {
       const newRows = rows - 1;
-      setRows(newRows);
       resizeGrid(newRows, columns);
     }
   };
 
   const increaseColumns = () => {
-    if (isSavedLayout) {
-      showAlert(
-        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
-      );
-      return;
-    }
     const newColumns = columns + 1;
-    setColumns(newColumns);
     resizeGrid(rows, newColumns);
   };
 
   const decreaseColumns = () => {
-    if (isSavedLayout) {
-      showAlert(
-        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
-      );
-      return;
-    }
     if (columns > 1) {
       const newColumns = columns - 1;
       resizeGrid(rows, newColumns);
-      setColumns(newColumns);
     }
   };
 
@@ -345,12 +337,6 @@ const AdCanvas = () => {
   };
 
   const handleMerge = (index, direction, selectedCells = []) => {
-    if (isSavedLayout) {
-      showAlert(
-        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
-      );
-      return;
-    }
     const updatedGrid = [...gridItems];
 
     if (!updatedGrid[index]) {
@@ -548,64 +534,65 @@ const AdCanvas = () => {
     const cell = updatedGrid[index];
 
     if (cell.isMerged) {
-      const cellsToUnmerge =
-        cell.selectedCells && cell.selectedCells.length > 0
-          ? cell.selectedCells
-          : [index];
+      const cellsToUnmerge = cell.selectedCells || [index];
 
-      const scheduledAds = cell.scheduledAds;
-
-      cellsToUnmerge.forEach((idx, idxIndex) => {
-        updatedGrid[idx] = {
-          scheduledAds: idxIndex === 0 ? scheduledAds : [],
-          isMerged: false,
-          hidden: false,
-          rowSpan: 1,
-          colSpan: 1,
-          // Remove merge-related properties to prevent issues with DynamoDB or other state inconsistencies
-          mergeDirection: null,
-          selectedCells: [],
-        };
+      // Restore all hidden cells to individual cells
+      cellsToUnmerge.forEach((idx) => {
+        if (updatedGrid[idx]) {
+          // Ensure the cell exists in the updated grid
+          updatedGrid[idx] = {
+            scheduledAds: [],
+            isMerged: false,
+            hidden: false,
+            rowSpan: 1,
+            colSpan: 1,
+            index: idx, // Maintain correct indexing
+          };
+        }
       });
     }
 
+    // Update the state
     setGridItems(updatedGrid);
   };
 
   const handleDrop = (item, index, rowIndex, colIndex) => {
     const normalizedItem = {
       id: item.id || uuidv4(),
-      adId: item.adId || uuidv4(), // Ensure `adId` is set
+      adId: item.adId || uuidv4(),
       type: item.type || "default",
       content: item.content || item,
       styles: item.styles || {},
     };
 
-    setCurrentScheduleAd({ item: normalizedItem, index });
+    const scheduledAd = {
+      item: normalizedItem,
+      index,
+      scheduledTime: item.scheduledTime || "00:00", // Default to "00:00"
+    };
+
+    setCurrentScheduleAd(scheduledAd);
     setIsScheduling(true);
   };
 
   const handleScheduleSave = (adItem, scheduledTime, index) => {
-    // Validate that adItem has a content property
     if (!adItem.content) {
       console.error("AdItem is missing the 'content' property:", adItem);
       showAlert("Failed to schedule the ad. Missing content information.");
       return;
     }
+
     const updatedGrid = [...gridItems];
 
-    // Check if the adItem is from the sidebar (i.e., has a placeholder ID)
-    const isNewAd = adItem.id && adItem.id.startsWith("sidebar-");
-
-    // Assign a new UUID if it's a new ad from the sidebar
     const scheduledAd = {
       id: uuidv4(),
       ad: {
         ...adItem,
-        adId: isNewAd ? uuidv4() : adItem.adId || uuidv4(), // Ensure `adId` is assigned for new ads
+        adId: adItem.adId || uuidv4(), // Ensure `adId` is assigned
       },
-      scheduledTime,
+      scheduledTime, // Store the selected scheduled time
     };
+
     updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
     setIsScheduling(false);
@@ -757,7 +744,13 @@ const AdCanvas = () => {
         return;
       }
     }
-    setCurrentAd({ index: actualIndex, scheduledAd });
+    setCurrentAd({
+      index: actualIndex,
+      scheduledAd: {
+        ...scheduledAd,
+        scheduledTime: scheduledAd.scheduledTime || "00:00", // Ensure it keeps the correct time or defaults to "00:00"
+      },
+    });
     setIsEditing(true);
   };
 
@@ -1025,6 +1018,7 @@ const AdCanvas = () => {
       {isEditing && currentAd && currentAd.scheduledAd && (
         <EditModal
           ad={currentAd.scheduledAd.ad}
+          scheduledTime={currentAd.scheduledAd.scheduledTime}
           onSave={handleSave}
           onClose={() => {
             setIsEditing(false);
@@ -1035,6 +1029,7 @@ const AdCanvas = () => {
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
           ad={currentScheduleAd.item}
+          scheduledTime={currentScheduleAd.scheduledTime} // Pass scheduledTime to modal
           onSave={(scheduledDateTime) =>
             handleScheduleSave(
               currentScheduleAd.item,
