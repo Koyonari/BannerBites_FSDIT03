@@ -151,19 +151,68 @@ const AdCanvas = () => {
       );
       return;
     }
+    
+    // Calculate the new total number of cells
     const newTotalCells = newRows * newColumns;
-    const updatedGrid = Array.from({ length: newTotalCells }, () => ({
+    // Create a new grid with the updated number of cells
+    const updatedGrid = Array.from({ length: newTotalCells }, (_, index) => ({
       scheduledAds: [],
       isMerged: false,
       hidden: false,
       rowSpan: 1,
       colSpan: 1,
     }));
-
-    for (let i = 0; i < Math.min(gridItems.length, newTotalCells); i++) {
-      updatedGrid[i] = gridItems[i];
+    
+    // Loop through the existing grid and map each cell to the new grid
+    for (let i = 0; i < gridItems.length; i++) {
+      const currentItem = gridItems[i];
+      const currentRow = Math.floor(i / columns);
+      const currentCol = i % columns;
+  
+      // Map the old position to the new grid layout
+      if (currentRow < newRows && currentCol < newColumns) {
+        const newIndex = currentRow * newColumns + currentCol;
+        updatedGrid[newIndex] = {
+          ...updatedGrid[newIndex], // Keep default properties for new cells
+          ...currentItem, // Copy properties from the old cell
+        };
+  
+        // Update merged properties if the cell was part of a merge
+        if (currentItem.isMerged && !currentItem.hidden) {
+          const newRowSpan = Math.min(currentItem.rowSpan, newRows - currentRow);
+          const newColSpan = Math.min(currentItem.colSpan, newColumns - currentCol);
+          updatedGrid[newIndex] = {
+            ...updatedGrid[newIndex],
+            rowSpan: newRowSpan,
+            colSpan: newColSpan,
+            isMerged: true,
+            hidden: false,
+          };
+  
+          // Update hidden cells that are part of the merged group
+          for (let r = 0; r < newRowSpan; r++) {
+            for (let c = 0; c < newColSpan; c++) {
+              if (r !== 0 || c !== 0) {
+                const hiddenIndex = (currentRow + r) * newColumns + (currentCol + c);
+                if (hiddenIndex < newTotalCells) {
+                  updatedGrid[hiddenIndex] = {
+                    ...updatedGrid[hiddenIndex],
+                    isMerged: true,
+                    hidden: true,
+                    rowSpan: 1,
+                    colSpan: 1,
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
     }
-
+  
+    // Update state
+    setRows(newRows);
+    setColumns(newColumns);
     setGridItems(updatedGrid);
   };
 
