@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Search, Trash } from "lucide-react";
-
+// LayoutSelector is a component that displays the list of available layouts
 const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -9,7 +9,7 @@ const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
   const filteredLayouts = layouts.filter((layout) =>
     layout.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
+  // Display the first 3 layouts
   const initialLayouts = filteredLayouts.slice(0, 3);
   const remainingLayouts = filteredLayouts.slice(3);
   const hasMore = filteredLayouts.length > 3;

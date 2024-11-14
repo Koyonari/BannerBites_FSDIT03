@@ -1,6 +1,7 @@
 import React from "react";
 import { useDrag } from "react-dnd";
 
+// AdComponent is a draggable component that can be dragged and dropped into the AdCanvas
 const AdComponent = ({ id, type }) => {
   const [{ isDragging }, drag] = useDrag(
     () => ({

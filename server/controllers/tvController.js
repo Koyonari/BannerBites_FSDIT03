@@ -1,6 +1,7 @@
 // controllers/tvController.js
 const TVLayoutModel = require("../models/TVLayoutModel");
 
+// Function to assign a layout to a TV
 const assignLayoutToTV = async (req, res) => {
   const { tvId } = req.params;
   const { layoutId, assignedDate } = req.body;

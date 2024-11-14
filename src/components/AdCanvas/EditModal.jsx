@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import { SketchPicker } from "react-color";
 import Modal from "../Modal/Modal";
 import { v4 as uuidv4 } from "uuid";
+import axios from 'axios';
 import StyledAlert from "../StyledAlert";
 
+// EditModal is a modal popup that allows users to edit an ad
 const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   const [formData, setFormData] = useState({
     content: {
@@ -42,6 +44,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
     });
   };
 
+  // useEffect hook to update the form data when the ad prop changes
   useEffect(() => {
     if (ad && ad.content) {
       const mediaUrl =
@@ -63,11 +66,11 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
           borderColor: "#000000",
         },
       });
-
+      // Set mediaUrl state if it exists
       if (mediaUrl) {
         setMediaUrl(mediaUrl);
       }
-      
+      // Set scheduledTimeState if ad.scheduledTime exists
       if (ad.scheduledTime) {
         setScheduledTimeState(ad.scheduledTime);
       } else if (scheduledTime) {
@@ -76,6 +79,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
     }
   }, [ad, scheduledTime]);
 
+  // Function to handle input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -87,6 +91,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
     }));
   };
 
+  // Function to handle style change
   const handleStyleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -98,6 +103,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
     }));
   };
 
+  // Function to handle color change
   const handleColorChange = (color, field) => {
     setFormData((prevData) => ({
       ...prevData,
@@ -108,70 +114,54 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
     }));
   };
 
-  const handleFileUpload = async (e) => {
-    const selectedFile = e.target.files[0];
-    if (!selectedFile) return;
+  // Function to handle file upload
+ // Function to handle file upload
+const handleFileUpload = async (e) => {
+  const selectedFile = e.target.files[0];
+  if (!selectedFile) return;
 
-    setFile(selectedFile);
-    setIsUploading(true);
+  setFile(selectedFile);
+  setIsUploading(true);
 
-    try {
-      const response = await fetch(
-        "http://localhost:5000/generate-presigned-url",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            fileName: selectedFile.name,
-            contentType: selectedFile.type,
-          }),
-        },
-      );
+  try {
+    // Request the pre-signed URL from the server
+    const response = await axios.post("http://localhost:5000/generate-presigned-url", {
+      fileName: selectedFile.name,
+      contentType: selectedFile.type,
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error fetching pre-signed URL:", errorData);
-        showAlert("Failed to get pre-signed URL");
-        return;
-      }
+    const { url, key } = response.data;
 
-      const { url, key } = await response.json();
+    // Upload the file to S3 using the pre-signed URL
+    await axios.put(url, selectedFile, {
+      headers: {
+        "Content-Type": selectedFile.type,
+      },
+    });
 
-      const uploadResponse = await fetch(url, {
-        method: "PUT",
-        headers: {
-          "Content-Type": selectedFile.type,
-        },
-        body: selectedFile,
-      });
-
-      if (uploadResponse.ok) {
-        const mediaUrlWithoutParams = url.split("?")[0];
-        setFormData((prevData) => ({
-          ...prevData,
-          content: {
-            ...prevData.content,
-            s3Bucket: process.env.REACT_APP_S3_BUCKET_NAME,
-            s3Key: key,
-            src: mediaUrlWithoutParams,
-          },
-        }));
-        setMediaUrl(mediaUrlWithoutParams);
-      } else {
-        throw new Error("Failed to upload file");
-      }
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      showAlert("Error uploading file");
-    } finally {
-      setIsUploading(false);
-    }
-  };
+    // Set the form data and media URL
+    const mediaUrlWithoutParams = url.split("?")[0];
+    setFormData((prevData) => ({
+      ...prevData,
+      content: {
+        ...prevData.content,
+        s3Bucket: process.env.REACT_APP_S3_BUCKET_NAME,
+        s3Key: key,
+        src: mediaUrlWithoutParams,
+      },
+    }));
+    setMediaUrl(mediaUrlWithoutParams);
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    showAlert("Error uploading file");
+  } finally {
+    setIsUploading(false);
+  }
+};
 
   const handleSave = () => {
     const isNewAd = ad.id && ad.id.startsWith("sidebar-");
+    // Check if all required fields are filled
     const updatedAd = {
       ...ad,
       content: formData.content,

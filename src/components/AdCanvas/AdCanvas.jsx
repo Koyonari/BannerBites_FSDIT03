@@ -15,16 +15,23 @@ import LayoutSelector from "../AdViewer/LayoutSelector";
 import DeleteConfirmationModal from "../Modal/DeleteConfirmationModal";
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
+// Main AdCanvas component, responsible for facilitating CRUD operations on ad layouts
 const AdCanvas = () => {
   // Layout Selection State
-  const [layouts, setLayouts] = useState([]);
-  const [isSelectingLayout, setIsSelectingLayout] = useState(true);
-  const [selectedLayout, setSelectedLayout] = useState(null);
-  const [showHelp, setShowHelp] = useState(false);
-  const [rows, setRows] = useState(2);
-  const [columns, setColumns] = useState(3);
-  const totalCells = rows * columns;
+  const [layouts, setLayouts] = useState([]); // List of available layouts
+  const [isSelectingLayout, setIsSelectingLayout] = useState(true); // Flag for layout selection mode
+  const [selectedLayout, setSelectedLayout] = useState(null); // Currently selected layout
+  const [isSavedLayout, setIsSavedLayout] = useState(false); // Tracks if the layout is saved
+
+  // Hint and Help State
+  const [showHelp, setShowHelp] = useState(false); // Toggle for displaying help hints
+
+  // Grid Layout Configuration State
+  const [rows, setRows] = useState(2); // Number of rows in the grid
+  const [columns, setColumns] = useState(3); // Number of columns in the grid
+  const totalCells = rows * columns; // Total cells in grid based on rows & columns
   const [gridItems, setGridItems] = useState(
+    // Array representing each grid cell's data
     Array.from({ length: totalCells }, () => ({
       scheduledAds: [],
       isMerged: false,
@@ -33,26 +40,36 @@ const AdCanvas = () => {
       colSpan: 1,
     })),
   );
-  const [isSavedLayout, setIsSavedLayout] = useState(false);
-  // State for managing delete modal
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [layoutToDelete, setLayoutToDelete] = useState(null);
-  const deleteButtonRef = useRef(null);
-  // States for managing editing a layout
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentAd, setCurrentAd] = useState(null);
-  const [selectedCells, setSelectedCells] = useState([]);
-  const [selectedMergedCells, setSelectedMergedCells] = useState([]);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [isScheduling, setIsScheduling] = useState(false);
-  const [currentScheduleAd, setCurrentScheduleAd] = useState(null);
-  const [isNamingLayout, setIsNamingLayout] = useState(false);
+
+  // Delete Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Controls delete modal visibility
+  const [layoutToDelete, setLayoutToDelete] = useState(null); // Layout currently selected for deletion
+  const deleteButtonRef = useRef(null); // Reference to the delete button element
+
+  // Editing State for Layouts
+  const [isEditing, setIsEditing] = useState(false); // Toggles layout editing mode
+  const [currentAd, setCurrentAd] = useState(null); // Currently selected ad for editing
+  const [selectedCells, setSelectedCells] = useState([]); // List of selected cells for actions
+  const [selectedMergedCells, setSelectedMergedCells] = useState([]); // Merged cells selection
+  const [isSelectionMode, setIsSelectionMode] = useState(false); // Toggles cell selection mode
+
+  // Ad Scheduling State
+  const [isScheduling, setIsScheduling] = useState(false); // Toggles ad scheduling mode
+  const [currentScheduleAd, setCurrentScheduleAd] = useState(null); // Currently selected ad for scheduling
+
+  // Layout Naming State
+  const [isNamingLayout, setIsNamingLayout] = useState(false); // Toggles layout naming mode
+
+  // Alert Configuration State
   const [alertConfig, setAlertConfig] = useState({
+    // Configuration for alerts
     isOpen: false,
     title: "",
     message: "",
     type: "info",
   });
+
+  // Function to show an alert message
   const showAlert = (message, title = "Alert", type = "info") => {
     setAlertConfig({
       isOpen: true,
@@ -62,8 +79,10 @@ const AdCanvas = () => {
     });
   };
 
+  // Function to close the alert message
   const navigate = useNavigate();
 
+  // Use Effect to handle the selection of a layout
   useEffect(() => {
     if (selectedLayout) {
       console.log("Retrieved Layout:", selectedLayout);
@@ -129,34 +148,35 @@ const AdCanvas = () => {
     }
   }, [selectedLayout]);
 
+  // Use Effect to fetch layouts from the server
   useEffect(() => {
     fetchLayouts(); // Initial fetch when the component mounts
   }, []);
 
-     // Function to fetch layouts from the server
-     const fetchLayouts = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/layouts");
-        if (!response.ok) {
-          throw new Error("Failed to fetch layouts");
-        }
-        const data = await response.json();
-        const uniqueLayouts = data.filter(
-          (layout, index, self) =>
-            index === self.findIndex((l) => l.layoutId === layout.layoutId)
-        );
-        setLayouts(uniqueLayouts);
-      } catch (error) {
-        console.error("Error fetching layouts:", error);
-      }
-    };
-  
+  // Function to fetch layouts from the server
+  const fetchLayouts = async () => {
+    try {
+      // Fetch layouts from the server
+      const response = await axios.get("http://localhost:5000/api/layouts");
+      // Filter out duplicate layouts based on layoutId
+      const uniqueLayouts = response.data.filter(
+        (layout, index, self) =>
+          index === self.findIndex((l) => l.layoutId === layout.layoutId),
+      );
+      // Update the state with the fetched layouts
+      setLayouts(uniqueLayouts);
+    } catch (error) {
+      console.error("Error fetching layouts:", error);
+    }
+  };
 
   // Function to handle the selection of a layout
   const handleSelectLayout = async (layoutId) => {
     try {
+      // Fetch the layout details from the server
       const response = await axios.get(`${apiUrl}/api/layouts/${layoutId}`);
       if (response.status === 200) {
+        // Update the state with the selected layout
         setSelectedLayout(response.data);
         setIsSavedLayout(true); // Set isSavedLayout to true for saved layouts
       }
@@ -165,15 +185,16 @@ const AdCanvas = () => {
       showAlert("Failed to load the layout. Please try again.");
     }
   };
-
+  // Function to handle the creation of a new layout
   const handleMoveLeft = () => {
     navigate(-1);
   };
-
+  // Function to handle the creation of a new layout
   const handleOpenSelector = async () => {
     setIsNamingLayout(true);
   };
 
+  // Function to handle the creation of a new layout
   const resizeGrid = (newRows, newColumns) => {
     // Calculate the new total number of cells
     const newTotalCells = newRows * newColumns;
@@ -207,15 +228,17 @@ const AdCanvas = () => {
 
         // Handle merged cells
         if (currentItem.isMerged && !currentItem.hidden) {
+          // Calculate the dimensions of the merged cell (rowSpan)
           const newRowSpan = Math.min(
             currentItem.rowSpan,
             newRows - currentRow,
           );
+          // Calculate the dimensions of the merged cell (colSpan)
           const newColSpan = Math.min(
             currentItem.colSpan,
             newColumns - currentCol,
           );
-
+          // Update the merged cell with new dimensions
           updatedGrid[newIndex] = {
             ...updatedGrid[newIndex],
             rowSpan: newRowSpan,
@@ -225,11 +248,15 @@ const AdCanvas = () => {
           };
 
           // Update hidden cells that are part of the merged group
+          // 1st loop for rows
           for (let r = 0; r < newRowSpan; r++) {
+            // 2nd loop for columns
             for (let c = 0; c < newColSpan; c++) {
               if (r !== 0 || c !== 0) {
+                // Skip the first cell (already updated)
                 const hiddenIndex =
                   (currentRow + r) * newColumns + (currentCol + c);
+                // Check if the hidden cell is within the new grid bounds
                 if (hiddenIndex < newTotalCells) {
                   updatedGrid[hiddenIndex] = {
                     ...updatedGrid[hiddenIndex],
@@ -246,10 +273,13 @@ const AdCanvas = () => {
 
         // Update the selectedCells for merged cells to reflect new indices
         if (currentItem.selectedCells && currentItem.isMerged) {
+          // Update the selectedCells with new indices
           updatedGrid[newIndex].selectedCells = currentItem.selectedCells
             .map((idx) => {
+              // Calculate the old row and column of the cell
               const oldRow = Math.floor(idx / columns);
               const oldCol = idx % columns;
+              // Check if the old cell is within the new grid bounds
               if (oldRow < newRows && oldCol < newColumns) {
                 return oldRow * newColumns + oldCol;
               }
@@ -266,11 +296,13 @@ const AdCanvas = () => {
     setGridItems(updatedGrid);
   };
 
+  // Function to handle the resizing of the grid
   const increaseRows = () => {
     const newRows = rows + 1;
     resizeGrid(newRows, columns);
   };
 
+  // Function to handle the resizing of the grid
   const decreaseRows = () => {
     if (rows > 1) {
       const newRows = rows - 1;
@@ -278,11 +310,13 @@ const AdCanvas = () => {
     }
   };
 
+  // Function to handle the resizing of the grid
   const increaseColumns = () => {
     const newColumns = columns + 1;
     resizeGrid(rows, newColumns);
   };
 
+  // Function to handle the resizing of the grid
   const decreaseColumns = () => {
     if (columns > 1) {
       const newColumns = columns - 1;
@@ -290,13 +324,15 @@ const AdCanvas = () => {
     }
   };
 
+  // Function to handle the merging of cells
   const validateMerge = (selectedCells) => {
     if (selectedCells.length <= 1) {
       return false;
     }
-
+    // Get the dimensions of the selection
     const rows = selectedCells.map((index) => Math.floor(index / columns));
     const cols = selectedCells.map((index) => index % columns);
+    // Get the min and max row and column values
     const minRow = Math.min(...rows);
     const maxRow = Math.max(...rows);
     const minCol = Math.min(...cols);
@@ -366,36 +402,43 @@ const AdCanvas = () => {
     return true;
   };
 
+  // Function to handle the merging of cells
   const handleMerge = (index, direction, selectedCells = []) => {
     const updatedGrid = [...gridItems];
-
+    // Check if the selected cell is valid
     if (!updatedGrid[index]) {
       showAlert("Invalid cell selection!");
       return;
     }
-
+    // Empty array to store the indices of cells to merge
     let indicesToMerge = [];
-
+    // Check if there are selected cells to merge
     if (selectedCells.length > 0) {
       if (!validateMerge(selectedCells)) {
         showAlert("Invalid merge selection. Please check your selection.");
         return;
       }
+      // If the selection is valid, set the indices to merge
       indicesToMerge = selectedCells;
     } else if (direction === "horizontal" || direction === "vertical") {
+      // Check if the selected cell is at the edge of the grid
       if (direction === "horizontal") {
+        // Check if the cell is at the right edge
         if ((index + 1) % columns === 0) {
           showAlert(
             "Cannot merge horizontally. No adjacent cell to the right.",
           );
           return;
         }
+        // Check if the cell is at the left edge
         const rightIndex = index + 1;
         if (
+          // Check if the cell to the right is valid for merging
           updatedGrid[rightIndex] &&
           !updatedGrid[rightIndex].isMerged &&
           !updatedGrid[rightIndex].hidden
         ) {
+          // Set the indices to merge
           indicesToMerge = [index, rightIndex];
         } else {
           showAlert("Cannot merge horizontally. Adjacent cell is invalid.");
@@ -403,15 +446,19 @@ const AdCanvas = () => {
         }
       } else if (direction === "vertical") {
         const bottomIndex = index + columns;
+        // Check if the cell is at the bottom edge
         if (bottomIndex >= totalCells) {
           showAlert("Cannot merge vertically. No adjacent cell below.");
           return;
         }
+        // Check if the cell is at the top edge
         if (
+          // Check if the cell below is valid for merging
           updatedGrid[bottomIndex] &&
           !updatedGrid[bottomIndex].isMerged &&
           !updatedGrid[bottomIndex].hidden
         ) {
+          // Set the indices to merge
           indicesToMerge = [index, bottomIndex];
         } else {
           showAlert("Cannot merge vertically. Adjacent cell is invalid.");
@@ -424,15 +471,17 @@ const AdCanvas = () => {
       // Calculate the dimensions of the merged cell
       const rows = indicesToMerge.map((idx) => Math.floor(idx / columns));
       const cols = indicesToMerge.map((idx) => idx % columns);
+      // Get the min and max row and column values
       const minRow = Math.min(...rows);
       const maxRow = Math.max(...rows);
       const minCol = Math.min(...cols);
       const maxCol = Math.max(...cols);
 
+      // Check if the merged cell is valid
       const mergedScheduledAds = indicesToMerge.reduce((ads, idx) => {
         return ads.concat(updatedGrid[idx].scheduledAds || []);
       }, []);
-
+      // Create the merged cell object
       const mergedItem = {
         scheduledAds: mergedScheduledAds,
         isMerged: true,
@@ -456,21 +505,25 @@ const AdCanvas = () => {
           colSpan: 1,
         };
       });
-
+      // Update the state with the new grid configuration
       setGridItems(updatedGrid);
     } else {
       showAlert("Cannot merge the selected cells.");
     }
   };
 
+  // Function to handle the selection of cells
   const handleCellSelection = (index) => {
     const cell = gridItems[index];
 
     // If the cell is merged
     if (cell.isMerged && !cell.hidden) {
+      // For merged cells
       setSelectedMergedCells((prev) => {
         if (prev.includes(index)) {
+          // If the cell is already selected, remove it from the selection
           const newSelection = prev.filter((i) => i !== index);
+          // If there are no more selected merged cells, exit selection mode
           if (newSelection.length === 0) {
             setIsSelectionMode(false);
           }
@@ -486,6 +539,7 @@ const AdCanvas = () => {
     if (!cell.hidden) {
       setSelectedCells((prev) => {
         if (prev.includes(index)) {
+          // If the cell is already selected, remove it from the selection
           const newSelection = prev.filter((i) => i !== index);
           if (newSelection.length === 0) {
             setIsSelectionMode(false);
@@ -500,9 +554,11 @@ const AdCanvas = () => {
     }
   };
 
+  // Function to handle the merging of selected cells
   const handleMergeSelected = () => {
     // Case 1: Single merged cell selected - unmerge it
     if (selectedMergedCells.length === 1 && selectedCells.length === 0) {
+      // Unmerge the selected merged cell
       handleUnmerge(selectedMergedCells[0]);
       setSelectedMergedCells([]);
       setIsSelectionMode(false);
@@ -522,18 +578,18 @@ const AdCanvas = () => {
       const allCellsToMerge = [
         ...new Set([...unmergedCells, ...selectedCells]),
       ];
-
+      // Check if the selection forms a valid rectangle or square
       if (validateMerge(allCellsToMerge)) {
         selectedMergedCells.forEach((index) => {
           handleUnmerge(index);
         });
-
+        // Sort the cells to merge in ascending order
         const sortedCells = [...allCellsToMerge].sort((a, b) => a - b);
         handleMerge(sortedCells[0], "selection", sortedCells);
       } else {
         showAlert("Selected cells must form a valid rectangle or square.");
       }
-
+      // Reset the selection state
       setSelectedMergedCells([]);
       setSelectedCells([]);
       setIsSelectionMode(false);
@@ -545,24 +601,25 @@ const AdCanvas = () => {
       showAlert("Please select at least 2 cells to merge.");
       return;
     }
-
+    // Check if the selection forms a valid rectangle or square
     if (!validateMerge(selectedCells)) {
       showAlert("Selected cells must form a valid rectangle or square.");
       setSelectedCells([]);
       setIsSelectionMode(false);
       return;
     }
-
+    // Sort the cells to merge in ascending order
     const sortedCells = [...selectedCells].sort((a, b) => a - b);
     handleMerge(sortedCells[0], "selection", sortedCells);
     setSelectedCells([]);
     setIsSelectionMode(false);
   };
 
+  // Function to handle the unmerging of cells
   const handleUnmerge = (index) => {
     const updatedGrid = [...gridItems];
     const cell = updatedGrid[index];
-
+    // Check if the cell is merged
     if (cell.isMerged) {
       const cellsToUnmerge = cell.selectedCells || [index];
 
@@ -586,7 +643,9 @@ const AdCanvas = () => {
     setGridItems(updatedGrid);
   };
 
+  // Function to handle the unmerging of selected cells
   const handleDrop = (item, index, rowIndex, colIndex) => {
+    // Define the normalized item object
     const normalizedItem = {
       id: item.id || uuidv4(),
       adId: item.adId || uuidv4(),
@@ -594,26 +653,27 @@ const AdCanvas = () => {
       content: item.content || item,
       styles: item.styles || {},
     };
-
+    // Define the scheduled ad object
     const scheduledAd = {
       item: normalizedItem,
       index,
       scheduledTime: item.scheduledTime || "00:00", // Default to "00:00"
     };
-
+    // Create a deep copy of the gridItems state to prevent accidental state mutation
     setCurrentScheduleAd(scheduledAd);
     setIsScheduling(true);
   };
 
+  // Function to handle the scheduling of ads
   const handleScheduleSave = (adItem, scheduledTime, index) => {
     if (!adItem.content) {
       console.error("AdItem is missing the 'content' property:", adItem);
       showAlert("Failed to schedule the ad. Missing content information.");
       return;
     }
-
+    // Create a deep copy of the gridItems state to prevent accidental state mutation
     const updatedGrid = [...gridItems];
-
+    // Define the scheduled ad object
     const scheduledAd = {
       id: uuidv4(),
       ad: {
@@ -622,7 +682,7 @@ const AdCanvas = () => {
       },
       scheduledTime, // Store the selected scheduled time
     };
-
+    // Update the grid cell with the scheduled ad
     updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
     setIsScheduling(false);
@@ -700,11 +760,12 @@ const AdCanvas = () => {
     }
   };
 
+  // Function to clean up the layout JSON before saving
   const cleanLayoutJSON = (layout) => {
     const { rows, columns, gridItems } = layout;
     const totalCells = rows * columns;
     const cleanedGridItems = [];
-
+    // Loop through each grid item and clean up the data
     for (let index = 0; index < totalCells; index++) {
       const item = gridItems[index] || {
         index,
@@ -718,7 +779,7 @@ const AdCanvas = () => {
         mergeDirection: null,
         selectedCells: [],
       };
-
+      // Clean up the scheduled ads for each grid item
       const cleanedItem = {
         index,
         row: item.row,
@@ -745,10 +806,10 @@ const AdCanvas = () => {
         selectedCells: item.selectedCells,
         hidden: item.hidden,
       };
-
+      // Add the cleaned item to the list
       cleanedGridItems.push(cleanedItem);
     }
-
+    // Return the cleaned layout object
     return {
       layoutId: layout.layoutId,
       name: layout.name,
@@ -758,10 +819,11 @@ const AdCanvas = () => {
     };
   };
 
-  // Opens the modal for editing a specific ad
+  // Function to handle the editing of ads
   const handleEdit = (index, scheduledAd) => {
     let actualIndex = index;
     if (gridItems[index].hidden) {
+      // Find the main cell for editing
       actualIndex = gridItems.findIndex((item) => {
         return (
           !item.hidden &&
@@ -775,6 +837,7 @@ const AdCanvas = () => {
         return;
       }
     }
+    // Update the current ad state with the selected ad
     setCurrentAd({
       index: actualIndex,
       scheduledAd: {
@@ -785,6 +848,7 @@ const AdCanvas = () => {
     setIsEditing(true);
   };
 
+  // Function to find the main cell index for a hidden cell
   const getMainCellIndex = (hiddenCellIndex) => {
     return gridItems.findIndex((item) => {
       return (
@@ -796,20 +860,21 @@ const AdCanvas = () => {
     });
   };
 
-  // Handles saving an updated ad from the modal
+  // Function to handle saving the edited ad
   const handleSave = (updatedAdData, updatedScheduledTime) => {
     setGridItems((prevGridItems) => {
       const updatedGrid = [...prevGridItems];
-
+      // Check if the current ad is in a hidden cell
       let mainIndex = currentAd.index;
       if (updatedGrid[mainIndex].hidden) {
+        // Find the main cell for editing
         mainIndex = getMainCellIndex(mainIndex);
         if (mainIndex === -1) {
           showAlert("Could not find the main cell for saving.");
           return prevGridItems;
         }
       }
-
+      // Update the scheduled ad with the new data
       const cellToUpdate = { ...updatedGrid[mainIndex] };
       const scheduledAds = cellToUpdate.scheduledAds.map((ad) =>
         ad.id === currentAd.scheduledAd.id
@@ -823,19 +888,20 @@ const AdCanvas = () => {
             }
           : ad,
       );
-
+      // Update the cell with the new scheduled ads
       cellToUpdate.scheduledAds = scheduledAds;
       updatedGrid[mainIndex] = cellToUpdate;
-
+      // Return the updated grid
       return updatedGrid;
     });
-
+    // Reset the editing state
     setIsEditing(false);
     setCurrentAd(null);
   };
 
   // Function to handle opening the delete confirmation modal
   const handleDeleteLayoutClick = (layoutId, buttonRef) => {
+    // Set the layout to delete and open the modal
     setLayoutToDelete(layoutId);
     setIsDeleteModalOpen(true);
     deleteButtonRef.current = buttonRef;
@@ -847,16 +913,16 @@ const AdCanvas = () => {
       try {
         // Use axios to send a DELETE request
         const response = await axios.delete(
-          `http://localhost:5000/api/layouts/${layoutToDelete}`
+          `http://localhost:5000/api/layouts/${layoutToDelete}`,
         );
-  
+
         // Check if the request was successful
         if (response.status === 200) {
           // Remove the deleted layout from the state
           setLayouts((prevLayouts) =>
-            prevLayouts.filter((layout) => layout.layoutId !== layoutToDelete)
+            prevLayouts.filter((layout) => layout.layoutId !== layoutToDelete),
           );
-  
+
           // Clear the canvas if the deleted layout was the currently selected one
           if (selectedLayout && selectedLayout.layoutId === layoutToDelete) {
             setSelectedLayout(null);
@@ -869,10 +935,10 @@ const AdCanvas = () => {
                 hidden: false,
                 rowSpan: 1,
                 colSpan: 1,
-              }))
+              })),
             ); // Create a new empty 2x3 grid
           }
-  
+
           // Close the delete modal and clear layoutToDelete state
           setIsDeleteModalOpen(false);
           setLayoutToDelete(null);
@@ -885,7 +951,9 @@ const AdCanvas = () => {
 
   // Function to cancel deletion
   const handleCancelDelete = () => {
+    // Close the delete modal and clear layoutToDelete state
     setIsDeleteModalOpen(false);
+    // Clear the layoutToDelete state
     setLayoutToDelete(null);
   };
 
@@ -990,9 +1058,11 @@ const AdCanvas = () => {
                 "--columns": columns,
               }}
             >
+              {/*Loop through each grid item and render the grid cell*/}
               {gridItems.map((item, index) => {
                 const rowIndex = Math.floor(index / columns);
                 const colIndex = index % columns;
+                // Render each grid cell
                 return (
                   <GridCell
                     key={index}
@@ -1069,6 +1139,7 @@ const AdCanvas = () => {
           data-tooltip-id="merge-tooltip"
           data-tooltip-content={mergeButtonTooltip}
         >
+          {/* Merge button */}
           <Merge
             onClick={handleMergeSelected}
             disabled={!isMergeButtonActive}
@@ -1079,7 +1150,7 @@ const AdCanvas = () => {
             }`}
           />
         </div>
-
+        {/* Check render*/}
         <Check
           onClick={handleOpenSelector}
           className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
@@ -1101,6 +1172,7 @@ const AdCanvas = () => {
           onClose={() => setIsNamingLayout(false)}
         />
       )}
+      {/* Edit Modal */}
       {isEditing && currentAd && currentAd.scheduledAd && (
         <EditModal
           ad={currentAd.scheduledAd.ad}
@@ -1112,6 +1184,7 @@ const AdCanvas = () => {
           }}
         />
       )}
+      {/* Schedule Modal */}
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
           ad={currentScheduleAd.item}
@@ -1134,6 +1207,7 @@ const AdCanvas = () => {
           }
         />
       )}
+      {/* Alert component */}
       <StyledAlert
         isOpen={alertConfig.isOpen}
         onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
@@ -1141,7 +1215,7 @@ const AdCanvas = () => {
         message={alertConfig.message}
         type={alertConfig.type}
       />
-  
+
       {/* LayoutSelector */}
       <LayoutSelector
         layouts={layouts}

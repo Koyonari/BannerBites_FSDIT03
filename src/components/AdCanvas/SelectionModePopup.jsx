@@ -1,3 +1,4 @@
+// Selection mode popup component, which is displayed when the user is in selection mode
 const SelectionModePopup = ({ isVisible }) => {
   return (
     <div
