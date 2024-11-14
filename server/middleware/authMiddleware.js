@@ -11,7 +11,7 @@ const verifyPassword = async (password, hashedPassword) => {
   }
 };
 
-// Authenticate user
+// Function to authenticate a user
 const authenticateUser = async (username, password, role) => {
     const user = await getUserByUsername(username);
     
@@ -29,7 +29,7 @@ const authenticateUser = async (username, password, role) => {
     }
   };
   
-
+// Function to verify a token and authenticate a user
 const verifyToken = (req, res, next) => {
   const token = req.cookies.authToken;
 

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../Navbar";
 import { Maximize2, Minimize2 } from "lucide-react";
 import LayoutViewer from "../AdViewer/LayoutViewer";
-
+import axios from "axios";
+// LayoutList is a component that displays a list of available layouts, nested within is the LayoutViewer component, which renders the layout of ads
 const LayoutList = () => {
   const [layouts, setLayouts] = useState([]);
   const [selectedLayout, setSelectedLayout] = useState(null);
@@ -21,19 +22,20 @@ const LayoutList = () => {
 
   useEffect(() => {
     fetchLayouts();
-
+    // Handle window resize and fullscreen change events
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
     handleResize();
 
+    // Handle fullscreen change event
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
-
+    // Add event listeners
     window.addEventListener("resize", handleResize);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-
+    // Cleanup
     return () => {
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
@@ -45,6 +47,7 @@ const LayoutList = () => {
     };
   }, []);
 
+  // Function to toggle fullscreen mode
   const toggleFullscreen = async () => {
     try {
       if (!isFullscreen) {
@@ -57,23 +60,25 @@ const LayoutList = () => {
     }
   };
 
+  // Function to fetch layouts
   const fetchLayouts = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch("http://localhost:5000/api/layouts");
-      if (!response.ok) {
-        throw new Error("Failed to fetch layouts");
-      }
-      const data = await response.json();
-      setLayouts(data);
+      
+      // Using axios to fetch layouts
+      const response = await axios.get("http://localhost:5000/api/layouts");
+      
+      // The data is already parsed as JSON, so you can use it directly
+      setLayouts(response.data);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // Function to handle layout selection
   const handleLayoutSelect = async (layoutId) => {
     if (pendingLayoutIdRef.current === layoutId) {
       // If this layout is already pending, ignore the repeated request.
@@ -81,41 +86,34 @@ const LayoutList = () => {
     }
     pendingLayoutIdRef.current = layoutId;
     reconnectAttemptsRef.current = 0; // Reset reconnect attempts for new selection
-
+  
     try {
       setLoading(true);
       setError(null);
       setSelectedLayout(null);
-
+  
       // Close the previous WebSocket connection if one exists
       if (websocketRef.current) {
         websocketRef.current.onclose = null; // Remove any existing onclose handlers to avoid triggering reconnections
         websocketRef.current.close();
         websocketRef.current = null;
       }
-
-      // Fetch the initial layout data
-      const response = await fetch(
-        `http://localhost:5000/api/layouts/${layoutId}`,
-      );
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch layout details for layoutId: ${layoutId}`,
-        );
-      }
-      const data = await response.json();
-      setSelectedLayout(data);
-
+  
+      // Fetch the initial layout data using axios
+      const response = await axios.get(`http://localhost:5000/api/layouts/${layoutId}`);
+      setSelectedLayout(response.data); // axios automatically parses JSON
+  
       // Set up WebSocket connection for real-time updates
       establishWebSocketConnection(layoutId);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message); // Detailed error message if available
     } finally {
       setLoading(false);
       pendingLayoutIdRef.current = null; // Allow new layout selection after handling is complete
     }
   };
 
+  // Function to establish WebSocket connection
   const establishWebSocketConnection = (layoutId) => {
     websocketRef.current = new WebSocket("ws://localhost:5000");
 
@@ -124,7 +122,7 @@ const LayoutList = () => {
         JSON.stringify({ type: "subscribe", layoutId }),
       );
     };
-
+    // Handle incoming WebSocket messages
     websocketRef.current.onmessage = (event) => {
       try {
         const parsedData = JSON.parse(event.data);
@@ -140,7 +138,7 @@ const LayoutList = () => {
         console.error("[FRONTEND] Error parsing WebSocket message:", e);
       }
     };
-
+    // Handle WebSocket close event
     websocketRef.current.onclose = (event) => {
       if (
         pendingLayoutIdRef.current === layoutId &&
@@ -152,17 +150,17 @@ const LayoutList = () => {
         }, 5000);
       }
     };
-
+    // Handle WebSocket errors
     websocketRef.current.onerror = (error) => {
       console.error("[FRONTEND] WebSocket error:", error);
     };
   };
-
+  // Display only the first 3 layouts on mobile
   const visibleLayouts =
     isMobile && !showAllLayouts
       ? layouts.slice(0, MOBILE_DISPLAY_LIMIT)
       : layouts;
-
+  // Check if there are more layouts to display
   const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
 
   return (

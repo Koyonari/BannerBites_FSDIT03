@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, Calendar } from "lucide-react";
-
+// ScheduleModal is a modal popup that allows the user to schedule an ad
 const ScheduleModal = ({ ad, scheduledTime: initialScheduledTime, onSave, onClose, existingScheduledTimes }) => {
   const [scheduledTime, setScheduledTime] = useState(
     initialScheduledTime && initialScheduledTime !== "" ? initialScheduledTime : "00:00"

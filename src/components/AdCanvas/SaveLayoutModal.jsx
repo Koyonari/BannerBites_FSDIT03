@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Modal from "../Modal/Modal";
 import StyledAlert from "../StyledAlert";
 
+// SaveLayoutModal is a modal popup that allows the user to save the current layout
 const SaveLayoutModal = ({ onSave, onClose }) => {
   const [layoutName, setLayoutName] = useState("");
   const [alertConfig, setAlertConfig] = useState({
@@ -11,7 +12,7 @@ const SaveLayoutModal = ({ onSave, onClose }) => {
     message: "",
     type: "info",
   });
-
+  // showAlert is a function that displays an alert message
   const showAlert = (message, title = "Alert", type = "info") => {
     setAlertConfig({
       isOpen: true,
@@ -20,7 +21,7 @@ const SaveLayoutModal = ({ onSave, onClose }) => {
       type,
     });
   };
-
+  // handleSave is a function that saves the current layout
   const handleSave = () => {
     if (layoutName.trim() === "") {
       showAlert("Please enter a name for the layout.");

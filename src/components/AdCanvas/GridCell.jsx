@@ -5,6 +5,7 @@ import AdListPopup from "./AdListPopup";
 import { CircleMinus, View, Pencil } from "lucide-react";
 import StyledAlert from "../StyledAlert";
 
+// Checkbox component, used for multi-selecting cells
 const Checkbox = ({ checked, onChange, className, showHelp }) => (
   <div
     id="cellCheckbox"

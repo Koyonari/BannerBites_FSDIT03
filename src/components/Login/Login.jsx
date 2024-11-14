@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import StyledAlert from "../StyledAlert";
-
+import axios from "axios";
+// Login is a component that renders the login form
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -14,7 +15,7 @@ const Login = () => {
     message: "",
     type: "info",
   });
-
+  // showAlert is a function that displays an alert message
   const showAlert = (message, title = "Alert", type = "info") => {
     setAlertConfig({
       isOpen: true,
@@ -23,33 +24,31 @@ const Login = () => {
       type,
     });
   };
-
+  // Function to handle login
   const handleLogin = async (e) => {
     e.preventDefault();
-
+  
     if (!username || !password) {
       showAlert("Please enter both username and password");
       return;
     }
-
+  
     try {
-      const response = await fetch("http://localhost:5000/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password, role }), // Include role in the request
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Invalid username or password");
-      }
-
+      await axios.post(
+        "http://localhost:5000/api/login",
+        { username, password, role }, // Request body with role included
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true, // Include credentials (e.g., cookies) with the request
+        }
+      );
+  
       alert(`Logged in successfully as ${role} - ${username}`);
       navigate("/"); // Redirect to home page after showing alert
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || "Invalid username or password");
     }
   };
 

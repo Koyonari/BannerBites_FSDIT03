@@ -1,6 +1,7 @@
 import React from "react";
 import { X, Edit2, Trash2, Clock } from "lucide-react";
 
+// AdListPopup is a modal popup that displays a list of scheduled ads
 const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center">
