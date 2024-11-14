@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Search, Trash } from "lucide-react";
 
-const LayoutSelector = ({ onSelect }) => {
+const LayoutSelector = ({ onSelect, onDeleteLayoutClick }) => {
   const [layouts, setLayouts] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,7 +16,7 @@ const LayoutSelector = ({ onSelect }) => {
         const data = await response.json();
         const uniqueLayouts = data.filter(
           (layout, index, self) =>
-            index === self.findIndex((l) => l.layoutId === layout.layoutId),
+            index === self.findIndex((l) => l.layoutId === layout.layoutId)
         );
         setLayouts(uniqueLayouts);
       } catch (error) {
@@ -28,7 +28,7 @@ const LayoutSelector = ({ onSelect }) => {
 
   // Filter layouts based on search query
   const filteredLayouts = layouts.filter((layout) =>
-    layout.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+    layout.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const initialLayouts = filteredLayouts.slice(0, 3);
@@ -37,24 +37,6 @@ const LayoutSelector = ({ onSelect }) => {
 
   const buttonBaseClasses =
     "w-full rounded-lg px-4 py-2 text-left text-sm transition-colors hover:bg-orange-500 hover:text-white dark:text-white dark:hover:bg-gray-700";
-
-  const handleDeleteLayout = async (layoutId) => {
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/layouts/${layoutId}`,
-        {
-          method: "DELETE",
-        },
-      );
-      if (!response.ok) {
-        throw new Error("Failed to delete layout");
-      }
-      // Update the layouts state after successful deletion
-      setLayouts(layouts.filter((layout) => layout.layoutId !== layoutId));
-    } catch (error) {
-      console.error("Error deleting layout:", error);
-    }
-  };
 
   return (
     <div className="flex w-4/5 flex-col items-center justify-center gap-2 overflow-y-auto bg-transparent py-4 text-lg shadow-none dark:text-white lg:fixed lg:right-4 lg:top-[52vh] lg:h-auto lg:w-[10vw] lg:-translate-y-1/2 lg:flex-col lg:items-stretch lg:pr-4 xl:pr-6 xl:text-xl 2xl:top-[49vh] 2xl:text-2xl 4xl:text-4xl">
@@ -86,7 +68,7 @@ const LayoutSelector = ({ onSelect }) => {
               </button>
               <Trash
                 className="h-5 w-5 cursor-pointer text-red-500 hover:text-red-700"
-                onClick={() => handleDeleteLayout(layout.layoutId)}
+                onClick={(e) => onDeleteLayoutClick(layout.layoutId, e.target)}
               />
             </div>
           ))}
@@ -124,7 +106,7 @@ const LayoutSelector = ({ onSelect }) => {
                   </button>
                   <Trash
                     className="h-5 w-5 cursor-pointer text-red-500 hover:text-red-700"
-                    onClick={() => handleDeleteLayout(layout.layoutId)}
+                    onClick={(e) => onDeleteLayoutClick(layout.layoutId, e.target)}
                   />
                 </div>
               ))}

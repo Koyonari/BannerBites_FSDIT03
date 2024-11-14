@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import Sidebar from "./Sidebar";
@@ -12,6 +12,7 @@ import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
 import LayoutSelector from "../AdViewer/LayoutSelector";
+import DeleteConfirmationModal from "../Modal/DeleteConfirmationModal";
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const AdCanvas = () => {
@@ -32,6 +33,11 @@ const AdCanvas = () => {
     })),
   );
   const [isSavedLayout, setIsSavedLayout] = useState(false);
+  // State for managing delete modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [layoutToDelete, setLayoutToDelete] = useState(null);
+  const deleteButtonRef = useRef(null);
+  // States for managing editing a layout
   const [isEditing, setIsEditing] = useState(false);
   const [currentAd, setCurrentAd] = useState(null);
   const [selectedCells, setSelectedCells] = useState([]);
@@ -803,6 +809,37 @@ const AdCanvas = () => {
     setCurrentAd(null);
   };
 
+  // Function to handle opening the delete confirmation modal
+  const handleDeleteLayoutClick = (layoutId, buttonRef) => {
+    setLayoutToDelete(layoutId);
+    setIsDeleteModalOpen(true);
+    deleteButtonRef.current = buttonRef;
+  };
+
+  // Function to confirm deletion
+  const handleConfirmDelete = async () => {
+    if (layoutToDelete) {
+      try {
+        const response = await axios.delete(
+          `http://localhost:5000/api/layouts/${layoutToDelete}`,
+        );
+        if (response.status === 200) {
+          // Update your layouts here if necessary
+          setIsDeleteModalOpen(false);
+          setLayoutToDelete(null);
+        }
+      } catch (error) {
+        console.error("Error deleting layout:", error);
+      }
+    }
+  };
+
+  // Function to cancel deletion
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false);
+    setLayoutToDelete(null);
+  };
+
   // Tooltip styles
   const tooltipStyle = {
     backgroundColor: "rgb(255, 255, 255)",
@@ -1056,8 +1093,20 @@ const AdCanvas = () => {
         type={alertConfig.type}
       />
 
-      {/* LayoutSelector */}
-      <LayoutSelector onSelect={handleSelectLayout} />
+      {/* Layout Selector */}
+      <LayoutSelector
+        onSelect={handleSelectLayout}
+        onDeleteLayoutClick={handleDeleteLayoutClick}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <DeleteConfirmationModal
+          isOpen={isDeleteModalOpen}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+        />
+      )}
     </div>
   );
 };
