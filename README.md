@@ -24,8 +24,8 @@ In recent years, the advertising industry has undergone significant
  advertisers to reach audiences through interactive and targeted ads.
 
  ### Features
-  -1.Customizable layout
-  -2.Real time communication
+  - 1.Customizable layout
+  - 2.Real time communication
 
 ## Project Structure
 
