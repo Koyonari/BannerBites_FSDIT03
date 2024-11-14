@@ -513,37 +513,40 @@ const AdCanvas = () => {
   };
 
   // Function to handle the selection of cells
-  const handleCellSelection = (index, checked) => {
+  const handleCellSelection = (index) => {
     const cell = gridItems[index];
-  
+
+    // If the cell is merged
     if (cell.isMerged && !cell.hidden) {
       // For merged cells
       setSelectedMergedCells((prev) => {
-        if (checked) {
-          return [...prev, index];
-        } else {
+        if (prev.includes(index)) {
+          // If the cell is already selected, remove it from the selection
           const newSelection = prev.filter((i) => i !== index);
-          if (newSelection.length === 0 && selectedCells.length === 0) {
+          // If there are no more selected merged cells, exit selection mode
+          if (newSelection.length === 0) {
             setIsSelectionMode(false);
           }
           return newSelection;
         }
+        return [...prev, index];
       });
-      if (!isSelectionMode) {
-        setIsSelectionMode(true);
-      }
-    } else if (!cell.hidden) {
-      // For non-merged cells
+      setIsSelectionMode(true);
+      return;
+    }
+
+    // For non-merged cells
+    if (!cell.hidden) {
       setSelectedCells((prev) => {
-        if (checked) {
-          return [...prev, index];
-        } else {
+        if (prev.includes(index)) {
+          // If the cell is already selected, remove it from the selection
           const newSelection = prev.filter((i) => i !== index);
-          if (newSelection.length === 0 && selectedMergedCells.length === 0) {
+          if (newSelection.length === 0) {
             setIsSelectionMode(false);
           }
           return newSelection;
         }
+        return [...prev, index];
       });
       if (!isSelectionMode) {
         setIsSelectionMode(true);
@@ -1072,7 +1075,6 @@ const AdCanvas = () => {
                     onEdit={handleEdit}
                     onMerge={handleMerge}
                     isSelected={selectedCells.includes(index)}
-                    selectedMergedCells={selectedMergedCells} 
                     onSelect={handleCellSelection}
                     isSelectionMode={isSelectionMode}
                     setIsSelectionMode={setIsSelectionMode}
