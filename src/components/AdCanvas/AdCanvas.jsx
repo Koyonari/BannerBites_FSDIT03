@@ -31,6 +31,7 @@ const AdCanvas = () => {
       colSpan: 1,
     })),
   );
+  const [isSavedLayout, setIsSavedLayout] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentAd, setCurrentAd] = useState(null);
   const [selectedCells, setSelectedCells] = useState([]);
@@ -59,12 +60,12 @@ const AdCanvas = () => {
   useEffect(() => {
     if (selectedLayout) {
       console.log("Retrieved Layout:", selectedLayout);
-  
+
       const totalCells = selectedLayout.rows * selectedLayout.columns;
-  
+
       const newGridItems = Array.from({ length: totalCells }, (_, index) => {
         const item = selectedLayout.gridItems.find((gi) => gi.index === index);
-  
+
         if (item) {
           // If the item is not merged, remove merge-related attributes
           if (!item.isMerged) {
@@ -78,7 +79,7 @@ const AdCanvas = () => {
               selectedCells: [],
             };
           }
-  
+
           // If the item is merged, retain the necessary merge attributes
           return {
             ...item,
@@ -112,7 +113,7 @@ const AdCanvas = () => {
           };
         }
       });
-  
+
       setRows(selectedLayout.rows);
       setColumns(selectedLayout.columns);
       setGridItems(newGridItems);
@@ -127,6 +128,7 @@ const AdCanvas = () => {
       const response = await axios.get(`${apiUrl}/api/layouts/${layoutId}`);
       if (response.status === 200) {
         setSelectedLayout(response.data);
+        setIsSavedLayout(true); // Set isSavedLayout to true for saved layouts
       }
     } catch (error) {
       console.error("Error fetching layout details:", error);
@@ -143,6 +145,12 @@ const AdCanvas = () => {
   };
 
   const resizeGrid = (newRows, newColumns) => {
+    if (isSavedLayout) {
+      showAlert(
+        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
+      );
+      return;
+    }
     const newTotalCells = newRows * newColumns;
     const updatedGrid = Array.from({ length: newTotalCells }, () => ({
       scheduledAds: [],
@@ -160,12 +168,24 @@ const AdCanvas = () => {
   };
 
   const increaseRows = () => {
+    if (isSavedLayout) {
+      showAlert(
+        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
+      );
+      return;
+    }
     const newRows = rows + 1;
     setRows(newRows);
     resizeGrid(newRows, columns);
   };
 
   const decreaseRows = () => {
+    if (isSavedLayout) {
+      showAlert(
+        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
+      );
+      return;
+    }
     if (rows > 1) {
       const newRows = rows - 1;
       setRows(newRows);
@@ -174,12 +194,24 @@ const AdCanvas = () => {
   };
 
   const increaseColumns = () => {
+    if (isSavedLayout) {
+      showAlert(
+        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
+      );
+      return;
+    }
     const newColumns = columns + 1;
     setColumns(newColumns);
     resizeGrid(rows, newColumns);
   };
 
   const decreaseColumns = () => {
+    if (isSavedLayout) {
+      showAlert(
+        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
+      );
+      return;
+    }
     if (columns > 1) {
       const newColumns = columns - 1;
       resizeGrid(rows, newColumns);
@@ -264,6 +296,12 @@ const AdCanvas = () => {
   };
 
   const handleMerge = (index, direction, selectedCells = []) => {
+    if (isSavedLayout) {
+      showAlert(
+        "Cannot modify layout of a saved layout. Please create a new layout or select a different one.",
+      );
+      return;
+    }
     const updatedGrid = [...gridItems];
 
     if (!updatedGrid[index]) {
@@ -947,22 +985,24 @@ const AdCanvas = () => {
       )}
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
-        ad={currentScheduleAd.item}
-        onSave={(scheduledDateTime) =>
-          handleScheduleSave(
-            currentScheduleAd.item,
-            scheduledDateTime,
-            currentScheduleAd.index,
-          )
-        }
-        onClose={() => {
-          setIsScheduling(false);
-          setCurrentScheduleAd(null);
-        }}
-        existingScheduledTimes={
-          gridItems[currentScheduleAd.index]?.scheduledAds.map(ad => ad.scheduledTime) || []
-        }
-      />
+          ad={currentScheduleAd.item}
+          onSave={(scheduledDateTime) =>
+            handleScheduleSave(
+              currentScheduleAd.item,
+              scheduledDateTime,
+              currentScheduleAd.index,
+            )
+          }
+          onClose={() => {
+            setIsScheduling(false);
+            setCurrentScheduleAd(null);
+          }}
+          existingScheduledTimes={
+            gridItems[currentScheduleAd.index]?.scheduledAds.map(
+              (ad) => ad.scheduledTime,
+            ) || []
+          }
+        />
       )}
       <StyledAlert
         isOpen={alertConfig.isOpen}
