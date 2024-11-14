@@ -5,7 +5,8 @@
   "scripts": {
     "test": "jest",
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "count-lines": "node scripts/countLinesServerSrc.js"
   },
   "keywords": [],
   "author": "",
