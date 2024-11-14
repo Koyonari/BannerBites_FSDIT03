@@ -20,9 +20,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
       borderColor: "#000000",
     },
   });
-  const [scheduledTimeState, setScheduledTimeState] = useState(
-    scheduledTime || "00:00",
-  );
+  const [scheduledTimeState, setScheduledTimeState] = useState(scheduledTime || "00:00");
   const [file, setFile] = useState(null);
   const [mediaUrl, setMediaUrl] = useState("");
   const [showBorderColorPicker, setShowBorderColorPicker] = useState(false);
@@ -69,8 +67,14 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
       if (mediaUrl) {
         setMediaUrl(mediaUrl);
       }
+      
+      if (ad.scheduledTime) {
+        setScheduledTimeState(ad.scheduledTime);
+      } else if (scheduledTime) {
+        setScheduledTimeState(scheduledTime);
+      }
     }
-  }, [ad]);
+  }, [ad, scheduledTime]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

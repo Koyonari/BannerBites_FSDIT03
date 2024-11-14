@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { X, Calendar } from "lucide-react";
 
-const ScheduleModal = ({ ad, onSave, onClose, existingScheduledTimes }) => {
-  const [scheduledTime, setScheduledTime] = useState("00:00");
+const ScheduleModal = ({ ad, scheduledTime: initialScheduledTime, onSave, onClose, existingScheduledTimes }) => {
+  const [scheduledTime, setScheduledTime] = useState(
+    initialScheduledTime && initialScheduledTime !== "" ? initialScheduledTime : "00:00"
+  );
   const [error, setError] = useState("");
 
   // Handle Save button click
