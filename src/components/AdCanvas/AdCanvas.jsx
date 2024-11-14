@@ -1000,8 +1000,31 @@ const AdCanvas = () => {
       ? "Click to merge/unmerge selected cells"
       : "Click to merge/unmerge selected cells";
 
+  let aspectRatio = "";
+  const difference = columns - rows;
+
+  if (difference === 0) {
+    aspectRatio = "1:1";
+  } else {
+    // Calculate the base aspect ratio and increment/decrement by 5 for each step away from 1:1
+    const widthRatio = 16 + (Math.abs(difference) - 1) * 5;
+    const heightRatio = 9;
+
+    if (difference > 0) {
+      // If columns > rows, we use width:height format (e.g., 16:9, 21:9)
+      aspectRatio = `${widthRatio}:${heightRatio}`;
+    } else {
+      // If rows > columns, we use height:width format (e.g., 9:16, 9:21)
+      aspectRatio = `${heightRatio}:${widthRatio}`;
+    }
+  }
+
   return (
     <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center pt-[10vh] text-center">
+      <div className="text-3xl font-bold text-black dark:text-white">
+        Current Aspect Ratio: {aspectRatio}
+      </div>
+
       <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
         <CircleHelp
           className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${

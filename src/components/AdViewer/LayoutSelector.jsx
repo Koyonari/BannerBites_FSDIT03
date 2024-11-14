@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Search, Trash } from "lucide-react";
-// LayoutSelector is a component that displays the list of available layouts
+
 const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter layouts based on search query
   const filteredLayouts = layouts.filter((layout) =>
-    layout.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    layout.name?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-  // Display the first 3 layouts
+
+  // Separate the first 3 layouts and the remaining layouts
   const initialLayouts = filteredLayouts.slice(0, 3);
   const remainingLayouts = filteredLayouts.slice(3);
   const hasMore = filteredLayouts.length > 3;
@@ -31,9 +32,10 @@ const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
       </div>
 
-      {/* Initial 3 layouts */}
+      {/* Layout list */}
       <div className="w-full border-l border-black dark:border-white">
         <div className="flex w-full flex-col gap-2">
+          {/* Display initial 3 layouts */}
           {initialLayouts.map((layout) => (
             <div
               key={layout.layoutId}
@@ -55,20 +57,9 @@ const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
 
         {/* Expandable section for remaining layouts */}
         {hasMore && (
-          <div className="flex w-full flex-col gap-2">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className={`${buttonBaseClasses} flex items-center justify-between`}
-            >
-              <span>{isOpen ? "Show Less" : `Show More`}</span>
-              {isOpen ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </button>
+          <>
             <div
-              className={`flex h-[20vh] flex-col gap-2 overflow-y-auto transition-all duration-200 ease-in-out ${
+              className={`flex flex-col gap-2 overflow-y-auto transition-all duration-200 ease-in-out ${
                 isOpen ? "max-h-48 overflow-y-auto" : "max-h-0"
               }`}
             >
@@ -90,7 +81,20 @@ const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
                 </div>
               ))}
             </div>
-          </div>
+
+            {/* Show More/Show Less button */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className={`${buttonBaseClasses} mt-2 flex items-center justify-between`}
+            >
+              <span>{isOpen ? "Show Less" : `Show More`}</span>
+              {isOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </button>
+          </>
         )}
       </div>
     </div>
