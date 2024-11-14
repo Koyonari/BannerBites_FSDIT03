@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import WebFont from "webfontloader";
-
-// Component to represent an individual Ad
+// AdViewer is a component that renders the layout of ads
 const AdComponent = ({ type, content = {}, styles = {} }) => {
   let mediaUrl = content.mediaUrl || content.src;
 
@@ -26,7 +25,7 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
       });
     }
   }, [styles.font]);
-
+  // AdStyles is an object that contains the styles for the ad
   const adStyles = {
     fontFamily: styles.font,
     fontSize: styles.fontSize,

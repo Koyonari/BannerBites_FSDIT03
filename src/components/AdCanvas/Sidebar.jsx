@@ -1,6 +1,7 @@
 import React from "react";
 import AdComponent from "./AdComponent";
 
+// Sidebar is a component that displays the ad options that can be added to the grid
 const Sidebar = ({ showHelp }) => {
   const adOptions = [{ type: "Text" }, { type: "Image" }, { type: "Video" }];
 
