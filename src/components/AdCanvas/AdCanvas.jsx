@@ -17,6 +17,7 @@ const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const AdCanvas = () => {
   // Layout Selection State
+  const [layouts, setLayouts] = useState([]);
   const [isSelectingLayout, setIsSelectingLayout] = useState(true);
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
@@ -127,6 +128,29 @@ const AdCanvas = () => {
       setIsSelectingLayout(false);
     }
   }, [selectedLayout]);
+
+  useEffect(() => {
+    fetchLayouts(); // Initial fetch when the component mounts
+  }, []);
+
+     // Function to fetch layouts from the server
+     const fetchLayouts = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/layouts");
+        if (!response.ok) {
+          throw new Error("Failed to fetch layouts");
+        }
+        const data = await response.json();
+        const uniqueLayouts = data.filter(
+          (layout, index, self) =>
+            index === self.findIndex((l) => l.layoutId === layout.layoutId)
+        );
+        setLayouts(uniqueLayouts);
+      } catch (error) {
+        console.error("Error fetching layouts:", error);
+      }
+    };
+  
 
   // Function to handle the selection of a layout
   const handleSelectLayout = async (layoutId) => {
@@ -669,6 +693,7 @@ const AdCanvas = () => {
         showAlert("Layout saved successfully!");
       }
       setIsNamingLayout(false);
+      fetchLayouts();
     } catch (error) {
       console.error("Error saving layout:", error);
       showAlert("Failed to save layout. Please try again.");
@@ -820,11 +845,35 @@ const AdCanvas = () => {
   const handleConfirmDelete = async () => {
     if (layoutToDelete) {
       try {
+        // Use axios to send a DELETE request
         const response = await axios.delete(
-          `http://localhost:5000/api/layouts/${layoutToDelete}`,
+          `http://localhost:5000/api/layouts/${layoutToDelete}`
         );
+  
+        // Check if the request was successful
         if (response.status === 200) {
-          // Update your layouts here if necessary
+          // Remove the deleted layout from the state
+          setLayouts((prevLayouts) =>
+            prevLayouts.filter((layout) => layout.layoutId !== layoutToDelete)
+          );
+  
+          // Clear the canvas if the deleted layout was the currently selected one
+          if (selectedLayout && selectedLayout.layoutId === layoutToDelete) {
+            setSelectedLayout(null);
+            setRows(2); // Reset to initial value of rows
+            setColumns(3); // Reset to initial value of columns
+            setGridItems(
+              Array.from({ length: 2 * 3 }, () => ({
+                scheduledAds: [],
+                isMerged: false,
+                hidden: false,
+                rowSpan: 1,
+                colSpan: 1,
+              }))
+            ); // Create a new empty 2x3 grid
+          }
+  
+          // Close the delete modal and clear layoutToDelete state
           setIsDeleteModalOpen(false);
           setLayoutToDelete(null);
         }
@@ -1092,9 +1141,10 @@ const AdCanvas = () => {
         message={alertConfig.message}
         type={alertConfig.type}
       />
-
-      {/* Layout Selector */}
+  
+      {/* LayoutSelector */}
       <LayoutSelector
+        layouts={layouts}
         onSelect={handleSelectLayout}
         onDeleteLayoutClick={handleDeleteLayoutClick}
       />

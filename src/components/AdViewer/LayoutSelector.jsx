@@ -1,30 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Search, Trash } from "lucide-react";
 
-const LayoutSelector = ({ onSelect, onDeleteLayoutClick }) => {
-  const [layouts, setLayouts] = useState([]);
+const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    const fetchLayouts = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/layouts");
-        if (!response.ok) {
-          throw new Error("Failed to fetch layouts");
-        }
-        const data = await response.json();
-        const uniqueLayouts = data.filter(
-          (layout, index, self) =>
-            index === self.findIndex((l) => l.layoutId === layout.layoutId)
-        );
-        setLayouts(uniqueLayouts);
-      } catch (error) {
-        console.error("Error fetching layouts:", error);
-      }
-    };
-    fetchLayouts();
-  }, []);
 
   // Filter layouts based on search query
   const filteredLayouts = layouts.filter((layout) =>
@@ -68,7 +47,7 @@ const LayoutSelector = ({ onSelect, onDeleteLayoutClick }) => {
               </button>
               <Trash
                 className="h-5 w-5 cursor-pointer text-red-500 hover:text-red-700"
-                onClick={(e) => onDeleteLayoutClick(layout.layoutId, e.target)}
+                onClick={() => onDeleteLayoutClick(layout.layoutId)}
               />
             </div>
           ))}
@@ -106,7 +85,7 @@ const LayoutSelector = ({ onSelect, onDeleteLayoutClick }) => {
                   </button>
                   <Trash
                     className="h-5 w-5 cursor-pointer text-red-500 hover:text-red-700"
-                    onClick={(e) => onDeleteLayoutClick(layout.layoutId, e.target)}
+                    onClick={() => onDeleteLayoutClick(layout.layoutId)}
                   />
                 </div>
               ))}
