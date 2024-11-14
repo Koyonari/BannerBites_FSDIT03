@@ -527,58 +527,57 @@ const fetchLayoutById = async (layoutId) => {
   }
 };
 
+// Function to delete layout and related items
 const deleteLayout = async (req, res) => {
   try {
     const { layoutId } = req.params;
 
     // Step 1: Fetch related grid items
     const gridItems = await GridItemModel.getGridItemsByLayoutId(layoutId);
-    if (!gridItems || gridItems.length === 0) {
-      throw new Error(`No grid items found for layoutId: ${layoutId}`);
-    }
 
     // Step 2: Fetch related scheduled ads
     const scheduledAds = await ScheduledAdModel.getScheduledAdsByLayoutId(layoutId);
-    if (!scheduledAds || scheduledAds.length === 0) {
-      throw new Error(`No scheduled ads found for layoutId: ${layoutId}`);
-    }
 
-    // Step 3: Prepare delete operations for grid items and scheduled ads
+    // Prepare delete operations for grid items and scheduled ads
     const transactItems = [];
 
-    // Add delete operations for grid items
-    gridItems.forEach((gridItem) => {
-      if (gridItem.layoutId && gridItem.index !== undefined) {
-        transactItems.push({
-          Delete: {
-            TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
-            Key: {
-              layoutId: gridItem.layoutId,
-              index: gridItem.index,
+    // Add delete operations for grid items if they exist
+    if (gridItems && gridItems.length > 0) {
+      gridItems.forEach((gridItem) => {
+        if (gridItem.layoutId && gridItem.index !== undefined) {
+          transactItems.push({
+            Delete: {
+              TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
+              Key: {
+                layoutId: gridItem.layoutId,
+                index: gridItem.index,
+              },
             },
-          },
-        });
-      } else {
-        console.error("Invalid grid item key:", gridItem);
-      }
-    });
+          });
+        } else {
+          console.error("Invalid grid item key:", gridItem);
+        }
+      });
+    }
 
-    // Add delete operations for scheduled ads
-    scheduledAds.forEach((scheduledAd) => {
-      if (scheduledAd.gridItemId && scheduledAd.scheduledTime) {
-        transactItems.push({
-          Delete: {
-            TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
-            Key: {
-              gridItemId: scheduledAd.gridItemId,
-              scheduledTime: scheduledAd.scheduledTime,
+    // Add delete operations for scheduled ads if they exist
+    if (scheduledAds && scheduledAds.length > 0) {
+      scheduledAds.forEach((scheduledAd) => {
+        if (scheduledAd.gridItemId && scheduledAd.scheduledTime) {
+          transactItems.push({
+            Delete: {
+              TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+              Key: {
+                gridItemId: scheduledAd.gridItemId,
+                scheduledTime: scheduledAd.scheduledTime,
+              },
             },
-          },
-        });
-      } else {
-        console.error("Invalid scheduled ad key:", scheduledAd);
-      }
-    });
+          });
+        } else {
+          console.error("Invalid scheduled ad key:", scheduledAd);
+        }
+      });
+    }
 
     // Add delete operation for layout
     if (layoutId) {
@@ -597,35 +596,37 @@ const deleteLayout = async (req, res) => {
     // Log transaction items for debugging purposes
     console.log("Transaction Delete Items: ", JSON.stringify(transactItems, null, 2));
 
-    // Step 4: Execute the transaction if all delete operations are valid
+    // Execute the transaction if there are valid delete operations
     if (transactItems.length > 0) {
       const transactionCommand = new TransactWriteCommand({
         TransactItems: transactItems,
       });
       await dynamoDb.send(transactionCommand);
     } else {
-      throw new Error("No valid transaction items to execute.");
+      console.warn("No valid transaction items to execute. Possibly no related items found.");
     }
 
-    // Step 5: Check for any Ads that are no longer referenced and delete them if needed
-    const adIdsToDelete = new Set(scheduledAds.map((ad) => ad.adId).filter(Boolean));
+    // Step 4: Check for any Ads that are no longer referenced and delete them if needed
+    if (scheduledAds && scheduledAds.length > 0) {
+      const adIdsToDelete = new Set(scheduledAds.map((ad) => ad.adId).filter(Boolean));
 
-    for (const adId of adIdsToDelete) {
-      if (!adId) {
-        console.warn("Encountered scheduledAd with undefined adId. Skipping.");
-        continue;
-      }
-      console.log(`Checking if Ad ${adId} can be deleted.`);
-      try {
-        // Check if the ad is scheduled anywhere else
-        const associatedScheduledAds = await ScheduledAdModel.getScheduledAdsByAdId(adId);
-        if (!associatedScheduledAds || associatedScheduledAds.length === 0) {
-          // Only delete if no other layouts are using this ad
-          await AdModel.deleteAdById(adId); // Correct method name
-          console.log(`Ad ${adId} deleted successfully.`);
+      for (const adId of adIdsToDelete) {
+        if (!adId) {
+          console.warn("Encountered scheduledAd with undefined adId. Skipping.");
+          continue;
         }
-      } catch (error) {
-        console.error(`Error processing Ad ${adId}:`, error);
+        console.log(`Checking if Ad ${adId} can be deleted.`);
+        try {
+          // Check if the ad is scheduled anywhere else
+          const associatedScheduledAds = await ScheduledAdModel.getScheduledAdsByAdId(adId);
+          if (!associatedScheduledAds || associatedScheduledAds.length === 0) {
+            // Only delete if no other layouts are using this ad
+            await AdModel.deleteAdById(adId);
+            console.log(`Ad ${adId} deleted successfully.`);
+          }
+        } catch (error) {
+          console.error(`Error processing Ad ${adId}:`, error);
+        }
       }
     }
 
