@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import WebFont from "webfontloader";
 
 // Component to represent an individual Ad
-const AdComponent = ({ type, content, styles = {} }) => {
+const AdComponent = ({ type, content = {}, styles = {} }) => {
   let mediaUrl = content.mediaUrl || content.src;
 
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
@@ -51,22 +51,16 @@ const AdComponent = ({ type, content, styles = {} }) => {
           </p>
         </div>
       )}
-      {type === "image" && (
+      {type === "image" && mediaUrl && (
         <div>
           <img
             src={mediaUrl}
-            alt={content.title}
+            alt={content.title || "Ad Image"}
             style={{ maxWidth: "100%", borderColor: styles.borderColor }}
           />
-          <h3 style={{ fontFamily: styles.font, color: styles.textColor }}>
-            {content.title}
-          </h3>
-          <p style={{ fontFamily: styles.font, color: styles.textColor }}>
-            {content.description}
-          </p>
         </div>
       )}
-      {type === "video" && (
+      {type === "video" && mediaUrl && (
         <div>
           <video
             key={mediaUrl} // Added key prop for real-time communication
@@ -80,12 +74,6 @@ const AdComponent = ({ type, content, styles = {} }) => {
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-          <h3 style={{ fontFamily: styles.font, color: styles.textColor }}>
-            {content.title}
-          </h3>
-          <p style={{ fontFamily: styles.font, color: styles.textColor }}>
-            {content.description}
-          </p>
         </div>
       )}
     </div>
