@@ -1,14 +1,15 @@
 import React from "react";
-import { HomeIcon, CircleUserRound, LayoutList } from "lucide-react";
+import { HomeIcon, LayoutList } from "lucide-react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
+import { CircleUserRound } from "lucide-react";
 
 const icons = {
   navbar: [
     { href: "/userhome", icon: HomeIcon, label: "Home" },
-    { href: "/login", icon: CircleUserRound, label: "Profile" },
     { href: "/layouts", icon: LayoutList, label: "LayoutList" },
+    { href: "/login", icon: CircleUserRound, label: "Profile" },
   ],
 };
 
@@ -22,7 +23,6 @@ const Hero = () => {
   useEffect(() => {
     // Update localStorage when dark mode changes
     localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
-
     // Update document classes
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
@@ -42,19 +42,17 @@ const Hero = () => {
           Banner
           <span className="text-orange-500 outline-3">Bites</span>
         </h1>
-
         <div className="relative flex h-16 w-full max-w-72 justify-center rounded-lg border-2 border-orange-500 bg-white p-4 dark:bg-black md:p-6">
           <div className="flex w-full max-w-xs items-center justify-between">
             {icons.navbar.map((item) => (
               <Link
-                key={item.label} // Using label as a unique key here
+                key={item.label}
                 to={item.href}
                 className="flex flex-col items-center"
               >
                 <item.icon className="h-6 w-6 text-black dark:text-white" />
               </Link>
             ))}
-
             <DarkModeSwitch
               checked={isDarkMode}
               onChange={toggleDarkMode}

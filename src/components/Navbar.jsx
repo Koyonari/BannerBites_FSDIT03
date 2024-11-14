@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
-import { HomeIcon, LayoutList } from "lucide-react";
+import { HomeIcon, LayoutList, CircleUserRound } from "lucide-react";
 import Hamburger from "hamburger-react";
 import { useNavigate } from "react-router-dom";
 import React from "react";
@@ -93,6 +93,10 @@ function Navbar() {
             className="h-6 w-6 cursor-pointer text-black transition-colors duration-500 dark:text-white xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
             onClick={handleLayoutClick}
           />
+          <CircleUserRound
+            className="h-6 w-6 cursor-pointer text-black transition-colors duration-500 dark:text-white xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
+            onClick={() => navigate("/login")}
+          />
           <DarkModeSwitch
             checked={isDarkMode}
             onChange={toggleDarkMode}
@@ -128,6 +132,12 @@ function Navbar() {
           <LayoutList
             className="h-6 w-6 cursor-pointer text-white transition-colors duration-300 dark:text-white"
             onClick={handleLayoutClick}
+          />
+        </div>
+        <div className="flex items-center justify-center gap-4 border-b border-white/20 py-8">
+          <CircleUserRound
+            className="h-6 w-6 cursor-pointer text-white transition-colors duration-300 dark:text-white"
+            onClick={() => navigate("/login")}
           />
         </div>
         <div className="flex items-center justify-center gap-4 border-b border-white/20 py-8">
