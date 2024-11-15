@@ -154,7 +154,9 @@ const AdCanvas = () => {
           }
 
           // Fetch ad details from the backend
-          const response = await axios.post(`${apiUrl}/api/ads/batchGet`, { adIds });
+          const response = await axios.post(`${apiUrl}/api/ads/batchGet`, {
+            adIds,
+          });
           const ads = response.data;
 
           // Create a map of adId to ad details
@@ -167,10 +169,12 @@ const AdCanvas = () => {
 
           // Attach ad details to scheduledAds
           const updatedGridItems = gridItems.map((item) => {
-            const updatedScheduledAds = item.scheduledAds.map((scheduledAd) => ({
-              ...scheduledAd,
-              ad: adsMap[scheduledAd.adId] || null,
-            }));
+            const updatedScheduledAds = item.scheduledAds.map(
+              (scheduledAd) => ({
+                ...scheduledAd,
+                ad: adsMap[scheduledAd.adId] || null,
+              }),
+            );
             return {
               ...item,
               scheduledAds: updatedScheduledAds,
@@ -232,6 +236,37 @@ const AdCanvas = () => {
   // Function to handle the creation of a new layout
   const handleOpenSelector = async () => {
     setIsNamingLayout(true);
+  };
+
+  const handleSelectCell = (index, checked) => {
+    if (checked) {
+      setSelectedCells((prev) => [...prev, index]);
+    } else {
+      setSelectedCells((prev) => prev.filter((i) => i !== index));
+    }
+
+    // Update selection mode based on current selections
+    if (checked) {
+      setIsSelectionMode(true);
+    } else if (selectedCells.length === 1 && selectedMergedCells.length === 0) {
+      setIsSelectionMode(false);
+    }
+  };
+
+  // Function to handle the selection of merged cells
+  const handleSelectMerged = (index, checked) => {
+    if (checked) {
+      setSelectedMergedCells((prev) => [...prev, index]);
+    } else {
+      setSelectedMergedCells((prev) => prev.filter((i) => i !== index));
+    }
+
+    // Update selection mode based on current selections
+    if (checked) {
+      setIsSelectionMode(true);
+    } else if (selectedMergedCells.length === 1 && selectedCells.length === 0) {
+      setIsSelectionMode(false);
+    }
   };
 
   // Function to handle the creation of a new layout
@@ -553,21 +588,45 @@ const AdCanvas = () => {
   };
 
   // Function to handle the selection of cells
+  // Function to handle the selection of cells
   const handleCellSelection = (index) => {
     const cell = gridItems[index];
-  
-    // Handle merged cells
+
+    // If the cell is merged
     if (cell.isMerged && !cell.hidden) {
-      const mergedCells = cell.selectedCells || [index];
-      setSelectedCells((prev) => [...new Set([...prev, ...mergedCells])]);
-    } else if (!cell.hidden) {
-      // Handle individual non-merged cells
-      setSelectedCells((prev) => {
+      // For merged cells
+      setSelectedMergedCells((prev) => {
         if (prev.includes(index)) {
-          return prev.filter((i) => i !== index);
+          // If the cell is already selected, remove it from the selection
+          const newSelection = prev.filter((i) => i !== index);
+          // If there are no more selected merged cells, exit selection mode
+          if (newSelection.length === 0) {
+            setIsSelectionMode(false);
+          }
+          return newSelection;
         }
         return [...prev, index];
       });
+      setIsSelectionMode(true);
+      return;
+    }
+
+    // For non-merged cells
+    if (!cell.hidden) {
+      setSelectedCells((prev) => {
+        if (prev.includes(index)) {
+          // If the cell is already selected, remove it from the selection
+          const newSelection = prev.filter((i) => i !== index);
+          if (newSelection.length === 0) {
+            setIsSelectionMode(false);
+          }
+          return newSelection;
+        }
+        return [...prev, index];
+      });
+      if (!isSelectionMode) {
+        setIsSelectionMode(true);
+      }
     }
   };
 
@@ -712,17 +771,17 @@ const AdCanvas = () => {
   const handleRemove = (index, scheduledAd) => {
     const updatedGrid = [...gridItems];
     const cell = updatedGrid[index];
-  
+
     // Update scheduledAds within the local grid state
     if (cell.scheduledAds && cell.scheduledAds.length > 0) {
       updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
-        (ad) => ad.id !== scheduledAd.id
+        (ad) => ad.id !== scheduledAd.id,
       );
     }
-  
+
     // Add the removed ad to removedAds to track it for future deletion upon save
     setRemovedAds((prev) => [...prev, scheduledAd]);
-  
+
     // Update the gridItems state
     setGridItems(updatedGrid);
   };
@@ -733,7 +792,7 @@ const AdCanvas = () => {
       const layoutId = selectedLayout ? selectedLayout.layoutId : uuidv4();
       const layout = { rows, columns, gridItems, layoutId, name };
       const cleanedLayout = cleanLayoutJSON(layout);
-  
+
       if (selectedLayout) {
         // Update an existing layout
         await axios.put(`${apiUrl}/api/layouts/${layoutId}`, cleanedLayout, {
@@ -741,7 +800,7 @@ const AdCanvas = () => {
             "Content-Type": "application/json",
           },
         });
-  
+
         // Delete scheduledAds that were marked for removal
         for (const removedAd of removedAds) {
           try {
@@ -755,10 +814,10 @@ const AdCanvas = () => {
             console.error("Error deleting scheduled ad:", error);
           }
         }
-  
+
         // Reset the removedAds state after successfully saving
         setRemovedAds([]);
-  
+
         showAlert("Layout updated successfully!");
       } else {
         // Save a new layout
@@ -769,7 +828,7 @@ const AdCanvas = () => {
         });
         showAlert("Layout saved successfully!");
       }
-  
+
       setIsNamingLayout(false);
       fetchLayouts();
     } catch (error) {
@@ -823,7 +882,6 @@ const AdCanvas = () => {
       gridItems: cleanedGridItems,
     };
   };
-
 
   // Function to handle the editing of ads
   const handleEdit = (index, scheduledAd) => {
@@ -991,6 +1049,7 @@ const AdCanvas = () => {
 
   const isMergeButtonActive =
     selectedCells.length >= 2 || selectedMergedCells.length >= 1;
+
   const mergeButtonTooltip =
     selectedMergedCells.length === 1
       ? "Click to merge/unmerge selected cells"
@@ -1093,14 +1152,15 @@ const AdCanvas = () => {
                     onRemove={handleRemove}
                     onEdit={handleEdit}
                     onMerge={handleMerge}
-                    isSelected={selectedCells.includes(index)}
-                    onSelect={handleCellSelection}
+                    onUnmerge={handleUnmerge}
+                    onSelect={handleSelectCell} // For individual cells
+                    onSelectMerged={handleSelectMerged} // For merged cells
                     isSelectionMode={isSelectionMode}
                     setIsSelectionMode={setIsSelectionMode}
                     selectedCells={selectedCells}
+                    selectedMergedCells={selectedMergedCells} // Pass selectedMergedCells
                     columns={columns}
                     totalCells={totalCells}
-                    onUnmerge={handleUnmerge}
                     showHelp={showHelp}
                     getMainCellIndex={getMainCellIndex}
                   />

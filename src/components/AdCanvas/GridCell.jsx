@@ -45,15 +45,14 @@ const GridCell = ({
   onEdit,
   onUnmerge,
   item,
-  isSelected,
   onSelect,
+  onSelectMerged,
   isSelectionMode,
   setIsSelectionMode,
   showHelp,
-  selectedMergedCells = [],
-  onSelectMerged,
-  getMainCellIndex,
   selectedCells,
+  selectedMergedCells = [],
+  getMainCellIndex,
 }) => {
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -63,7 +62,7 @@ const GridCell = ({
         isOver: monitor.isOver(),
       }),
     }),
-    [onDrop, index, rowIndex, colIndex],
+    [onDrop, index, rowIndex, colIndex]
   );
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -79,7 +78,7 @@ const GridCell = ({
     setIsPopupOpen(!isPopupOpen);
   };
 
-  const showAlert = (message, title = "Alert", type = "info") => {
+  const showAlertMsg = (message, title = "Alert", type = "info") => {
     setAlertConfig({
       isOpen: true,
       title,
@@ -89,19 +88,15 @@ const GridCell = ({
   };
 
   const isCellSelected = item?.isMerged
-    ? selectedCells.some((cellIndex) => item.selectedCells?.includes(cellIndex))
+    ? selectedMergedCells.includes(index)
     : selectedCells.includes(index);
 
   const handleCheckboxChange = (checked) => {
     if (item && !item.hidden) {
-      if (!isSelectionMode) {
-        setIsSelectionMode(true);
-      }
-
       if (item.isMerged && typeof onSelectMerged === "function") {
         onSelectMerged(index, checked);
       } else if (typeof onSelect === "function") {
-        onSelect(index);
+        onSelect(index, checked);
       }
     }
   };
@@ -114,11 +109,11 @@ const GridCell = ({
       if (typeof getMainCellIndex === "function") {
         cellIndex = getMainCellIndex(index);
         if (cellIndex === -1) {
-          showAlert("Could not find the main cell for editing.");
+          showAlertMsg("Could not find the main cell for editing.");
           return;
         }
       } else {
-        showAlert("Cannot edit a hidden cell.");
+        showAlertMsg("Cannot edit a hidden cell.");
         return;
       }
     }
@@ -146,11 +141,11 @@ const GridCell = ({
       if (typeof getMainCellIndex === "function") {
         cellIndex = getMainCellIndex(index);
         if (cellIndex === -1) {
-          showAlert("Could not find the main cell for removing.");
+          showAlertMsg("Could not find the main cell for removing.");
           return;
         }
       } else {
-        showAlert("Cannot remove from a hidden cell.");
+        showAlertMsg("Cannot remove from a hidden cell.");
         return;
       }
     }
