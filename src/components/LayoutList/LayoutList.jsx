@@ -65,10 +65,10 @@ const LayoutList = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Using axios to fetch layouts
       const response = await axios.get("http://localhost:5000/api/layouts");
-      
+
       // The data is already parsed as JSON, so you can use it directly
       setLayouts(response.data);
     } catch (err) {
@@ -86,23 +86,60 @@ const LayoutList = () => {
     }
     pendingLayoutIdRef.current = layoutId;
     reconnectAttemptsRef.current = 0; // Reset reconnect attempts for new selection
-  
+
     try {
       setLoading(true);
       setError(null);
       setSelectedLayout(null);
-  
+
       // Close the previous WebSocket connection if one exists
       if (websocketRef.current) {
         websocketRef.current.onclose = null; // Remove any existing onclose handlers to avoid triggering reconnections
         websocketRef.current.close();
         websocketRef.current = null;
       }
-  
+
       // Fetch the initial layout data using axios
-      const response = await axios.get(`http://localhost:5000/api/layouts/${layoutId}`);
-      setSelectedLayout(response.data); // axios automatically parses JSON
-  
+      const response = await axios.get(
+        `http://localhost:5000/api/layouts/${layoutId}`,
+      );
+      const layoutData = response.data; // axios automatically parses JSON
+
+      // Extract unique adIds from scheduledAds
+      const adIdsSet = new Set();
+      layoutData.gridItems.forEach((item) => {
+        item.scheduledAds.forEach((scheduledAd) => {
+          if (scheduledAd.adId) {
+            adIdsSet.add(scheduledAd.adId);
+          }
+        });
+      });
+      const adIds = Array.from(adIdsSet);
+
+      // Fetch ad details
+      const adsResponse = await axios.post(
+        `http://localhost:5000/api/ads/batchGet`,
+        { adIds },
+      );
+      const ads = adsResponse.data;
+
+      // Map adId to ad details
+      const adsMap = {};
+      ads.forEach((ad) => {
+        adsMap[ad.adId] = ad;
+      });
+
+      // Attach ad details to scheduledAds
+      layoutData.gridItems = layoutData.gridItems.map((item) => {
+        const updatedScheduledAds = item.scheduledAds.map((scheduledAd) => ({
+          ...scheduledAd,
+          ad: adsMap[scheduledAd.adId] || null,
+        }));
+        return { ...item, scheduledAds: updatedScheduledAds };
+      });
+
+      setSelectedLayout(layoutData);
+
       // Set up WebSocket connection for real-time updates
       establishWebSocketConnection(layoutId);
     } catch (err) {

@@ -93,7 +93,7 @@ const AdModel = {
       },
     };
     // Use the UpdateCommand to save or update the Ad in DynamoDB
-    const command = new UpdateCommand(params);
+    const command = new PutCommand(params);
     const result = await dynamoDb.send(command);
     console.log(`Ad ${ad.adId} saved/updated successfully.`);
     return result;

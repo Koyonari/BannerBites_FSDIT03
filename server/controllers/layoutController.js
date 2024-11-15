@@ -103,13 +103,16 @@ const saveLayout = async (req, res) => {
 
       // Process scheduled ads for each grid item
       for (const scheduledAd of item.scheduledAds) {
-        scheduledAd.gridItemId = gridItemId;
-        if (!scheduledAd.scheduledTime) {
-          console.error(`Missing scheduledTime for scheduled ad at grid item index ${item.index}`);
+        // Ensure scheduled ad has an adId
+        if (!scheduledAd.adId) {
+          console.error(`Missing adId for scheduled ad at grid item index ${item.index}`);
           continue;
         }
+        
+        // Assign gridItemId to scheduledAd
+        scheduledAd.gridItemId = gridItemId;
 
-        // Add scheduled ad to transaction
+        // Add scheduled ad to transaction items
         transactItems.push({
           Put: {
             TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
@@ -118,25 +121,24 @@ const saveLayout = async (req, res) => {
               gridItemId: scheduledAd.gridItemId,
               scheduledTime: scheduledAd.scheduledTime,
               id: scheduledAd.id,
-              adId: scheduledAd.ad.adId,
+              adId: scheduledAd.adId  // Store adId reference
             },
           },
         });
 
-        // Add or update ad details if the ad is unique
-        if (scheduledAd.ad && !uniqueAds.has(scheduledAd.ad.adId)) {
+        // Add ad to Ads table if not already added
+        if (!uniqueAds.has(scheduledAd.adId)) {
+          console.log(`Adding Ad with adId ${scheduledAd.adId}`);
           transactItems.push({
             Put: {
               TableName: process.env.DYNAMODB_TABLE_ADS,
               Item: {
-                adId: scheduledAd.ad.adId,
-                content: scheduledAd.ad.content,
-                styles: scheduledAd.ad.styles,
-                type: scheduledAd.ad.type,
+                adId: scheduledAd.adId,
+                ...scheduledAd.ad,  // The full ad object
               },
             },
           });
-          uniqueAds.add(scheduledAd.ad.adId);
+          uniqueAds.add(scheduledAd.adId);
         }
       }
     }
@@ -241,11 +243,18 @@ const updateLayout = async (req, res) => {
         },
       });
 
+      // Process scheduled ads for each grid item
       for (const scheduledAd of item.scheduledAds) {
-        if (scheduledAd === null) continue;
-
+        // Ensure scheduled ad has adId
+        if (!scheduledAd.adId) {
+          console.error("ScheduledAd is missing adId:", scheduledAd);
+          continue;
+        }
+      
+        // Assign gridItemId to scheduledAd
         scheduledAd.gridItemId = gridItemId;
-
+      
+        // Add or update scheduled ad
         allTransactItems.push({
           Put: {
             TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
@@ -253,27 +262,25 @@ const updateLayout = async (req, res) => {
               gridItemId: scheduledAd.gridItemId,
               scheduledTime: scheduledAd.scheduledTime,
               id: scheduledAd.id,
-              adId: scheduledAd.ad ? scheduledAd.ad.adId : null,
+              adId: scheduledAd.adId,  // Store adId reference
               layoutId: layoutId,
               index: item.index,
             },
           },
         });
-
-        // Add or update ad details if the ad is unique
-        if (scheduledAd.ad && !uniqueAds.has(scheduledAd.ad.adId)) {
+      
+        // Add or update ad in Ads table if not already processed
+        if (!uniqueAds.has(scheduledAd.adId)) {
           allTransactItems.push({
             Put: {
               TableName: process.env.DYNAMODB_TABLE_ADS,
               Item: {
-                adId: scheduledAd.ad.adId,
-                content: scheduledAd.ad.content,
-                styles: scheduledAd.ad.styles,
-                type: scheduledAd.ad.type,
+                adId: scheduledAd.adId,
+                ...scheduledAd.ad,  // The full ad object
               },
             },
           });
-          uniqueAds.add(scheduledAd.ad.adId);
+          uniqueAds.add(scheduledAd.adId);
         }
       }
     }
@@ -318,7 +325,7 @@ const getLayoutById = async (req, res) => {
 const fetchLayoutById = async (layoutId) => {
   try {
     console.log(`Fetching layout details for layoutId: ${layoutId}`);
-    
+
     // Step 1: Fetch layout from LayoutModel
     const layout = await LayoutModel.getLayoutById(layoutId);
     if (!layout) {
@@ -334,14 +341,16 @@ const fetchLayoutById = async (layoutId) => {
     }
 
     // Step 3: Gather all gridItemIds to fetch related scheduled ads
-    const gridItemIds = gridItems.map((item) => `${layoutId}#${item.index}`);
-    const scheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemIds(gridItemIds);
+    const gridItemIds = gridItems.map((item) => item.gridItemId);
+    const allScheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemIds(gridItemIds);
 
     // Step 4: Collect unique adIds from scheduledAds to batch fetch ad details
     const adIdsSet = new Set();
-    scheduledAds.forEach((scheduledAd) => {
+    allScheduledAds.forEach((scheduledAd) => {
       if (scheduledAd.adId) {
         adIdsSet.add(scheduledAd.adId);
+      } else {
+        console.error(`ScheduledAd is missing adId for scheduledAd ID: ${scheduledAd.id}`);
       }
     });
     const adIds = Array.from(adIdsSet);
@@ -350,24 +359,23 @@ const fetchLayoutById = async (layoutId) => {
     const ads = await AdModel.getAdsByIds(adIds);
     const adsMap = new Map(ads.map((ad) => [ad.adId, ad]));
 
-    // Step 6: Populate scheduledAds in grid items with ad details
-    for (const item of gridItems) {
-      item.scheduledAds = scheduledAds.filter((scheduledAd) => scheduledAd.gridItemId === item.gridItemId);
+    // Step 6: Group scheduledAds by gridItemId
+    const scheduledAdsByGridItemId = allScheduledAds.reduce((acc, scheduledAd) => {
+      if (!acc[scheduledAd.gridItemId]) {
+        acc[scheduledAd.gridItemId] = [];
+      }
+      // Attach ad details to scheduledAd
+      scheduledAd.ad = adsMap.get(scheduledAd.adId) || null;
+      acc[scheduledAd.gridItemId].push(scheduledAd);
+      return acc;
+    }, {});
 
-      item.scheduledAds.forEach((scheduledAd) => {
-        if (scheduledAd.adId) {
-          const adDetails = adsMap.get(scheduledAd.adId);
-          scheduledAd.ad = {
-            adId: scheduledAd.adId,
-            ...adDetails ? { content: adDetails.content, styles: adDetails.styles, type: adDetails.type } : {},
-          };
-        } else {
-          scheduledAd.ad = null;
-        }
-      });
-    }
+    // Step 7: Attach scheduledAds to their respective grid items
+    gridItems.forEach((item) => {
+      item.scheduledAds = scheduledAdsByGridItemId[item.gridItemId] || [];
+    });
 
-    // Step 7: Attach grid items back to the layout
+    // Step 8: Attach grid items back to the layout
     layout.gridItems = gridItems;
 
     return layout;

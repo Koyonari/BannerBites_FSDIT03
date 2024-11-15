@@ -1,4 +1,9 @@
-const { DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
+// services/dynamoDbStreamListener.js
+
+const {
+  DescribeTableCommand,
+  DynamoDBClient,
+} = require("@aws-sdk/client-dynamodb");
 const {
   DynamoDBStreamsClient,
   DescribeStreamCommand,
@@ -7,10 +12,13 @@ const {
 } = require("@aws-sdk/client-dynamodb-streams");
 const { unmarshall } = require("@aws-sdk/util-dynamodb");
 const debounce = require("lodash.debounce");
-const { layoutUpdatesCache, clients } = require("../state"); // Import layoutUpdatesCache and clients
-const { dynamoDbClient, dynamoDbStreamsClient } = require("./awsClients");
+const { layoutUpdatesCache, clients } = require("../state");
 const { fetchLayoutById, getLayoutsByAdId } = require("../services/layoutService");
 const WebSocket = require("ws");
+
+// Initialize AWS clients
+const dynamoDbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
+const dynamoDbStreamsClient = new DynamoDBStreamsClient({ region: process.env.AWS_REGION });
 
 // Broadcast function for sending layout updates to WebSocket clients
 const broadcastLayoutUpdate = (layoutId, updatedData) => {
@@ -23,7 +31,10 @@ const broadcastLayoutUpdate = (layoutId, updatedData) => {
   });
 
   // Log the data being broadcasted
-  console.log(`[BACKEND] Broadcasting layout update for layoutId: ${layoutId}`, JSON.stringify(updatedData, null, 2));
+  console.log(
+    `[BACKEND] Broadcasting layout update for layoutId: ${layoutId}`,
+    JSON.stringify(updatedData, null, 2)
+  );
 
   // Broadcast to valid clients listening to the specified layoutId
   clients.forEach((clientData, clientWs) => {
@@ -49,6 +60,7 @@ const listenToDynamoDbStreams = async () => {
     process.env.DYNAMODB_TABLE_SCHEDULEDADS,
     process.env.DYNAMODB_TABLE_ADS,
   ];
+
   for (const tableName of tableNames) {
     try {
       if (!tableName) {
@@ -92,7 +104,10 @@ const listenToDynamoDbStreams = async () => {
         }
       }
     } catch (error) {
-      console.error(`[BACKEND] Error setting up DynamoDB Streams listener for table ${tableName}:`, error);
+      console.error(
+        `[BACKEND] Error setting up DynamoDB Streams listener for table ${tableName}:`,
+        error
+      );
     }
   }
 };
@@ -125,7 +140,6 @@ const pollStream = async (shardIterator, tableName) => {
                 break;
 
               case process.env.DYNAMODB_TABLE_SCHEDULEDADS:
-                // ScheduledAds now directly affects the layout
                 layoutId = updatedItem.layoutId;
                 if (layoutId) {
                   affectedLayoutIds.add(layoutId);
@@ -133,9 +147,9 @@ const pollStream = async (shardIterator, tableName) => {
                 break;
 
               case process.env.DYNAMODB_TABLE_ADS:
-                const adId = updatedItem.adId || updatedItem.id;
+                const adId = updatedItem.adId;
                 if (adId) {
-                  // Fetch related layoutIds from the Ads table
+                  // Fetch related layoutIds from ScheduledAds
                   const relatedLayoutIds = await getLayoutsByAdId(adId);
                   relatedLayoutIds.forEach((id) => affectedLayoutIds.add(id));
                 }
@@ -144,6 +158,9 @@ const pollStream = async (shardIterator, tableName) => {
               default:
                 console.warn(`[BACKEND] Unknown table: ${tableName}`);
             }
+          } else if (record.eventName === "REMOVE") {
+            // Handle removal events if necessary
+            // For example, if an ad is deleted, you might need to update layouts that used it
           }
         }
       }
@@ -168,12 +185,13 @@ const pollStream = async (shardIterator, tableName) => {
 
       // Update shardIterator for the next poll
       shardIterator = recordsData.NextShardIterator;
+
+      // Wait before polling again
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     } catch (error) {
       console.error(`[BACKEND] Error polling DynamoDB Stream for table ${tableName}:`, error);
       break; // Exit the polling loop on error
     }
-
-    await new Promise((resolve) => setTimeout(resolve, 5000));
   }
 };
 

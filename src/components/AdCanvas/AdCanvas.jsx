@@ -22,7 +22,8 @@ const AdCanvas = () => {
   const [isSelectingLayout, setIsSelectingLayout] = useState(true); // Flag for layout selection mode
   const [selectedLayout, setSelectedLayout] = useState(null); // Currently selected layout
   const [isSavedLayout, setIsSavedLayout] = useState(false); // Tracks if the layout is saved
-
+  // New state to hold ad details
+  const [adDetailsMap, setAdDetailsMap] = useState({});
   // Hint and Help State
   const [showHelp, setShowHelp] = useState(false); // Toggle for displaying help hints
 
@@ -93,30 +94,17 @@ const AdCanvas = () => {
         const item = selectedLayout.gridItems.find((gi) => gi.index === index);
 
         if (item) {
-          // If the item is not merged, remove merge-related attributes
-          if (!item.isMerged) {
-            return {
-              ...item,
-              isMerged: false,
-              hidden: false,
-              rowSpan: 1,
-              colSpan: 1,
-              mergeDirection: null,
-              selectedCells: [],
-            };
-          }
+          // Process scheduledAds to ensure they have adId
+          const scheduledAds = (item.scheduledAds || []).map((scheduledAd) => ({
+            ...scheduledAd,
+            id: scheduledAd.id || uuidv4(),
+            adId: scheduledAd.adId, // Ensure adId is set
+            // Remove nested ad object if present
+          }));
 
-          // If the item is merged, retain the necessary merge attributes
           return {
             ...item,
-            scheduledAds: item.scheduledAds.map((scheduledAd) => ({
-              ...scheduledAd,
-              id: scheduledAd.id || uuidv4(),
-              ad: {
-                ...scheduledAd.ad,
-                id: scheduledAd.ad.adId || uuidv4(),
-              },
-            })),
+            scheduledAds,
             isMerged: item.isMerged || false,
             hidden: item.hidden || false,
             rowSpan: item.rowSpan || 1,
@@ -145,6 +133,57 @@ const AdCanvas = () => {
       setGridItems(newGridItems);
       console.log("Updated Grid Items State:", newGridItems);
       setIsSelectingLayout(false);
+
+      // Move fetchAdDetails inside useEffect
+      const fetchAdDetails = async (gridItems) => {
+        try {
+          // Collect all unique adIds from scheduledAds
+          const adIdsSet = new Set();
+          gridItems.forEach((item) => {
+            item.scheduledAds.forEach((scheduledAd) => {
+              if (scheduledAd.adId) {
+                adIdsSet.add(scheduledAd.adId);
+              }
+            });
+          });
+          const adIds = Array.from(adIdsSet);
+
+          if (adIds.length === 0) {
+            return;
+          }
+
+          // Fetch ad details from the backend
+          const response = await axios.post(`${apiUrl}/api/ads/batchGet`, { adIds });
+          const ads = response.data;
+
+          // Create a map of adId to ad details
+          const adsMap = {};
+          ads.forEach((ad) => {
+            adsMap[ad.adId] = ad;
+          });
+
+          setAdDetailsMap(adsMap);
+
+          // Attach ad details to scheduledAds
+          const updatedGridItems = gridItems.map((item) => {
+            const updatedScheduledAds = item.scheduledAds.map((scheduledAd) => ({
+              ...scheduledAd,
+              ad: adsMap[scheduledAd.adId] || null,
+            }));
+            return {
+              ...item,
+              scheduledAds: updatedScheduledAds,
+            };
+          });
+
+          setGridItems(updatedGridItems);
+        } catch (error) {
+          console.error("Error fetching ad details:", error);
+          showAlert("Failed to load ad details. Please try again.");
+        }
+      };
+
+      fetchAdDetails(newGridItems);
     }
   }, [selectedLayout]);
 
@@ -666,25 +705,27 @@ const AdCanvas = () => {
 
   // Function to handle the scheduling of ads
   const handleScheduleSave = (adItem, scheduledTime, index) => {
-    if (!adItem.content) {
-      console.error("AdItem is missing the 'content' property:", adItem);
-      showAlert("Failed to schedule the ad. Missing content information.");
+    if (!adItem.adId) {
+      console.error("AdItem is missing the 'adId' property:", adItem);
+      showAlert("Failed to schedule the ad. Missing adId.");
       return;
     }
-    // Create a deep copy of the gridItems state to prevent accidental state mutation
     const updatedGrid = [...gridItems];
-    // Define the scheduled ad object
     const scheduledAd = {
       id: uuidv4(),
-      ad: {
-        ...adItem,
-        adId: adItem.adId || uuidv4(), // Ensure `adId` is assigned
-      },
-      scheduledTime, // Store the selected scheduled time
+      adId: adItem.adId,
+      scheduledTime,
+      ad: adItem, // Optionally include ad details for local use
     };
-    // Update the grid cell with the scheduled ad
     updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
+
+    // Update adDetailsMap
+    setAdDetailsMap((prevMap) => ({
+      ...prevMap,
+      [adItem.adId]: adItem,
+    }));
+
     setIsScheduling(false);
     setCurrentScheduleAd(null);
   };
@@ -765,7 +806,6 @@ const AdCanvas = () => {
     const { rows, columns, gridItems } = layout;
     const totalCells = rows * columns;
     const cleanedGridItems = [];
-    // Loop through each grid item and clean up the data
     for (let index = 0; index < totalCells; index++) {
       const item = gridItems[index] || {
         index,
@@ -779,26 +819,16 @@ const AdCanvas = () => {
         mergeDirection: null,
         selectedCells: [],
       };
-      // Clean up the scheduled ads for each grid item
       const cleanedItem = {
         index,
         row: item.row,
         column: item.column,
-        scheduledAds: (item.scheduledAds || []).map((scheduledAd) => {
-          const ad = scheduledAd.ad;
-          const isNewAd = ad.id && ad.id.startsWith("sidebar-");
-          const adData = {
-            adId: isNewAd ? uuidv4() : ad.adId,
-            type: ad.type.toLowerCase(),
-            content: { ...ad.content },
-            styles: { ...ad.styles },
-          };
-          return {
-            id: scheduledAd.id,
-            scheduledTime: scheduledAd.scheduledTime,
-            ad: adData,
-          };
-        }),
+        scheduledAds: (item.scheduledAds || []).map((scheduledAd) => ({
+          id: scheduledAd.id,
+          scheduledTime: scheduledAd.scheduledTime,
+          adId: scheduledAd.adId,
+          ad: scheduledAd.ad, // Include the ad object
+        })),
         isMerged: item.isMerged,
         rowSpan: item.rowSpan,
         colSpan: item.colSpan,
@@ -806,10 +836,8 @@ const AdCanvas = () => {
         selectedCells: item.selectedCells,
         hidden: item.hidden,
       };
-      // Add the cleaned item to the list
       cleanedGridItems.push(cleanedItem);
     }
-    // Return the cleaned layout object
     return {
       layoutId: layout.layoutId,
       name: layout.name,
@@ -819,30 +847,20 @@ const AdCanvas = () => {
     };
   };
 
+
   // Function to handle the editing of ads
   const handleEdit = (index, scheduledAd) => {
-    let actualIndex = index;
-    if (gridItems[index].hidden) {
-      // Find the main cell for editing
-      actualIndex = gridItems.findIndex((item) => {
-        return (
-          !item.hidden &&
-          item.isMerged &&
-          item.selectedCells &&
-          item.selectedCells.includes(index)
-        );
-      });
-      if (actualIndex === -1) {
-        showAlert("Could not find the main cell for editing.");
-        return;
-      }
+    // Ensure ad details are present
+    const adDetails = scheduledAd.ad || adDetailsMap[scheduledAd.adId];
+    if (!adDetails) {
+      showAlert("Ad details not found for editing.");
+      return;
     }
-    // Update the current ad state with the selected ad
     setCurrentAd({
-      index: actualIndex,
+      index,
       scheduledAd: {
         ...scheduledAd,
-        scheduledTime: scheduledAd.scheduledTime || "00:00", // Ensure it keeps the correct time or defaults to "00:00"
+        ad: adDetails,
       },
     });
     setIsEditing(true);
@@ -864,37 +882,38 @@ const AdCanvas = () => {
   const handleSave = (updatedAdData, updatedScheduledTime) => {
     setGridItems((prevGridItems) => {
       const updatedGrid = [...prevGridItems];
-      // Check if the current ad is in a hidden cell
       let mainIndex = currentAd.index;
       if (updatedGrid[mainIndex].hidden) {
-        // Find the main cell for editing
         mainIndex = getMainCellIndex(mainIndex);
         if (mainIndex === -1) {
           showAlert("Could not find the main cell for saving.");
           return prevGridItems;
         }
       }
-      // Update the scheduled ad with the new data
       const cellToUpdate = { ...updatedGrid[mainIndex] };
       const scheduledAds = cellToUpdate.scheduledAds.map((ad) =>
         ad.id === currentAd.scheduledAd.id
           ? {
               ...ad,
+              scheduledTime: updatedScheduledTime,
               ad: {
                 ...ad.ad,
                 ...updatedAdData,
               },
-              scheduledTime: updatedScheduledTime,
             }
           : ad,
       );
-      // Update the cell with the new scheduled ads
       cellToUpdate.scheduledAds = scheduledAds;
       updatedGrid[mainIndex] = cellToUpdate;
-      // Return the updated grid
+
+      // Update adDetailsMap
+      setAdDetailsMap((prevMap) => ({
+        ...prevMap,
+        [updatedAdData.adId]: updatedAdData,
+      }));
+
       return updatedGrid;
     });
-    // Reset the editing state
     setIsEditing(false);
     setCurrentAd(null);
   };

@@ -25,22 +25,23 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
       });
     }
   }, [styles.font]);
+
   // AdStyles is an object that contains the styles for the ad
   const adStyles = {
     fontFamily: styles.font,
     fontSize: styles.fontSize,
     color: styles.textColor,
     borderColor: styles.borderColor,
-    borderStyle: 'solid',
-    borderWidth: styles.borderColor ? '2px' : '0px',
-    padding: '10px',
-    boxSizing: 'border-box',
+    borderStyle: "solid",
+    borderWidth: styles.borderColor ? "2px" : "0px",
+    padding: "10px",
+    boxSizing: "border-box",
     ...styles,
   };
 
   return (
     <div className="ad-item" style={adStyles}>
-      {type === "text" && (
+      {type === "Text" && (
         <div>
           <h3 style={{ fontFamily: styles.font, color: styles.textColor }}>
             {content.title}
@@ -50,7 +51,7 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
           </p>
         </div>
       )}
-      {type === "image" && mediaUrl && (
+      {type === "Image" && mediaUrl && (
         <div>
           <img
             src={mediaUrl}
@@ -59,7 +60,7 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
           />
         </div>
       )}
-      {type === "video" && mediaUrl && (
+      {type === "Video" && mediaUrl && (
         <div>
           <video
             key={mediaUrl} // Added key prop for real-time communication
@@ -74,6 +75,10 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
             Your browser does not support the video tag.
           </video>
         </div>
+      )}
+      {/* Handle unsupported types */}
+      {type !== "Text" && type !== "Image" && type !== "Video" && (
+        <div>Unsupported ad type: {type}</div>
       )}
     </div>
   );
@@ -164,9 +169,31 @@ const AdViewer = ({ layout }) => {
           );
         }
 
+        // **Adjustments Start Here**
+        // Ensure adToDisplay.ad exists
+        if (!adToDisplay || !adToDisplay.ad) {
+          return (
+            <div
+              key={index}
+              className="grid-cell"
+              style={{
+                gridRow: `span ${rowSpan || 1}`,
+                gridColumn: `span ${colSpan || 1}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                position: "relative",
+              }}
+            >
+              <div>No ad scheduled</div>
+            </div>
+          );
+        }
+
         // Determine the correct ad to display
-        const ad = adToDisplay ? adToDisplay.ad : null;
-        const { type, content, styles } = ad || {};
+        const ad = adToDisplay.ad;
+        const { type, content, styles } = ad;
 
         return (
           <div
@@ -175,7 +202,9 @@ const AdViewer = ({ layout }) => {
             style={{
               gridRow: `span ${rowSpan || 1}`,
               gridColumn: `span ${colSpan || 1}`,
-              border: styles?.borderColor ? `2px solid ${styles.borderColor}` : 'none',
+              border: styles?.borderColor
+                ? `2px solid ${styles.borderColor}`
+                : "none",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -183,9 +212,7 @@ const AdViewer = ({ layout }) => {
               position: "relative",
             }}
           >
-            {adToDisplay && (
-              <AdComponent type={type} content={content} styles={styles} />
-            )}
+            <AdComponent type={type} content={content} styles={styles} />
           </div>
         );
       })}

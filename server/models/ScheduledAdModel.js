@@ -14,15 +14,10 @@ const ScheduledAdModel = {
     const params = {
       TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
       Item: {
-        gridItemId: `${layoutId}#${gridIndex}`, // Composite key that acts as the primary key
-        id: scheduledAd.id, // Unique identifier for the scheduled ad
-        scheduledTime: scheduledAd.scheduledTime, // Composite sort key
-        ad: { //Nested ad object 
-          adId: scheduledAd.ad.adId,
-          type: scheduledAd.ad.type,
-          content: scheduledAd.ad.content,
-          styles: scheduledAd.ad.styles,
-        },
+        gridItemId: `${layoutId}#${gridIndex}`,
+        id: scheduledAd.id,
+        scheduledTime: scheduledAd.scheduledTime,
+        adId: scheduledAd.adId,  // Store adId reference
         index: gridIndex,
         layoutId: layoutId,
       },
