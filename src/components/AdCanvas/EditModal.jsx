@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { SketchPicker } from "react-color";
 import Modal from "../Modal/Modal";
 import { v4 as uuidv4 } from "uuid";
-import axios from 'axios';
+import axios from "axios";
 import StyledAlert from "../StyledAlert";
 
 // EditModal is a modal popup that allows users to edit an ad
@@ -22,7 +22,9 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
       borderColor: "#000000",
     },
   });
-  const [scheduledTimeState, setScheduledTimeState] = useState(scheduledTime || "00:00");
+  const [scheduledTimeState, setScheduledTimeState] = useState(
+    scheduledTime || "00:00",
+  );
   const [file, setFile] = useState(null);
   const [mediaUrl, setMediaUrl] = useState("");
   const [showBorderColorPicker, setShowBorderColorPicker] = useState(false);
@@ -115,49 +117,51 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
   };
 
   // Function to handle file upload
- // Function to handle file upload
-const handleFileUpload = async (e) => {
-  const selectedFile = e.target.files[0];
-  if (!selectedFile) return;
+  const handleFileUpload = async (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
 
-  setFile(selectedFile);
-  setIsUploading(true);
+    setFile(selectedFile);
+    setIsUploading(true);
 
-  try {
-    // Request the pre-signed URL from the server
-    const response = await axios.post("http://localhost:5000/generate-presigned-url", {
-      fileName: selectedFile.name,
-      contentType: selectedFile.type,
-    });
+    try {
+      // Request the pre-signed URL from the server
+      const response = await axios.post(
+        "http://localhost:5000/generate-presigned-url",
+        {
+          fileName: selectedFile.name,
+          contentType: selectedFile.type,
+        },
+      );
 
-    const { url, key } = response.data;
+      const { url, key } = response.data;
 
-    // Upload the file to S3 using the pre-signed URL
-    await axios.put(url, selectedFile, {
-      headers: {
-        "Content-Type": selectedFile.type,
-      },
-    });
+      // Upload the file to S3 using the pre-signed URL
+      await axios.put(url, selectedFile, {
+        headers: {
+          "Content-Type": selectedFile.type,
+        },
+      });
 
-    // Set the form data and media URL
-    const mediaUrlWithoutParams = url.split("?")[0];
-    setFormData((prevData) => ({
-      ...prevData,
-      content: {
-        ...prevData.content,
-        s3Bucket: process.env.REACT_APP_S3_BUCKET_NAME,
-        s3Key: key,
-        src: mediaUrlWithoutParams,
-      },
-    }));
-    setMediaUrl(mediaUrlWithoutParams);
-  } catch (error) {
-    console.error("Error uploading file:", error);
-    showAlert("Error uploading file");
-  } finally {
-    setIsUploading(false);
-  }
-};
+      // Set the form data and media URL
+      const mediaUrlWithoutParams = url.split("?")[0];
+      setFormData((prevData) => ({
+        ...prevData,
+        content: {
+          ...prevData.content,
+          s3Bucket: process.env.REACT_APP_S3_BUCKET_NAME,
+          s3Key: key,
+          src: mediaUrlWithoutParams,
+        },
+      }));
+      setMediaUrl(mediaUrlWithoutParams);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      showAlert("Error uploading file");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSave = () => {
     const isNewAd = ad.id && ad.id.startsWith("sidebar-");
@@ -175,6 +179,7 @@ const handleFileUpload = async (e) => {
 
   // Convert ad.type to lowercase to be used later
   const adType = ad?.type?.toLowerCase() || "";
+  const isTextBased = adType !== "image" && adType !== "video";
 
   return (
     <Modal isOpen={!!ad} onClose={onClose}>
@@ -188,196 +193,216 @@ const handleFileUpload = async (e) => {
           </div>
 
           {/* Content */}
-          <div className="flex-1 space-y-4 overflow-y-auto p-6">
-            <div>
-              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
-                Title
-              </label>
-              <input
-                name="title"
-                type="text"
-                value={formData.content.title}
-                onChange={handleInputChange}
-                className="w-full rounded-md border p-2 focus:ring-2 focus:ring-orange-500"
-                placeholder="Enter title"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
-                Description
-              </label>
-              <textarea
-                name="description"
-                value={formData.content.description}
-                onChange={handleInputChange}
-                className="min-h-24 w-full rounded-md border p-2 focus:ring-2 focus:ring-orange-500"
-                placeholder="Enter description"
-              />
-            </div>
-
-            {/* Text Ad Fields */}
-            {adType === "text" && (
-              <div className="space-y-4">
+          <div className="flex h-full flex-col">
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="mx-auto grid max-w-5xl gap-6">
+                {/* Title */}
                 <div>
-                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
-                    Font Family
+                  <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                    Title
                   </label>
                   <input
-                    name="font"
+                    name="title"
                     type="text"
-                    value={formData.styles.font}
-                    onChange={handleStyleChange}
-                    className="w-full rounded-md border p-2"
-                    placeholder="Font Family (e.g., Arial)"
+                    value={formData.content.title}
+                    onChange={handleInputChange}
+                    className="h-12 w-full rounded-md border p-3 text-gray-500"
+                    placeholder="Enter title"
                   />
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
-                    Font Size
-                  </label>
-                  <input
-                    name="fontSize"
-                    type="text"
-                    value={formData.styles.fontSize}
-                    onChange={handleStyleChange}
-                    className="w-full rounded-md border p-2"
-                    placeholder="Font Size (e.g., 14px)"
-                  />
-                </div>
-
-                {/* Text Color Picker */}
-                <div className="relative">
-                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
-                    Text Color
-                  </label>
-                  <div
-                    onClick={() => setShowTextColorPicker(!showTextColorPicker)}
-                    className="flex w-full cursor-pointer items-center space-x-2 rounded-md border p-2"
-                  >
-                    <div
-                      className="h-6 w-6 rounded border"
-                      style={{ backgroundColor: formData.styles.textColor }}
+                {/* Description and Colors Section */}
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Description */}
+                  <div>
+                    <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                      Description
+                    </label>
+                    <textarea
+                      name="description"
+                      value={formData.content.description}
+                      onChange={handleInputChange}
+                      className="h-40 w-full resize-none rounded-md border p-3"
+                      placeholder="Enter description"
                     />
-                    <span>{formData.styles.textColor}</span>
                   </div>
-                  {showTextColorPicker && (
-                    <div className="absolute z-20">
+
+                  {/* Colors */}
+                  <div className="space-y-6">
+                    {isTextBased && (
+                      <div className="relative">
+                        <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                          Text Color
+                        </label>
+                        <div
+                          onClick={() =>
+                            setShowTextColorPicker(!showTextColorPicker)
+                          }
+                          className="flex h-12 w-full cursor-pointer items-center space-x-2 rounded-md border p-3"
+                        >
+                          <div
+                            className="h-6 w-6 rounded border"
+                            style={{
+                              backgroundColor: formData.styles.textColor,
+                            }}
+                          />
+                          <span>{formData.styles.textColor}</span>
+                        </div>
+                        {showTextColorPicker && (
+                          <div className="absolute z-20">
+                            <div
+                              className="fixed inset-0"
+                              onClick={() => setShowTextColorPicker(false)}
+                            />
+                            <SketchPicker
+                              color={formData.styles.textColor}
+                              onChange={(color) =>
+                                handleColorChange(color, "textColor")
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="relative">
+                      <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                        Border Color
+                      </label>
                       <div
-                        className="fixed inset-0"
-                        onClick={() => setShowTextColorPicker(false)}
-                      />
-                      <SketchPicker
-                        color={formData.styles.textColor}
-                        onChange={(color) =>
-                          handleColorChange(color, "textColor")
+                        onClick={() =>
+                          setShowBorderColorPicker(!showBorderColorPicker)
                         }
+                        className="flex h-12 w-full cursor-pointer items-center space-x-2 rounded-md border p-3"
+                      >
+                        <div
+                          className="h-6 w-6 rounded border"
+                          style={{
+                            backgroundColor: formData.styles.borderColor,
+                          }}
+                        />
+                        <span>{formData.styles.borderColor}</span>
+                      </div>
+                      {showBorderColorPicker && (
+                        <div className="absolute z-10">
+                          <div
+                            className="fixed inset-0"
+                            onClick={() => setShowBorderColorPicker(false)}
+                          />
+                          <SketchPicker
+                            color={formData.styles.borderColor}
+                            onChange={(color) =>
+                              handleColorChange(color, "borderColor")
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Font Settings */}
+                {isTextBased && (
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                        Font Family
+                      </label>
+                      <input
+                        name="font"
+                        type="text"
+                        value={formData.styles.font}
+                        onChange={handleStyleChange}
+                        className="h-12 w-full rounded-md border p-3"
+                        placeholder="Font Family (e.g., Arial)"
                       />
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
 
-            {/* Media Upload Fields */}
-            {(adType === "image" || adType === "video") && (
-              <div className="space-y-4">
+                    <div>
+                      <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                        Font Size
+                      </label>
+                      <input
+                        name="fontSize"
+                        type="text"
+                        value={formData.styles.fontSize}
+                        onChange={handleStyleChange}
+                        className="h-12 w-full rounded-md border p-3"
+                        placeholder="Font Size (e.g., 14px)"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Scheduled Time */}
                 <div>
-                  <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
-                    Upload {adType}
+                  <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                    Scheduled Time
                   </label>
                   <input
-                    type="file"
-                    accept={`${adType}/*`}
-                    onChange={handleFileUpload}
-                    className="w-full rounded-md border p-2"
+                    type="time"
+                    value={scheduledTimeState}
+                    onChange={(e) => setScheduledTimeState(e.target.value)}
+                    className="h-12 w-full rounded-md border p-3"
                   />
                 </div>
 
-                {(file || mediaUrl) && (
-                  <div className="mt-4">
-                    {adType === "image" ? (
-                      <img
-                        src={file ? URL.createObjectURL(file) : mediaUrl}
-                        alt="Preview"
-                        className="h-auto max-w-full rounded-md"
+                {/* Media Upload Section */}
+                {(adType === "image" || adType === "video") && (
+                  <div className="w-full space-y-4">
+                    <div>
+                      <label className="mb-1 block text-xl text-gray-700 dark:text-white">
+                        Upload {adType}
+                      </label>
+                      <input
+                        type="file"
+                        accept={`${adType}/*`}
+                        onChange={handleFileUpload}
+                        className="w-full rounded-md border p-2"
                       />
-                    ) : (
-                      <video controls className="w-full rounded-md">
-                        <source
-                          src={file ? URL.createObjectURL(file) : mediaUrl}
-                          type={file ? file.type : "video/mp4"}
-                        />
-                        Your browser does not support the video tag.
-                      </video>
+                    </div>
+
+                    {(file || mediaUrl) && (
+                      <div className="mt-4">
+                        {adType === "image" ? (
+                          <img
+                            src={file ? URL.createObjectURL(file) : mediaUrl}
+                            alt="Preview"
+                            className="h-auto max-w-full rounded-md"
+                          />
+                        ) : (
+                          <video controls className="w-full rounded-md">
+                            <source
+                              src={file ? URL.createObjectURL(file) : mediaUrl}
+                              type={file ? file.type : "video/mp4"}
+                            />
+                            Your browser does not support the video tag.
+                          </video>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
               </div>
-            )}
+            </div>
 
-            {/* Border Color */}
-            <div className="relative">
-              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
-                Border Color
-              </label>
-              <div
-                onClick={() => setShowBorderColorPicker(!showBorderColorPicker)}
-                className="flex w-full cursor-pointer items-center space-x-2 rounded-md border p-2"
-              >
-                <div
-                  className="h-6 w-6 rounded border"
-                  style={{ backgroundColor: formData.styles.borderColor }}
-                />
-                <span>{formData.styles.borderColor}</span>
+            {/* Footer */}
+            <div className="border-t bg-gray-50 p-6 dark:bg-black">
+              <div className="mx-auto flex max-w-5xl justify-end space-x-4">
+                <button
+                  onClick={onClose}
+                  className="rounded-md border px-6 py-2 hover:bg-gray-50 dark:bg-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="rounded-md bg-orange-500 px-6 py-2 text-white hover:bg-orange-600"
+                  disabled={isUploading}
+                >
+                  Save Changes
+                </button>
               </div>
-              {showBorderColorPicker && (
-                <div className="absolute z-10">
-                  <div
-                    className="fixed inset-0"
-                    onClick={() => setShowBorderColorPicker(false)}
-                  />
-                  <SketchPicker
-                    color={formData.styles.borderColor}
-                    onChange={(color) =>
-                      handleColorChange(color, "borderColor")
-                    }
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Scheduled Time */}
-            <div>
-              <label className="mb-1 block text-xl font-bold text-gray-700 dark:text-white">
-                Scheduled Time
-              </label>
-              <input
-                type="time"
-                value={scheduledTimeState}
-                onChange={(e) => setScheduledTimeState(e.target.value)}
-                className="w-full rounded-md border p-2 focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="dark:bg- border-t bg-gray-50 p-6 dark:bg-black">
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={onClose}
-                className="rounded-md border px-4 py-2 hover:bg-gray-50 dark:bg-white"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="rounded-md bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
-                disabled={isUploading}
-              >
-                {isUploading ? "Uploading..." : "Save Changes"}
-              </button>
             </div>
           </div>
         </div>
