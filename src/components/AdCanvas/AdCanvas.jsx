@@ -24,6 +24,7 @@ const AdCanvas = () => {
   const [isSavedLayout, setIsSavedLayout] = useState(false); // Tracks if the layout is saved
   // New state to hold ad details
   const [adDetailsMap, setAdDetailsMap] = useState({});
+  const [removedAds, setRemovedAds] = useState([]);
   // Hint and Help State
   const [showHelp, setShowHelp] = useState(false); // Toggle for displaying help hints
 
@@ -732,40 +733,20 @@ const AdCanvas = () => {
 
   // Handles removing ads from a grid cell
   const handleRemove = (index, scheduledAd) => {
-    // Create a deep copy of the gridItems state to prevent accidental state mutation
-    const updatedGrid = gridItems.map((item) => ({
-      ...item,
-      scheduledAds: item.scheduledAds ? [...item.scheduledAds] : [], // Ensure each scheduledAds is properly cloned
-    }));
-
+    const updatedGrid = [...gridItems];
     const cell = updatedGrid[index];
-
-    // Check if the scheduledAd has a unique identifier to remove the specific one
+  
+    // Update scheduledAds within the local grid state
     if (cell.scheduledAds && cell.scheduledAds.length > 0) {
       updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
-        (ad) => ad.id !== scheduledAd.id,
+        (ad) => ad.id !== scheduledAd.id
       );
     }
-
-    // Ensure that the removal logic properly considers the updated state of scheduledAds
-    if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
-      const cellsToUnmerge =
-        cell.selectedCells && cell.selectedCells.length > 0
-          ? cell.selectedCells
-          : [index];
-
-      cellsToUnmerge.forEach((idx) => {
-        updatedGrid[idx] = {
-          scheduledAds: [],
-          isMerged: false,
-          hidden: false,
-          rowSpan: 1,
-          colSpan: 1,
-        };
-      });
-    }
-
-    // Update the state with the new grid configuration
+  
+    // Add the removed ad to removedAds to track it for future deletion upon save
+    setRemovedAds((prev) => [...prev, scheduledAd]);
+  
+    // Update the gridItems state
     setGridItems(updatedGrid);
   };
 
@@ -775,7 +756,7 @@ const AdCanvas = () => {
       const layoutId = selectedLayout ? selectedLayout.layoutId : uuidv4();
       const layout = { rows, columns, gridItems, layoutId, name };
       const cleanedLayout = cleanLayoutJSON(layout);
-
+  
       if (selectedLayout) {
         // Update an existing layout
         await axios.put(`${apiUrl}/api/layouts/${layoutId}`, cleanedLayout, {
@@ -783,6 +764,24 @@ const AdCanvas = () => {
             "Content-Type": "application/json",
           },
         });
+  
+        // Delete scheduledAds that were marked for removal
+        for (const removedAd of removedAds) {
+          try {
+            await axios.delete(`${apiUrl}/api/scheduledAds`, {
+              data: {
+                gridItemId: removedAd.gridItemId,
+                scheduledTime: removedAd.scheduledTime,
+              },
+            });
+          } catch (error) {
+            console.error("Error deleting scheduled ad:", error);
+          }
+        }
+  
+        // Reset the removedAds state after successfully saving
+        setRemovedAds([]);
+  
         showAlert("Layout updated successfully!");
       } else {
         // Save a new layout
@@ -793,6 +792,7 @@ const AdCanvas = () => {
         });
         showAlert("Layout saved successfully!");
       }
+  
       setIsNamingLayout(false);
       fetchLayouts();
     } catch (error) {

@@ -222,7 +222,7 @@ const updateLayout = async (req, res) => {
       },
     });
 
-    // Process each grid item and scheduled ads similarly as in saveLayout
+    // Process each grid item and scheduled ads as in saveLayout
     for (const item of updatedLayout.gridItems) {
       const gridItemId = `${layoutId}#${item.index}`;
 
@@ -245,15 +245,14 @@ const updateLayout = async (req, res) => {
 
       // Process scheduled ads for each grid item
       for (const scheduledAd of item.scheduledAds) {
-        // Ensure scheduled ad has adId
         if (!scheduledAd.adId) {
           console.error("ScheduledAd is missing adId:", scheduledAd);
           continue;
         }
-      
+
         // Assign gridItemId to scheduledAd
         scheduledAd.gridItemId = gridItemId;
-      
+
         // Add or update scheduled ad
         allTransactItems.push({
           Put: {
@@ -262,13 +261,13 @@ const updateLayout = async (req, res) => {
               gridItemId: scheduledAd.gridItemId,
               scheduledTime: scheduledAd.scheduledTime,
               id: scheduledAd.id,
-              adId: scheduledAd.adId,  // Store adId reference
+              adId: scheduledAd.adId,
               layoutId: layoutId,
               index: item.index,
             },
           },
         });
-      
+
         // Add or update ad in Ads table if not already processed
         if (!uniqueAds.has(scheduledAd.adId)) {
           allTransactItems.push({
@@ -276,7 +275,7 @@ const updateLayout = async (req, res) => {
               TableName: process.env.DYNAMODB_TABLE_ADS,
               Item: {
                 adId: scheduledAd.adId,
-                ...scheduledAd.ad,  // The full ad object
+                ...scheduledAd.ad,
               },
             },
           });
@@ -285,6 +284,10 @@ const updateLayout = async (req, res) => {
       }
     }
 
+    // Delete redundant scheduled ads
+    await ScheduledAdModel.deleteOldScheduledAds(layoutId, updatedLayout);
+
+    // Execute the transaction to update layout and add/update ads
     await executeTransactItemsInBatches(allTransactItems, res, layoutId);
   } catch (error) {
     console.error("Error updating layout and related items:", error);
