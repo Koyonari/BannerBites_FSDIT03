@@ -35,7 +35,7 @@ In recent years, the advertising industry has undergone significant
 
 ## Project Screenshots
 ### 1. User Home
-**File Name:** `BannerBites_UserHome.png`  
+![User Home](./public/screenshots/BannerBites_UserHome.png)
 **Description:** Landing page for operators and admins
 
 ## NPM Modules Used
