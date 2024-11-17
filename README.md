@@ -24,13 +24,19 @@ In recent years, the advertising industry has undergone significant
  advertisers to reach audiences through interactive and targeted ads.
 
  ### Features
-  -1.Customizable layout
-  -2.Real time communication
+  -1. Customizable layout
+  -2. Real time communication
+  -3. Improved UI/UX for Operators
 
 ## Project Structure
 
 - **Frontend**: React.js for the user interface, incorporating libraries for AWS integration, WebSocket, and UI styling.
 - **Backend**: Node.js server for API requests, AWS interactions, and WebSocket functionality.
+
+## Project Screenshots
+### 1. User Home
+**File Name:** `BannerBites_UserHome.png`  
+**Description:** Landing page for operators and admins
 
 ## NPM Modules Used
 
