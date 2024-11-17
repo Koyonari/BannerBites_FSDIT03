@@ -34,9 +34,88 @@ In recent years, the advertising industry has undergone significant
 - **Backend**: Node.js server for API requests, AWS interactions, and WebSocket functionality.
 
 ## Project Screenshots
+
 ### 1. User Home
-![User Home](./public/screenshots/BannerBites_UserHome.png)
-**Description:** Landing page for operators and admins
+![User Home](./public/screenshots/BannerBites_UserHome.png)  
+**Description:** Landing page for operators and admins, showing personalized options and key features.
+
+---
+
+### 2. Homepage
+![Homepage](./public/screenshots/BannerBites_Homepage.png)  
+**Description:** Main dashboard showcasing all available features and navigation options.
+
+---
+
+### 3. Ad Canvas
+![Ad Canvas](./public/screenshots/BannerBites_AdCanvas.png)  
+**Description:** Main workspace where users can create and edit their ad designs.
+
+---
+
+### 4. Ad Creation
+![Ad Creation](./public/screenshots/BannerBites_AdCreation.png)  
+**Description:** Interface for creating a new ad within the application.
+
+---
+
+### 5. Ad Preview
+![Ad Preview](./public/screenshots/BannerBites_AdPreview.png)  
+**Description:** Preview interface allowing users to view ads before saving or publishing.
+
+---
+
+### 6. Ad Preview with Full-Screen Button
+![Ad Preview with Full-Screen Button](./public/screenshots/BannerBites_AdPreviewWithFullScreenButton.png)  
+**Description:** Full-screen preview option for better visualization of ad designs.
+
+---
+
+### 7. Layouts Tab
+![Layouts Tab](./public/screenshots/BannerBites_LayoutsTab.png)  
+**Description:** Tab where users can view, create, and assign layouts to ads.
+
+---
+
+### 8. Save Layout Popup
+![Save Layout Popup](./public/screenshots/BannerBites_SaveLayoutPopup.png)  
+**Description:** Popup that appears when users save a layout.
+
+---
+
+### 9. Successfully Saved Layout Popup
+![Successfully Saved Layout Popup](./public/screenshots/BannerBites_SuccessfullySaveLayoutPopup.png)  
+**Description:** Confirmation popup indicating successful saving of a layout.
+
+---
+
+### 10. Selection Mode
+![Selection Mode](./public/screenshots/BannerBites_SelectionMode.png)  
+**Description:** Interface mode where users can select and manipulate ad elements.
+
+---
+
+### 11. Increase Ad Size Button
+![Increase Ad Size Button](./public/screenshots/BannerBites_IncreaseAdSizeButton.png)  
+**Description:** Button used to increase the size of ad elements or canvas.
+
+---
+
+### 12. Decrease Ad Size Button
+![Decrease Ad Size Button](./public/screenshots/BannerBites_DecreaseAdSizeButton.png)  
+**Description:** Button used to decrease the size of ad elements or canvas.
+
+---
+
+### 13. Delete Confirmation Popup
+![Delete Confirmation Popup](./public/screenshots/BannerBites_DeleteConfirmationPopup.png)  
+**Description:** Popup shown when users attempt to delete an ad or element, requiring confirmation.
+
+---
+
+### 14. Tooltips
+![Tooltips](./public/screenshots/BannerBites_Tooltips.png)  
+**Description:** Tooltips providing additional guidance and information about features and functionality.
 
 ## NPM Modules Used
 
