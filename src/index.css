@@ -2,10 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "InterVariable";
+  src: url("./fonts/Inter-VariableFont.ttf") format("truetype");
+}
+
 body {
   margin: 0;
   padding: 0;
-  font-family: "Helvetica Neue", sans-serif;
+  font-family: "InterVariable", sans-serif;
   scroll-behavior: smooth;
   overflow-x: hidden;
 }
