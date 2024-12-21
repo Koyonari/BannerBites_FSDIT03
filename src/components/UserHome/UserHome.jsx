@@ -104,12 +104,12 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
 
   if (showTVSelector) {
     return (
-      <section className="min-h-screen bg-white dark:bg-black">
+      <section className="light-bg dark:dark-bg min-h-screen">
         <Navbar />
         <div className="p-4">
           <MoveLeft
             onClick={handleBack}
-            className="h-8 w-16 rounded-lg bg-gray-500 py-1 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-orange-500 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+            className="secondary-text h-8 w-16 rounded-lg bg-gray-500 py-1 transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-orange-500 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
           />
           <TVSelector
             locationId={selectedLocationId}
@@ -121,7 +121,7 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
   }
 
   return (
-    <section className="min-h-screen bg-white dark:bg-black">
+    <section className="light-bg dark:dark-bg min-h-screen">
       <Navbar />
       <div className="flex h-12 justify-center gap-4 pt-4 md:px-4 xl:h-24">
         <div className="flex h-full w-1/6 items-center rounded-md border border-gray-300 px-4 py-2 lg:text-xl xl:text-2xl">
@@ -151,7 +151,7 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
           />
         </div>
         <Link key="home" to={"/ad"} className="w-1/6">
-          <button className="h-full w-full rounded-md bg-orange-500 px-4 py-2 text-center text-xs font-bold text-white transition-colors hover:bg-orange-600 md:text-base lg:text-xl xl:text-2xl">
+          <button className="pcolor-bg h-full w-full rounded-md px-4 py-2 text-center text-xs font-bold text-white transition-colors hover:bg-orange-600 md:text-base lg:text-xl xl:text-2xl">
             Create New
           </button>
         </Link>

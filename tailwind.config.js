@@ -28,6 +28,33 @@ module.exports = {
           "-webkit-text-stroke": "0.4px",
           "-webkit-text-stroke-color": "#000000",
         },
+
+        // Border Colour
+        ".primary-border": {
+          borderColor: "rgb(249 115 22 / 1)",
+        },
+
+        // Background Colour
+        ".pcolor-bg": {
+          backgroundColor: "rgb(249 115 22 / 1)",
+        },
+        ".dark-bg": {
+          backgroundColor: "rgb(0 0 0 / 1)",
+        },
+        ".light-bg": {
+          backgroundColor: "rgb(255 255 255 / 1)",
+        },
+
+        // Text Colour
+        ".pcolor-text": {
+          color: "rgb(249 115 22 / 1)",
+        },
+        ".primary-text": {
+          color: "rgb(0 0 0 / 1)",
+        },
+        ".secondary-text": {
+          color: "rgb(255 255 255 / 1)",
+        },
       };
 
       addUtilities(newUtilities, ["responsive", "hover"]);
