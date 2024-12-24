@@ -27,12 +27,12 @@ const Login = () => {
   // Function to handle login
   const handleLogin = async (e) => {
     e.preventDefault();
-  
+
     if (!username || !password) {
       showAlert("Please enter both username and password");
       return;
     }
-  
+
     try {
       await axios.post(
         "http://localhost:5000/api/login",
@@ -42,9 +42,9 @@ const Login = () => {
             "Content-Type": "application/json",
           },
           withCredentials: true, // Include credentials (e.g., cookies) with the request
-        }
+        },
       );
-  
+
       alert(`Logged in successfully as ${role} - ${username}`);
       navigate("/"); // Redirect to home page after showing alert
     } catch (err) {
@@ -53,25 +53,25 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-black">
-      <div className="relative w-full max-w-md rounded-lg border border-gray-300 bg-white p-20 shadow-lg dark:bg-black">
+    <div className="flex min-h-screen items-center justify-center gcolor-bg dark:dark-bg">
+      <div className="relative w-full max-w-md rounded-lg border p-20 shadow-lg secondary-border light-bg dark:dark-bg">
         {/* Close button */}
         <button
           onClick={() => navigate("/")}
-          className="absolute right-4 top-4 p-1 text-gray-500 hover:text-black dark:hover:text-white"
+          className="absolute right-4 top-4 p-1 gcolor-text hover:primary-text dark:hover:secondary-text"
         >
           ✖
         </button>
 
         {/* Selection Tab with transition */}
         <div className="mb-6 flex w-full justify-center">
-          <div className="flex overflow-hidden rounded-md border border-gray-300">
+          <div className="flex overflow-hidden rounded-md border secondary-border">
             <button
               onClick={() => setRole("Operator")}
               className={`px-4 py-2 font-semibold transition-colors duration-300 ${
                 role === "Operator"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-200 text-gray-700"
+                  ? "pcolor-bg secondary-text"
+                  : "g2color-bg primary-text"
               }`}
             >
               Operator
@@ -80,8 +80,8 @@ const Login = () => {
               onClick={() => setRole("Admin")}
               className={`px-4 py-2 font-semibold transition-colors duration-300 ${
                 role === "Admin"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-200 text-gray-700"
+                  ? "pcolor-bg secondary-text"
+                  : "g2color-bg primary-text"
               }`}
             >
               Admin
@@ -99,7 +99,7 @@ const Login = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full rounded-md border border-gray-300 px-4 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="focus:ring-primary w-full rounded-md border px-4 py-2 secondary-border placeholder-secondary focus:outline-none focus:ring-2"
             />
           </div>
           <div>
@@ -111,18 +111,18 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full rounded-md border border-gray-300 px-4 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="focus:ring-primary w-full rounded-md border border-gray-300 px-4 py-2 placeholder-primary focus:outline-none focus:ring-2"
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-md bg-orange-500 py-2 font-semibold text-white hover:bg-orange-600"
+            className="w-full rounded-md py-2 font-semibold pcolor-bg secondary-text hover:p2color-bg"
           >
             Login
           </button>
         </form>
 
-        {error && <p className="mt-4 text-red-500">{error}</p>}
+        {error && <p className="mt-4 alert-text">{error}</p>}
       </div>
       <StyledAlert
         isOpen={alertConfig.isOpen}

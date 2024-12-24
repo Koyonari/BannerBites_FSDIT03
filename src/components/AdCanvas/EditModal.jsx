@@ -183,11 +183,11 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
   return (
     <Modal isOpen={!!ad} onClose={onClose}>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="!z-[9999] flex h-[80vh] w-full max-w-2xl flex-col rounded-lg border bg-white dark:border-white dark:bg-black">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-opacity-50 p-4 dark-bg">
+        <div className="!z-[9999] flex h-[80vh] w-full max-w-2xl flex-col rounded-lg border light-bg dark:white-border dark:dark-bg">
           {/* Header */}
           <div className="border-b p-6">
-            <h3 className="text-2xl font-bold dark:text-white">
+            <h3 className="text-2xl font-bold dark:secondary-text">
               Edit {adType.charAt(0).toUpperCase() + adType.slice(1)} Ad
             </h3>
           </div>
@@ -198,7 +198,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
               <div className="mx-auto grid max-w-5xl gap-6">
                 {/* Title */}
                 <div>
-                  <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                  <label className="mb-2 block text-xl gcolor-text dark:secondary-text">
                     Title
                   </label>
                   <input
@@ -206,7 +206,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                     type="text"
                     value={formData.content.title}
                     onChange={handleInputChange}
-                    className="h-12 w-full rounded-md border p-3 text-gray-500"
+                    className="h-12 w-full rounded-md border p-3 gcolor-text"
                     placeholder="Enter title"
                   />
                 </div>
@@ -215,7 +215,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                 <div className="grid grid-cols-2 gap-6">
                   {/* Description */}
                   <div>
-                    <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                    <label className="mb-2 block text-xl gcolor-text dark:secondary-text">
                       Description
                     </label>
                     <textarea
@@ -231,7 +231,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                   <div className="space-y-6">
                     {isTextBased && (
                       <div className="relative">
-                        <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                        <label className="mb-2 block text-xl gcolor-text dark:secondary-text">
                           Text Color
                         </label>
                         <div
@@ -266,7 +266,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                     )}
 
                     <div className="relative">
-                      <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                      <label className="mb-2 block text-xl gcolor-text dark:secondary-text">
                         Border Color
                       </label>
                       <div
@@ -305,7 +305,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                 {isTextBased && (
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                      <label className="mb-2 block text-xl gcolor-text dark:secondary-text">
                         Font Family
                       </label>
                       <input
@@ -319,7 +319,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                      <label className="mb-2 block text-xl gcolor-text dark:secondary-text">
                         Font Size
                       </label>
                       <input
@@ -336,7 +336,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
                 {/* Scheduled Time */}
                 <div>
-                  <label className="mb-2 block text-xl text-gray-700 dark:text-white">
+                  <label className="mb-2 block text-xl gcolor-text dark:secondary-text">
                     Scheduled Time
                   </label>
                   <input
@@ -351,7 +351,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                 {(adType === "image" || adType === "video") && (
                   <div className="w-full space-y-4">
                     <div>
-                      <label className="mb-1 block text-xl text-gray-700 dark:text-white">
+                      <label className="mb-1 block text-xl gcolor-text dark:secondary-text">
                         Upload {adType}
                       </label>
                       <input
@@ -387,17 +387,17 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             </div>
 
             {/* Footer */}
-            <div className="border-t bg-gray-50 p-6 dark:bg-black">
+            <div className="g2color-bg border-t p-6 dark:dark-bg">
               <div className="mx-auto flex max-w-5xl justify-end space-x-4">
                 <button
                   onClick={onClose}
-                  className="rounded-md border px-6 py-2 hover:bg-gray-50 dark:bg-white"
+                  className="hover:g2color-bg rounded-md border px-6 py-2 dark:light-bg"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="rounded-md bg-orange-500 px-6 py-2 text-white hover:bg-orange-600"
+                  className="rounded-md px-6 py-2 pcolor-bg secondary-text hover:p2color-bg"
                   disabled={isUploading}
                 >
                   Save Changes

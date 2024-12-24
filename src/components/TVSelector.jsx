@@ -15,7 +15,7 @@ const TVSelector = ({ locationId, onSelectTV }) => {
 
   return (
     <div className="tv-selector h-full w-full pl-8 pr-8">
-      <h2 className="mb-12 text-center text-5xl font-bold dark:text-white xl:text-7xl">
+      <h2 className="mb-12 text-center text-5xl font-bold dark:secondary-text xl:text-7xl">
         Televisions
       </h2>
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -23,7 +23,7 @@ const TVSelector = ({ locationId, onSelectTV }) => {
           <li key={tv.tvId} className="flex justify-center">
             <button
               onClick={() => onSelectTV(tv.tvId)}
-              className="h-[24vh] w-full max-w-lg rounded-lg border-2 border-orange-500 bg-gray-300 text-lg font-bold text-black shadow-md transition-all duration-300 ease-in-out hover:-translate-y-2 hover:bg-orange-600 hover:text-white hover:shadow-xl dark:bg-black dark:text-white lg:text-2xl xl:h-[30vh] xl:max-w-xl xl:text-4xl"
+              className="h-[24vh] w-full max-w-lg rounded-lg border-2 text-lg font-bold shadow-md transition-all duration-300 ease-in-out primary-border pcolor-bg primary-text hover:-translate-y-2 hover:shadow-xl hover:p2color-bg hover:secondary-text dark:dark-bg dark:secondary-text lg:text-2xl xl:h-[30vh] xl:max-w-xl xl:text-4xl"
             >
               {tv.name}
             </button>

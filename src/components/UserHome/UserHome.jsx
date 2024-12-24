@@ -12,7 +12,7 @@ const Card = ({ title, date, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="card relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-orange-500 bg-gray-300 text-center text-black transition-all duration-300 ease-in-out hover:-translate-y-2 hover:bg-orange-600 hover:text-white hover:shadow-xl dark:bg-black dark:text-white dark:hover:bg-orange-500 dark:hover:text-white sm:h-full lg:h-[35vh] lg:w-[28vw] xl:border-4"
+      className="card dark:hover:primary-bg relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 text-center transition-all duration-300 ease-in-out primary-border pcolor-bg primary-text hover:-translate-y-2 hover:shadow-xl hover:p2color-bg hover:secondary-text dark:dark-bg dark:secondary-text dark:hover:secondary-text sm:h-full lg:h-[35vh] lg:w-[28vw] xl:border-4"
     >
       <div>
         <h1 className="text-md px-6 py-4 font-bold sm:text-xl md:px-2 lg:text-2xl 2xl:text-4xl">
@@ -86,12 +86,12 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
 
   if (showLayoutAssignment) {
     return (
-      <section className="min-h-screen bg-white dark:bg-black">
+      <section className="min-h-screen light-bg dark:dark-bg">
         <Navbar />
         <div className="p-4">
           <MoveLeft
             onClick={handleBack}
-            className="h-8 w-16 rounded-lg bg-gray-500 py-1 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-orange-500 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+            className="h-8 w-16 rounded-lg py-1 transition-all duration-300 ease-in-out scolor-bg secondary-text hover:cursor-pointer hover:pcolor-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
           />
           <AssignLayoutToTV
             tvId={selectedTVId}
@@ -104,12 +104,12 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
 
   if (showTVSelector) {
     return (
-      <section className="light-bg dark:dark-bg min-h-screen">
+      <section className="min-h-screen light-bg dark:dark-bg">
         <Navbar />
         <div className="p-4">
           <MoveLeft
             onClick={handleBack}
-            className="secondary-text h-8 w-16 rounded-lg bg-gray-500 py-1 transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-orange-500 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+            className="h-8 w-16 rounded-lg py-1 transition-all duration-300 ease-in-out scolor-bg secondary-text hover:cursor-pointer hover:pcolor-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
           />
           <TVSelector
             locationId={selectedLocationId}
@@ -121,19 +121,19 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
   }
 
   return (
-    <section className="light-bg dark:dark-bg min-h-screen">
+    <section className="min-h-screen light-bg dark:dark-bg">
       <Navbar />
       <div className="flex h-12 justify-center gap-4 pt-4 md:px-4 xl:h-24">
-        <div className="flex h-full w-1/6 items-center rounded-md border border-gray-300 px-4 py-2 lg:text-xl xl:text-2xl">
+        <div className="flex h-full w-1/6 items-center rounded-md border px-4 py-2 secondary-border lg:text-xl xl:text-2xl">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="w-full bg-transparent text-black focus:outline-none dark:bg-black dark:text-white"
+            className="w-full bg-transparent primary-text focus:outline-none dark:dark-bg dark:secondary-text"
           >
             {sortOptions.map((option) => (
               <option
                 key={option.value}
-                className="dark:text-black"
+                className="dark:primary-text"
                 value={option.value}
               >
                 {option.label}
@@ -141,17 +141,17 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
             ))}
           </select>
         </div>
-        <div className="flex h-full w-1/2 items-center rounded-md border border-gray-300 px-4 py-2 dark:border-white">
+        <div className="flex h-full w-1/2 items-center rounded-md border px-4 py-2 secondary-border dark:white-border">
           <input
             type="text"
             placeholder="Search location"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent text-black placeholder-gray-500 focus:outline-none dark:text-white dark:placeholder-gray-400 lg:text-xl xl:text-2xl"
+            className="w-full bg-transparent primary-text placeholder-primary focus:outline-none dark:secondary-text dark:placeholder-secondary lg:text-xl xl:text-2xl"
           />
         </div>
         <Link key="home" to={"/ad"} className="w-1/6">
-          <button className="pcolor-bg h-full w-full rounded-md px-4 py-2 text-center text-xs font-bold text-white transition-colors hover:bg-orange-600 md:text-base lg:text-xl xl:text-2xl">
+          <button className="h-full w-full rounded-md px-4 py-2 text-center text-xs font-bold transition-colors pcolor-bg secondary-text hover:p2color-bg md:text-base lg:text-xl xl:text-2xl">
             Create New
           </button>
         </Link>

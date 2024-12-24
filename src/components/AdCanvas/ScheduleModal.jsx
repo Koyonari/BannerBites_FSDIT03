@@ -1,9 +1,17 @@
 import React, { useState } from "react";
 import { X, Calendar } from "lucide-react";
 // ScheduleModal is a modal popup that allows the user to schedule an ad
-const ScheduleModal = ({ ad, scheduledTime: initialScheduledTime, onSave, onClose, existingScheduledTimes }) => {
+const ScheduleModal = ({
+  ad,
+  scheduledTime: initialScheduledTime,
+  onSave,
+  onClose,
+  existingScheduledTimes,
+}) => {
   const [scheduledTime, setScheduledTime] = useState(
-    initialScheduledTime && initialScheduledTime !== "" ? initialScheduledTime : "00:00"
+    initialScheduledTime && initialScheduledTime !== ""
+      ? initialScheduledTime
+      : "00:00",
   );
   const [error, setError] = useState("");
 
@@ -21,7 +29,9 @@ const ScheduleModal = ({ ad, scheduledTime: initialScheduledTime, onSave, onClos
 
     // Check if the selected time is already scheduled
     if (existingScheduledTimes.includes(newTime)) {
-      setError("This time slot is already scheduled. Please choose another time.");
+      setError(
+        "This time slot is already scheduled. Please choose another time.",
+      );
     } else {
       setError(""); // Clear the error if the time is valid
     }
@@ -31,32 +41,32 @@ const ScheduleModal = ({ ad, scheduledTime: initialScheduledTime, onSave, onClos
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       {/* Modal Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 backdrop-blur-sm dark-bg"
         onClick={onClose}
       />
 
       {/* Modal Content */}
-      <div className="relative z-50 w-full max-w-md rounded-lg border bg-white shadow-lg dark:border-white dark:bg-black">
+      <div className="relative z-50 w-full max-w-md rounded-lg border shadow-lg light-bg dark:white-border dark:dark-bg">
         {/* Header */}
         <div className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-orange-500" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <Calendar className="h-5 w-5 pcolor-bg" />
+            <h2 className="text-lg font-semibold gcolor-text dark:gcolor-text">
               Schedule Ad
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1 hover:bg-gray-100"
+            className="hover:g2color-bg rounded-full p-1"
           >
-            <X className="h-5 w-5 text-gray-500 dark:text-white hover:dark:text-black" />
+            <X className="h-5 w-5 gcolor-text dark:secondary-text hover:dark:primary-text" />
           </button>
         </div>
 
         {/* Body */}
         <div className="p-4">
           <label className="block space-y-2">
-            <span className="text-lg font-medium text-gray-700 dark:text-white">
+            <span className="text-lg font-medium gcolor-text dark:secondary-text">
               <b>Select Time</b>
             </span>
             <input
@@ -64,30 +74,30 @@ const ScheduleModal = ({ ad, scheduledTime: initialScheduledTime, onSave, onClos
               value={scheduledTime}
               onChange={handleTimeChange}
               className={`block w-full rounded-md border-2 p-2 focus:outline-none focus:ring-2 ${
-                error ? "border-red-500 focus:border-red-500" : "focus:border-orange-500"
+                error
+                  ? "alert-border focus:alert-border"
+                  : "focus:alert2-border"
               }`}
             />
           </label>
-          {error && (
-            <p className="mt-2 text-sm text-red-500">
-              {error}
-            </p>
-          )}
+          {error && <p className="alert-text mt-2 text-sm">{error}</p>}
         </div>
 
         {/* Footer */}
         <div className="flex justify-end gap-3 border-t p-4">
           <button
             onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-white hover:dark:text-black"
+            className="rounded-md px-4 py-2 text-sm font-medium gcolor-text hover:gcolor-bg dark:secondary-text hover:dark:primary-text"
           >
             <b>Cancel</b>
           </button>
           <button
             onClick={handleSave}
             disabled={!!error}
-            className={`rounded-md px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 ${
-              error ? "bg-gray-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
+            className={`rounded-md px-4 py-2 text-sm font-medium secondary-text focus:outline-none focus:ring-2 ${
+              error
+                ? "cursor-not-allowed gcolor-bg"
+                : "pcolor-bg hover:p2color-bg"
             }`}
           >
             <b>Schedule</b>

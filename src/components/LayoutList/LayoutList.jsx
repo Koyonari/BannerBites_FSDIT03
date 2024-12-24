@@ -65,10 +65,10 @@ const LayoutList = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Using axios to fetch layouts
       const response = await axios.get("http://localhost:5000/api/layouts");
-      
+
       // The data is already parsed as JSON, so you can use it directly
       setLayouts(response.data);
     } catch (err) {
@@ -86,23 +86,25 @@ const LayoutList = () => {
     }
     pendingLayoutIdRef.current = layoutId;
     reconnectAttemptsRef.current = 0; // Reset reconnect attempts for new selection
-  
+
     try {
       setLoading(true);
       setError(null);
       setSelectedLayout(null);
-  
+
       // Close the previous WebSocket connection if one exists
       if (websocketRef.current) {
         websocketRef.current.onclose = null; // Remove any existing onclose handlers to avoid triggering reconnections
         websocketRef.current.close();
         websocketRef.current = null;
       }
-  
+
       // Fetch the initial layout data using axios
-      const response = await axios.get(`http://localhost:5000/api/layouts/${layoutId}`);
+      const response = await axios.get(
+        `http://localhost:5000/api/layouts/${layoutId}`,
+      );
       setSelectedLayout(response.data); // axios automatically parses JSON
-  
+
       // Set up WebSocket connection for real-time updates
       establishWebSocketConnection(layoutId);
     } catch (err) {
@@ -164,15 +166,15 @@ const LayoutList = () => {
   const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
 
   return (
-    <div className="min-h-screen dark:bg-black">
+    <div className="min-h-screen dark:dark-bg">
       <Navbar />
       <div className="container mx-auto w-full p-4 md:p-12">
         <div className="flex flex-col md:min-h-[600px] md:flex-row">
           <div className="w-full md:w-[300px] md:flex-shrink-0">
-            <div className="mb-6 rounded-lg bg-white p-6 shadow dark:bg-black dark:text-white md:mb-0">
+            <div className="mb-6 rounded-lg p-6 shadow light-bg dark:dark-bg dark:secondary-text md:mb-0">
               <h2 className="mb-4 text-xl font-bold">Available Layouts</h2>
               {loading && !selectedLayout && (
-                <div className="flex items-center justify-center p-4 text-gray-600">
+                <div className="flex items-center justify-center p-4 gcolor-text">
                   <svg
                     className="mr-2 h-5 w-5 animate-spin"
                     viewBox="0 0 24 24"
@@ -196,7 +198,7 @@ const LayoutList = () => {
                 </div>
               )}
               {error && (
-                <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-600">
+                <div className="alert-bg alert2-text mb-4 rounded-lg p-4">
                   Error: {error}
                 </div>
               )}
@@ -206,8 +208,8 @@ const LayoutList = () => {
                     key={layout.layoutId}
                     className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
                       selectedLayout?.layoutId === layout.layoutId
-                        ? "bg-orange-600 text-white"
-                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        ? "p2color-bg secondary-text"
+                        : "hover:g2color-bg gcolor-bg primary-text"
                     }`}
                     onClick={() => handleLayoutSelect(layout.layoutId)}
                   >
@@ -216,7 +218,7 @@ const LayoutList = () => {
                 ))}
                 {hasMoreLayouts && (
                   <button
-                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-50 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-100"
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors gcolor-bg gcolor-text hover:gcolor-bg"
                     onClick={() => setShowAllLayouts(!showAllLayouts)}
                   >
                     <span>{showAllLayouts ? "Show Less" : `Show More`}</span>
@@ -227,14 +229,14 @@ const LayoutList = () => {
           </div>
           <div className="flex-1 md:ml-8">
             <div
-              className="relative flex h-[500px] items-center justify-center rounded-lg border-8 border-gray-800 p-4 md:h-full md:min-h-[600px]"
+              className="relative flex h-[500px] items-center justify-center rounded-lg border-8 p-4 secondary-border md:h-full md:min-h-[600px]"
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
             >
               {selectedLayout && !loading && (
                 <button
                   onClick={toggleFullscreen}
-                  className={`absolute right-6 top-6 z-10 rounded-full bg-gray-800 p-2 text-white transition-opacity duration-200 hover:bg-gray-700 ${
+                  className={`hover:g2color-bg absolute right-6 top-6 z-10 rounded-full p-2 transition-opacity duration-200 gcolor-bg secondary-text ${
                     isHovering || isFullscreen ? "opacity-100" : "opacity-0"
                   }`}
                   aria-label={
@@ -250,12 +252,12 @@ const LayoutList = () => {
               )}
               <div
                 ref={previewRef}
-                className={`h-full w-full overflow-hidden rounded-lg bg-white ${
+                className={`h-full w-full overflow-hidden rounded-lg light-bg ${
                   isFullscreen ? "flex items-center justify-center" : ""
                 }`}
               >
                 {loading && selectedLayout && (
-                  <div className="flex h-full items-center justify-center p-4 text-gray-600">
+                  <div className="flex h-full items-center justify-center p-4 gcolor-bg">
                     <svg
                       className="mr-2 h-5 w-5 animate-spin"
                       viewBox="0 0 24 24"
@@ -282,7 +284,7 @@ const LayoutList = () => {
                   <LayoutViewer layout={selectedLayout} />
                 )}
                 {!selectedLayout && !loading && (
-                  <div className="flex h-full items-center justify-center p-4 text-gray-500">
+                  <div className="flex h-full items-center justify-center p-4 gcolor-text">
                     Select a layout to preview
                   </div>
                 )}

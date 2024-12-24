@@ -1021,14 +1021,14 @@ const AdCanvas = () => {
 
   return (
     <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center pt-[10vh] text-center">
-      <div className="text-3xl font-bold text-black dark:text-white">
+      <div className="text-3xl font-bold primary-text dark:secondary-text">
         Current Aspect Ratio: {aspectRatio}
       </div>
 
       <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
         <CircleHelp
           className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
-            showHelp ? "text-orange-500" : "text-gray-600"
+            showHelp ? "pcolor-text" : "gcolor-text"
           }`}
           fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
           strokeWidth={2}
@@ -1043,7 +1043,7 @@ const AdCanvas = () => {
             data-tooltip-id="remCols-tooltip"
             data-tooltip-content={tooltips.remCols}
             onClick={decreaseColumns}
-            className="flex h-5/6 w-4 items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+            className="hover:g2color-bg flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
           >
             <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
               -
@@ -1060,7 +1060,7 @@ const AdCanvas = () => {
               data-tooltip-id="remRows-tooltip"
               data-tooltip-content={tooltips.remRows}
               onClick={decreaseRows}
-              className="flex h-4 w-full items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+              className="hover:g2color-bg flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
             >
               <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                 -
@@ -1119,7 +1119,7 @@ const AdCanvas = () => {
               data-tooltip-id="addRows-tooltip"
               data-tooltip-content={tooltips.addRows}
               onClick={increaseRows}
-              className="flex h-4 w-full items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+              className="hover:g2color-bg flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
             >
               <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                 +
@@ -1135,7 +1135,7 @@ const AdCanvas = () => {
             data-tooltip-id="addCols-tooltip"
             data-tooltip-content={tooltips.addCols}
             onClick={increaseColumns}
-            className="flex h-5/6 w-4 items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+            className="hover:g2color-bg flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
           >
             <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
               +
@@ -1154,7 +1154,7 @@ const AdCanvas = () => {
       <div className="mx-auto flex w-4/5 flex-row justify-between py-4 lg:py-8">
         <MoveLeft
           onClick={handleMoveLeft}
-          className="h-8 w-16 rounded-lg bg-orange-500 py-1 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+          className="h-8 w-16 rounded-lg py-1 pcolor-bg secondary-text hover:cursor-pointer hover:p2color-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
         />
 
         <div
@@ -1166,17 +1166,17 @@ const AdCanvas = () => {
           <Merge
             onClick={handleMergeSelected}
             disabled={!isMergeButtonActive}
-            className={`h-8 w-16 rounded-lg py-2 text-white transition-colors duration-300 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
+            className={`h-8 w-16 rounded-lg py-2 transition-colors duration-300 secondary-text sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
               !isMergeButtonActive
-                ? "cursor-not-allowed bg-gray-400"
-                : "bg-orange-500 hover:cursor-pointer hover:bg-orange-600"
+                ? "g2color-bg cursor-not-allowed"
+                : "pcolor-bg hover:cursor-pointer hover:p2color-bg"
             }`}
           />
         </div>
         {/* Check render*/}
         <Check
           onClick={handleOpenSelector}
-          className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
+          className="h-8 w-16 rounded-lg py-1.5 pcolor-bg secondary-text hover:cursor-pointer hover:p2color-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
         />
       </div>
 

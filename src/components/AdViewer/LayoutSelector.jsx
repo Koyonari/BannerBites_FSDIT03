@@ -16,10 +16,10 @@ const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
   const hasMore = filteredLayouts.length > 3;
 
   const buttonBaseClasses =
-    "w-full rounded-lg px-4 py-2 text-left text-sm transition-colors hover:bg-orange-500 hover:text-white dark:text-white dark:hover:bg-gray-700";
+    "w-full rounded-lg px-4 py-2 text-left text-sm transition-colors hover:primary-bg hover:secondary-text dark:secondary-text dark:hover:bg-gray-700";
 
   return (
-    <div className="flex w-4/5 flex-col items-center justify-center gap-2 overflow-y-auto bg-transparent py-4 text-lg shadow-none dark:text-white lg:fixed lg:right-4 lg:top-[52vh] lg:h-auto lg:w-[10vw] lg:-translate-y-1/2 lg:flex-col lg:items-stretch lg:pr-4 xl:pr-6 xl:text-xl 2xl:top-[49vh] 2xl:text-2xl 4xl:text-4xl">
+    <div className="flex w-4/5 flex-col items-center justify-center gap-2 overflow-y-auto bg-transparent py-4 text-lg shadow-none dark:secondary-text lg:fixed lg:right-4 lg:top-[52vh] lg:h-auto lg:w-[10vw] lg:-translate-y-1/2 lg:flex-col lg:items-stretch lg:pr-4 xl:pr-6 xl:text-xl 2xl:top-[49vh] 2xl:text-2xl 4xl:text-4xl">
       {/* Search bar */}
       <div className="relative mb-2 w-full">
         <input
@@ -27,13 +27,13 @@ const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
           placeholder="Search layouts"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-lg border px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          className="focus:ring-secondary w-full rounded-lg border px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 dark:secondary-border dark:g2color-bg dark:secondary-text"
         />
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 gcolor-text" />
       </div>
 
       {/* Layout list */}
-      <div className="w-full border-l border-black dark:border-white">
+      <div className="w-full border-l primary-border dark:white-border">
         <div className="flex w-full flex-col gap-2">
           {/* Display initial 3 layouts */}
           {initialLayouts.map((layout) => (
@@ -48,7 +48,7 @@ const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
                 {layout.name || "Unnamed Layout"}
               </button>
               <Trash
-                className="h-5 w-5 cursor-pointer text-red-500 hover:text-red-700"
+                className="h-5 w-5 cursor-pointer alert-text hover:alert2-text"
                 onClick={() => onDeleteLayoutClick(layout.layoutId)}
               />
             </div>
@@ -75,7 +75,7 @@ const LayoutSelector = ({ layouts, onSelect, onDeleteLayoutClick }) => {
                     {layout.name || "Unnamed Layout"}
                   </button>
                   <Trash
-                    className="h-5 w-5 cursor-pointer text-red-500 hover:text-red-700"
+                    className="h-5 w-5 cursor-pointer alert-text hover:alert2-text"
                     onClick={() => onDeleteLayoutClick(layout.layoutId)}
                   />
                 </div>
