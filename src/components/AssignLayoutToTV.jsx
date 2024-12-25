@@ -62,7 +62,7 @@ const AssignLayoutToTV = ({ tvId, onLayoutAssigned }) => {
           <select
             value={selectedLayoutId}
             onChange={(e) => setSelectedLayoutId(e.target.value)}
-            className="focus:ring-primary w-full rounded-md border px-3 py-2 shadow-sm secondary-border light-bg focus:outline-none focus:ring-2 focus:primary-border lg:text-lg"
+            className="w-full rounded-md border px-3 py-2 shadow-sm secondary-border light-bg focus:outline-none focus:ring-2 focus:primary-border focus:ring-primary lg:text-lg"
           >
             <option value="">Select Layout</option>
             {layouts.map((layout) => (
@@ -81,13 +81,13 @@ const AssignLayoutToTV = ({ tvId, onLayoutAssigned }) => {
             type="datetime-local"
             value={assignedDate}
             onChange={(e) => setAssignedDate(e.target.value)}
-            className="focus:ring-primary w-full rounded-md border px-3 py-2 shadow-sm secondary-border light-bg focus:outline-none focus:ring-2 focus:primary-border lg:text-lg"
+            className="w-full rounded-md border px-3 py-2 shadow-sm secondary-border light-bg focus:outline-none focus:ring-2 focus:primary-border focus:ring-primary lg:text-lg"
           />
         </div>
 
         <button
           onClick={handleAssign}
-          className="focus:ring-primary mt-4 w-full rounded-md px-4 py-2 font-bold transition-colors duration-200 p2color-bg secondary-text hover:alert-bg focus:outline-none focus:ring-2 focus:ring-offset-2 lg:text-lg"
+          className="mt-4 w-full rounded-md px-4 py-2 font-bold transition-colors duration-200 pcolor-bg secondary-text hover:p2color-bg hover:primary-text focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary lg:text-lg"
         >
           Assign Layout
         </button>

@@ -8,7 +8,6 @@ import LayoutViewer from "../AdViewer/LayoutViewer";
 import LocationSelector from "../LocationSelector";
 import TVSelector from "../TVSelector";
 import AssignLayoutTab from "../AssignLayoutTab";
-import LayoutSelector from "../AdViewer/LayoutSelector";
 import ErrorBoundary from "../ErrorBoundary";
 import Navbar from "../Navbar";
 
@@ -81,12 +80,6 @@ const Ad = () => {
                 />
               </Routes>
             </div>
-            {isSelectorOpen && (
-              <LayoutSelector
-                onSelect={handleSelectLayout}
-                onClose={() => setIsSelectorOpen(false)}
-              />
-            )}
           </DndProvider>
         </ErrorBoundary>
       </div>

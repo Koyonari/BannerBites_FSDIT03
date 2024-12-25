@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import Sidebar from "./Sidebar";
+import CollapsibleSidebar from "./CollapsibleSidebar";
 import GridCell from "./GridCell";
 import EditModal from "./EditModal";
 import ScheduleModal from "./ScheduleModal";
@@ -11,7 +12,6 @@ import StyledAlert from "../StyledAlert";
 import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
-import LayoutSelector from "../AdViewer/LayoutSelector";
 import DeleteConfirmationModal from "../Modal/DeleteConfirmationModal";
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -1020,7 +1020,7 @@ const AdCanvas = () => {
   }
 
   return (
-    <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center pt-[10vh] text-center">
+    <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center pt-[10vh] text-center light-bg dark:dark-bg">
       <div className="text-3xl font-bold primary-text dark:secondary-text">
         Current Aspect Ratio: {aspectRatio}
       </div>
@@ -1043,7 +1043,7 @@ const AdCanvas = () => {
             data-tooltip-id="remCols-tooltip"
             data-tooltip-content={tooltips.remCols}
             onClick={decreaseColumns}
-            className="hover:g2color-bg flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+            className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
           >
             <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
               -
@@ -1060,7 +1060,7 @@ const AdCanvas = () => {
               data-tooltip-id="remRows-tooltip"
               data-tooltip-content={tooltips.remRows}
               onClick={decreaseRows}
-              className="hover:g2color-bg flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+              className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
             >
               <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                 -
@@ -1119,7 +1119,7 @@ const AdCanvas = () => {
               data-tooltip-id="addRows-tooltip"
               data-tooltip-content={tooltips.addRows}
               onClick={increaseRows}
-              className="hover:g2color-bg flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+              className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
             >
               <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                 +
@@ -1135,7 +1135,7 @@ const AdCanvas = () => {
             data-tooltip-id="addCols-tooltip"
             data-tooltip-content={tooltips.addCols}
             onClick={increaseColumns}
-            className="hover:g2color-bg flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+            className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
           >
             <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
               +
@@ -1147,8 +1147,11 @@ const AdCanvas = () => {
       {/* Popup when in selection mode */}
       <SelectionModePopup isVisible={isSelectionMode} />
 
-      {/* Sidebar */}
-      <Sidebar />
+      <CollapsibleSidebar
+        layouts={layouts}
+        onSelectLayout={handleSelectLayout}
+        onDeleteLayoutClick={handleDeleteLayoutClick}
+      />
 
       {/* Navigation buttons */}
       <div className="mx-auto flex w-4/5 flex-row justify-between py-4 lg:py-8">
@@ -1168,7 +1171,7 @@ const AdCanvas = () => {
             disabled={!isMergeButtonActive}
             className={`h-8 w-16 rounded-lg py-2 transition-colors duration-300 secondary-text sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
               !isMergeButtonActive
-                ? "g2color-bg cursor-not-allowed"
+                ? "cursor-not-allowed g2color-bg"
                 : "pcolor-bg hover:cursor-pointer hover:p2color-bg"
             }`}
           />
@@ -1237,13 +1240,6 @@ const AdCanvas = () => {
         title={alertConfig.title}
         message={alertConfig.message}
         type={alertConfig.type}
-      />
-
-      {/* LayoutSelector */}
-      <LayoutSelector
-        layouts={layouts}
-        onSelect={handleSelectLayout}
-        onDeleteLayoutClick={handleDeleteLayoutClick}
       />
 
       {/* Delete Confirmation Modal */}
