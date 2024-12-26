@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
-import Sidebar from "./Sidebar";
 import CollapsibleSidebar from "./CollapsibleSidebar";
 import GridCell from "./GridCell";
 import EditModal from "./EditModal";
@@ -18,6 +17,8 @@ const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 // Main AdCanvas component, responsible for facilitating CRUD operations on ad layouts
 const AdCanvas = () => {
   // Layout Selection State
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [ratio, setRatio] = useState(0);
   const [layouts, setLayouts] = useState([]); // List of available layouts
   const [isSelectingLayout, setIsSelectingLayout] = useState(true); // Flag for layout selection mode
   const [selectedLayout, setSelectedLayout] = useState(null); // Currently selected layout
@@ -40,6 +41,11 @@ const AdCanvas = () => {
       colSpan: 1,
     })),
   );
+
+  // Sidebar
+  const handleSidebarStateChange = (isOpen) => {
+    setSidebarOpen(isOpen);
+  };
 
   // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Controls delete modal visibility
@@ -1019,139 +1025,169 @@ const AdCanvas = () => {
     }
   }
 
+  // Responsive Ad Canvas with Sidebar
+  useEffect(() => {
+    const updateDimensions = () => {
+      setRatio(window.innerHeight / window.innerWidth);
+    };
+    window.addEventListener("resize", updateDimensions);
+    updateDimensions();
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
+
+  const isVertical = ratio > 1;
+
   return (
-    <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center pt-[10vh] text-center light-bg dark:dark-bg">
-      <div className="text-3xl font-bold primary-text dark:secondary-text">
-        Current Aspect Ratio: {aspectRatio}
-      </div>
-
-      <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
-        <CircleHelp
-          className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
-            showHelp ? "pcolor-text" : "gcolor-text"
-          }`}
-          fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
-          strokeWidth={2}
-          onClick={() => setShowHelp(!showHelp)}
-        />
-      </div>
-      <div className="flex w-full max-w-[75vw] flex-row items-stretch justify-center gap-2 pt-[-2]">
-        {/* Decrease Columns button */}
-        <div className="group flex flex-col justify-center">
+    <div className="flex h-screen w-full flex-col overflow-auto light-bg dark:dark-bg">
+      <div
+        className={`flex ${isVertical ? "flex-col" : "flex-row"} h-full w-full`}
+      >
+        <div
+          className={`flex flex-col ${isVertical ? "h-2/3" : "h-full"} w-full`}
+        >
           <div
-            id="remCols"
-            data-tooltip-id="remCols-tooltip"
-            data-tooltip-content={tooltips.remCols}
-            onClick={decreaseColumns}
-            className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+            className={`transition-all duration-300 ${sidebarOpen ? "ml-[25vw] w-[75vw] px-4" : "ml-[5vw] w-[90vw]"} flex h-full flex-col items-center justify-center`}
           >
-            <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-              -
-            </span>
-          </div>
-        </div>
-
-        {/* Grid Container with aspect ratio wrapper */}
-        <div className="flex w-80 flex-1 flex-col">
-          {/* Decrease Rows button */}
-          <div className="group py-2">
-            <div
-              id="remRows"
-              data-tooltip-id="remRows-tooltip"
-              data-tooltip-content={tooltips.remRows}
-              onClick={decreaseRows}
-              className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
-            >
-              <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-                -
-              </span>
+            <div className="text-3xl font-bold primary-text dark:secondary-text">
+              Current Aspect Ratio: {aspectRatio}
             </div>
-          </div>
 
-          {/* Aspect ratio container */}
-          <div className="relative h-full w-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
-            {/* Grid cells container */}
-            <div
-              className="absolute left-0 top-0 grid h-full w-full auto-rows-fr gap-2.5"
-              style={{
-                gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
-                gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
-                gridAutoFlow: "dense",
-                "--rows": rows,
-                "--columns": columns,
-              }}
-            >
-              {/*Loop through each grid item and render the grid cell*/}
-              {gridItems.map((item, index) => {
-                const rowIndex = Math.floor(index / columns);
-                const colIndex = index % columns;
-                // Render each grid cell
-                return (
-                  <GridCell
-                    key={index}
-                    index={index}
-                    rowIndex={rowIndex}
-                    colIndex={colIndex}
-                    item={item}
-                    onDrop={handleDrop}
-                    onRemove={handleRemove}
-                    onEdit={handleEdit}
-                    onMerge={handleMerge}
-                    isSelected={selectedCells.includes(index)}
-                    onSelect={handleCellSelection}
-                    isSelectionMode={isSelectionMode}
-                    setIsSelectionMode={setIsSelectionMode}
-                    columns={columns}
-                    totalCells={totalCells}
-                    onUnmerge={handleUnmerge}
-                    showHelp={showHelp}
-                    getMainCellIndex={getMainCellIndex}
-                  />
-                );
-              })}
+            <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
+              <CircleHelp
+                className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
+                  showHelp ? "pcolor-text" : "gcolor-text"
+                }`}
+                fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
+                strokeWidth={2}
+                onClick={() => setShowHelp(!showHelp)}
+              />
             </div>
-          </div>
+            <div className="flex w-full max-w-[75vw] flex-row items-stretch justify-center gap-2 pt-[-2]">
+              {/* Decrease Columns button */}
+              <div className="group flex flex-col justify-center">
+                <div
+                  id="remCols"
+                  data-tooltip-id="remCols-tooltip"
+                  data-tooltip-content={tooltips.remCols}
+                  onClick={decreaseColumns}
+                  className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+                >
+                  <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                    -
+                  </span>
+                </div>
+              </div>
 
-          {/* Increase Rows button */}
-          <div className="group py-2">
-            <div
-              id="addRows"
-              data-tooltip-id="addRows-tooltip"
-              data-tooltip-content={tooltips.addRows}
-              onClick={increaseRows}
-              className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
-            >
-              <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-                +
-              </span>
+              {/* Grid Container with aspect ratio wrapper */}
+              <div className="flex w-80 flex-1 flex-col">
+                {/* Decrease Rows button */}
+                <div className="group py-2">
+                  <div
+                    id="remRows"
+                    data-tooltip-id="remRows-tooltip"
+                    data-tooltip-content={tooltips.remRows}
+                    onClick={decreaseRows}
+                    className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                  >
+                    <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                      -
+                    </span>
+                  </div>
+                </div>
+
+                {/* Aspect ratio container */}
+                <div className="relative h-full w-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
+                  {/* Grid cells container */}
+                  <div
+                    className="absolute left-0 top-0 grid h-full w-full auto-rows-fr gap-2.5"
+                    style={{
+                      gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
+                      gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
+                      gridAutoFlow: "dense",
+                      "--rows": rows,
+                      "--columns": columns,
+                    }}
+                  >
+                    {/*Loop through each grid item and render the grid cell*/}
+                    {gridItems.map((item, index) => {
+                      const rowIndex = Math.floor(index / columns);
+                      const colIndex = index % columns;
+                      // Render each grid cell
+                      return (
+                        <GridCell
+                          key={index}
+                          index={index}
+                          rowIndex={rowIndex}
+                          colIndex={colIndex}
+                          item={item}
+                          onDrop={handleDrop}
+                          onRemove={handleRemove}
+                          onEdit={handleEdit}
+                          onMerge={handleMerge}
+                          isSelected={selectedCells.includes(index)}
+                          onSelect={handleCellSelection}
+                          isSelectionMode={isSelectionMode}
+                          setIsSelectionMode={setIsSelectionMode}
+                          columns={columns}
+                          totalCells={totalCells}
+                          onUnmerge={handleUnmerge}
+                          showHelp={showHelp}
+                          getMainCellIndex={getMainCellIndex}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Increase Rows button */}
+                <div className="group py-2">
+                  <div
+                    id="addRows"
+                    data-tooltip-id="addRows-tooltip"
+                    data-tooltip-content={tooltips.addRows}
+                    onClick={increaseRows}
+                    className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                  >
+                    <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                      +
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Increase Columns button */}
+              <div className="group flex flex-col justify-center">
+                <div
+                  id="addCols"
+                  data-tooltip-id="addCols-tooltip"
+                  data-tooltip-content={tooltips.addCols}
+                  onClick={increaseColumns}
+                  className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+                >
+                  <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                    +
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Increase Columns button */}
-        <div className="group flex flex-col justify-center">
+            {/* Popup when in selection mode */}
+            <SelectionModePopup isVisible={isSelectionMode} />
+          </div>
+
           <div
-            id="addCols"
-            data-tooltip-id="addCols-tooltip"
-            data-tooltip-content={tooltips.addCols}
-            onClick={increaseColumns}
-            className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+            className={`flex ${isVertical ? "h-1/3 w-full" : "h-full"} transition-all duration-300`}
           >
-            <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-              +
-            </span>
+            <CollapsibleSidebar
+              layouts={layouts}
+              onSelectLayout={handleSelectLayout}
+              onDeleteLayoutClick={handleDeleteLayoutClick}
+              onStateChange={handleSidebarStateChange}
+              isVertical={isVertical}
+            />
           </div>
         </div>
       </div>
-
-      {/* Popup when in selection mode */}
-      <SelectionModePopup isVisible={isSelectionMode} />
-
-      <CollapsibleSidebar
-        layouts={layouts}
-        onSelectLayout={handleSelectLayout}
-        onDeleteLayoutClick={handleDeleteLayoutClick}
-      />
 
       {/* Navigation buttons */}
       <div className="mx-auto flex w-4/5 flex-row justify-between py-4 lg:py-8">
