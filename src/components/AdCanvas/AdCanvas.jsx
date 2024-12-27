@@ -1057,7 +1057,7 @@ const AdCanvas = () => {
                 : sidebarOpen
                   ? "ml-[25vw] w-[75vw] px-4"
                   : "ml-[5vw] w-[90vw]"
-            } flex h-full flex-col items-center justify-center`}
+            } flex flex-col items-center justify-center`}
           >
             <div className="text-3xl font-bold primary-text dark:secondary-text">
               Current Aspect Ratio: {aspectRatio}
@@ -1076,32 +1076,16 @@ const AdCanvas = () => {
             </div>
 
             {/* Grid controls and cells */}
-            <div className="flex w-full max-w-[75vw] flex-row items-stretch justify-center gap-2 pt-[-2]">
-              {/* Decrease Columns button */}
-              <div className="group flex flex-col justify-center">
-                <div
-                  id="remCols"
-                  data-tooltip-id="remCols-tooltip"
-                  data-tooltip-content={tooltips.remCols}
-                  onClick={decreaseColumns}
-                  className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
-                >
-                  <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-                    -
-                  </span>
-                </div>
-              </div>
-
-              {/* Grid Container with aspect ratio wrapper */}
-              <div className="flex w-80 flex-1 flex-col">
-                {/* Decrease Rows button */}
-                <div className="group py-2">
+            <div className="relative flex w-full max-w-[75vw] flex-col items-center">
+              <div className="flex w-full flex-row items-stretch justify-center gap-2">
+                {/* Decrease Columns button */}
+                <div className="group flex flex-col justify-center">
                   <div
-                    id="remRows"
-                    data-tooltip-id="remRows-tooltip"
-                    data-tooltip-content={tooltips.remRows}
-                    onClick={decreaseRows}
-                    className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                    id="remCols"
+                    data-tooltip-id="remCols-tooltip"
+                    data-tooltip-content={tooltips.remCols}
+                    onClick={decreaseColumns}
+                    className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
                   >
                     <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                       -
@@ -1109,58 +1093,89 @@ const AdCanvas = () => {
                   </div>
                 </div>
 
-                {/* Aspect ratio container */}
-                <div className="relative h-full w-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
-                  {/* Grid cells container */}
-                  <div
-                    className="absolute left-0 top-0 grid h-full w-full auto-rows-fr gap-2.5"
-                    style={{
-                      gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
-                      gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
-                      gridAutoFlow: "dense",
-                      "--rows": rows,
-                      "--columns": columns,
-                    }}
-                  >
-                    {/*Loop through each grid item and render the grid cell*/}
-                    {gridItems.map((item, index) => {
-                      const rowIndex = Math.floor(index / columns);
-                      const colIndex = index % columns;
-                      // Render each grid cell
-                      return (
-                        <GridCell
-                          key={index}
-                          index={index}
-                          rowIndex={rowIndex}
-                          colIndex={colIndex}
-                          item={item}
-                          onDrop={handleDrop}
-                          onRemove={handleRemove}
-                          onEdit={handleEdit}
-                          onMerge={handleMerge}
-                          isSelected={selectedCells.includes(index)}
-                          onSelect={handleCellSelection}
-                          isSelectionMode={isSelectionMode}
-                          setIsSelectionMode={setIsSelectionMode}
-                          columns={columns}
-                          totalCells={totalCells}
-                          onUnmerge={handleUnmerge}
-                          showHelp={showHelp}
-                          getMainCellIndex={getMainCellIndex}
-                        />
-                      );
-                    })}
+                {/* Grid Container with aspect ratio wrapper */}
+                <div className="flex w-80 flex-1 flex-col">
+                  {/* Decrease Rows button */}
+                  <div className="group py-2">
+                    <div
+                      id="remRows"
+                      data-tooltip-id="remRows-tooltip"
+                      data-tooltip-content={tooltips.remRows}
+                      onClick={decreaseRows}
+                      className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                    >
+                      <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                        -
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Aspect ratio container */}
+                  <div className="relative h-full w-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
+                    {/* Grid cells container */}
+                    <div
+                      className="absolute left-0 top-0 grid h-full w-full auto-rows-fr gap-2.5"
+                      style={{
+                        gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
+                        gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
+                        gridAutoFlow: "dense",
+                        "--rows": rows,
+                        "--columns": columns,
+                      }}
+                    >
+                      {gridItems.map((item, index) => {
+                        const rowIndex = Math.floor(index / columns);
+                        const colIndex = index % columns;
+                        return (
+                          <GridCell
+                            key={index}
+                            index={index}
+                            rowIndex={rowIndex}
+                            colIndex={colIndex}
+                            item={item}
+                            onDrop={handleDrop}
+                            onRemove={handleRemove}
+                            onEdit={handleEdit}
+                            onMerge={handleMerge}
+                            isSelected={selectedCells.includes(index)}
+                            onSelect={handleCellSelection}
+                            isSelectionMode={isSelectionMode}
+                            setIsSelectionMode={setIsSelectionMode}
+                            columns={columns}
+                            totalCells={totalCells}
+                            onUnmerge={handleUnmerge}
+                            showHelp={showHelp}
+                            getMainCellIndex={getMainCellIndex}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Increase Rows button */}
+                  <div className="group py-2">
+                    <div
+                      id="addRows"
+                      data-tooltip-id="addRows-tooltip"
+                      data-tooltip-content={tooltips.addRows}
+                      onClick={increaseRows}
+                      className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                    >
+                      <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                        +
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Increase Rows button */}
-                <div className="group py-2">
+                {/* Increase Columns button */}
+                <div className="group flex flex-col justify-center">
                   <div
-                    id="addRows"
-                    data-tooltip-id="addRows-tooltip"
-                    data-tooltip-content={tooltips.addRows}
-                    onClick={increaseRows}
-                    className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                    id="addCols"
+                    data-tooltip-id="addCols-tooltip"
+                    data-tooltip-content={tooltips.addCols}
+                    onClick={increaseColumns}
+                    className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
                   >
                     <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                       +
@@ -1169,23 +1184,37 @@ const AdCanvas = () => {
                 </div>
               </div>
 
-              {/* Increase Columns button */}
-              <div className="group flex flex-col justify-center">
+              {/* Navigation buttons */}
+              <div className="mt-[5vh] flex w-11/12 flex-row justify-between">
+                <MoveLeft
+                  onClick={handleMoveLeft}
+                  className="h-8 w-16 rounded-lg py-1 pcolor-bg secondary-text hover:cursor-pointer hover:p2color-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+                />
+
                 <div
-                  id="addCols"
-                  data-tooltip-id="addCols-tooltip"
-                  data-tooltip-content={tooltips.addCols}
-                  onClick={increaseColumns}
-                  className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 gcolor-bg hover:cursor-pointer hover:g2color-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+                  id="merge"
+                  data-tooltip-id="merge-tooltip"
+                  data-tooltip-content={mergeButtonTooltip}
                 >
-                  <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-                    +
-                  </span>
+                  <Merge
+                    onClick={handleMergeSelected}
+                    disabled={!isMergeButtonActive}
+                    className={`h-8 w-16 rounded-lg py-2 transition-colors duration-300 secondary-text sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
+                      !isMergeButtonActive
+                        ? "cursor-not-allowed g2color-bg"
+                        : "pcolor-bg hover:cursor-pointer hover:p2color-bg"
+                    }`}
+                  />
                 </div>
+
+                <Check
+                  onClick={handleOpenSelector}
+                  className="h-8 w-16 rounded-lg py-1.5 pcolor-bg secondary-text hover:cursor-pointer hover:p2color-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
+                />
               </div>
             </div>
 
-            {/* Popup when in selection mode */}
+            {/* Selection mode popup */}
             <SelectionModePopup isVisible={isSelectionMode} />
           </div>
 
@@ -1207,37 +1236,7 @@ const AdCanvas = () => {
         </div>
       </div>
 
-      {/* Navigation buttons */}
-      <div className="mx-auto flex w-4/5 flex-row justify-between py-4 lg:py-8">
-        <MoveLeft
-          onClick={handleMoveLeft}
-          className="h-8 w-16 rounded-lg py-1 pcolor-bg secondary-text hover:cursor-pointer hover:p2color-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
-        />
-
-        <div
-          id="merge"
-          data-tooltip-id="merge-tooltip"
-          data-tooltip-content={mergeButtonTooltip}
-        >
-          {/* Merge button */}
-          <Merge
-            onClick={handleMergeSelected}
-            disabled={!isMergeButtonActive}
-            className={`h-8 w-16 rounded-lg py-2 transition-colors duration-300 secondary-text sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
-              !isMergeButtonActive
-                ? "cursor-not-allowed g2color-bg"
-                : "pcolor-bg hover:cursor-pointer hover:p2color-bg"
-            }`}
-          />
-        </div>
-        {/* Check render*/}
-        <Check
-          onClick={handleOpenSelector}
-          className="h-8 w-16 rounded-lg py-1.5 pcolor-bg secondary-text hover:cursor-pointer hover:p2color-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
-        />
-      </div>
-
-      {/* Tooltip components */}
+      {/* Tooltips */}
       <Tooltip id="sidebar-tooltip" {...tooltipPropsRight} />
       <Tooltip id="merge-tooltip" {...tooltipPropsRight} />
       <Tooltip id="addRows-tooltip" {...tooltipPropsRight} />
@@ -1252,7 +1251,6 @@ const AdCanvas = () => {
           onClose={() => setIsNamingLayout(false)}
         />
       )}
-      {/* Edit Modal */}
       {isEditing && currentAd && currentAd.scheduledAd && (
         <EditModal
           ad={currentAd.scheduledAd.ad}
@@ -1264,11 +1262,10 @@ const AdCanvas = () => {
           }}
         />
       )}
-      {/* Schedule Modal */}
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
           ad={currentScheduleAd.item}
-          scheduledTime={currentScheduleAd.scheduledTime} // Pass scheduledTime to modal
+          scheduledTime={currentScheduleAd.scheduledTime}
           onSave={(scheduledDateTime) =>
             handleScheduleSave(
               currentScheduleAd.item,
