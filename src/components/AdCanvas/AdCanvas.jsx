@@ -1042,16 +1042,28 @@ const AdCanvas = () => {
       <div
         className={`flex ${isVertical ? "flex-col" : "flex-row"} h-full w-full`}
       >
+        {/* Main content container with conditional margin/height based on sidebar state */}
         <div
-          className={`flex flex-col ${isVertical ? "h-2/3" : "h-full"} w-full`}
+          className={`flex flex-col ${
+            isVertical
+              ? `${sidebarOpen ? "h-[50vh]" : "h-[66.666667%]"} w-full transition-all duration-300`
+              : "h-full w-full"
+          }`}
         >
           <div
-            className={`transition-all duration-300 ${sidebarOpen ? "ml-[25vw] w-[75vw] px-4" : "ml-[5vw] w-[90vw]"} flex h-full flex-col items-center justify-center`}
+            className={`transition-all duration-300 ${
+              isVertical
+                ? "mx-auto w-[90vw]"
+                : sidebarOpen
+                  ? "ml-[25vw] w-[75vw] px-4"
+                  : "ml-[5vw] w-[90vw]"
+            } flex h-full flex-col items-center justify-center`}
           >
             <div className="text-3xl font-bold primary-text dark:secondary-text">
               Current Aspect Ratio: {aspectRatio}
             </div>
 
+            {/* Help icon */}
             <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
               <CircleHelp
                 className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
@@ -1062,6 +1074,8 @@ const AdCanvas = () => {
                 onClick={() => setShowHelp(!showHelp)}
               />
             </div>
+
+            {/* Grid controls and cells */}
             <div className="flex w-full max-w-[75vw] flex-row items-stretch justify-center gap-2 pt-[-2]">
               {/* Decrease Columns button */}
               <div className="group flex flex-col justify-center">
@@ -1176,7 +1190,11 @@ const AdCanvas = () => {
           </div>
 
           <div
-            className={`flex ${isVertical ? "h-1/3 w-full" : "h-full"} transition-all duration-300`}
+            className={`flex ${
+              isVertical
+                ? `${sidebarOpen ? "h-[50vh]" : "h-[33.333333%]"} w-full`
+                : "h-full"
+            } transition-all duration-300`}
           >
             <CollapsibleSidebar
               layouts={layouts}
