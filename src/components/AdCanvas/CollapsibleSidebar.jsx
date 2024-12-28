@@ -33,7 +33,7 @@ const CollapsibleSidebar = ({
   const [showMore, setShowMore] = useState(false);
 
   const buttonBaseClasses =
-    "w-full rounded-lg px-4 py-2 text-left text-sm transition-colors hover:primary-bg hover:secondary-text dark:secondary-text dark:hover:bg-gray-700";
+    "w-full rounded-lg px-4 py-2 text-left text-sm transition-colors hover:pcolor-bg hover:secondary-text dark:secondary-text dark:hover:dark-bg";
 
   return (
     <div
@@ -44,23 +44,22 @@ const CollapsibleSidebar = ({
       <div
         className={`${
           isVertical
-            ? `fixed bottom-0 left-0 w-full transition-all duration-300 ease-in-out ${
+            ? `fixed bottom-0 left-0 w-full pt-0 transition-all duration-300 ease-in-out ${
                 isOpen ? "h-[40vh]" : "h-12"
               }`
-            : `fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out ${
+            : `fixed left-0 top-0 h-screen pt-[10vh] transition-all duration-300 ease-in-out ${
                 isOpen ? "w-[17.5vw]" : "w-12"
               }`
         }`}
-        style={{ paddingTop: isVertical ? "0" : "10vh" }}
       >
-        <div className="relative flex h-full w-full flex-col bg-gray-200 shadow-lg dark:bg-gray-900">
+        <div className="relative flex h-full w-full flex-col shadow-lg light-bg dark:dark-bg">
           <button
             onClick={() => setIsOpen(!isOpen)}
             className={`${
               isVertical
                 ? "absolute -top-3 left-1/2 h-6 w-12 -translate-x-1/2 rounded-t-lg"
                 : "absolute -right-3 top-1/2 h-12 w-6 -translate-y-1/2 rounded-r-lg"
-            } flex items-center justify-center bg-blue-500 text-white hover:bg-blue-600`}
+            } flex items-center justify-center pcolor-bg light-text hover:p2color-bg`}
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
           >
             {isVertical ? (
@@ -77,12 +76,33 @@ const CollapsibleSidebar = ({
           </button>
 
           <div
-            className={`h-full overflow-hidden transition-all duration-300 ${
+            className={`mt-20 h-full overflow-hidden transition-all duration-300 ${
               isOpen ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
           >
-            <div className="h-1/2 overflow-y-auto border-b border-gray-200 p-4 dark:border-gray-700">
-              <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
+            {/* Elements Section */}
+            <div className="h-1/5 overflow-y-auto p-4">
+              <h2 className="mb-4 text-center text-xl font-bold secondary-text">
+                Elements
+              </h2>
+              <div className="pr-2">
+                <Sidebar />
+              </div>
+            </div>
+
+            {/* Ads Section */}
+            <div className="h-2/5 border-b p-4 primary-border dark:secondary-border">
+              <h2 className="mb-4 text-lg font-bold primary-text dark:secondary-text">
+                Ads
+              </h2>
+              <div className="flex flex-col gap-4">
+                <div className="h-24 w-full rounded-lg gcolor-bg dark:g2color-bg"></div>
+              </div>
+            </div>
+
+            {/* Layouts Section */}
+            <div className="h-2/5 overflow-y-auto border-t p-4 primary-border dark:secondary-border">
+              <h2 className="mb-4 text-lg font-bold primary-text dark:secondary-text">
                 Layouts
               </h2>
 
@@ -92,7 +112,7 @@ const CollapsibleSidebar = ({
                   placeholder="Search layouts"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="focus:ring-secondary w-full rounded-lg border px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 dark:secondary-border dark:g2color-bg dark:secondary-text"
+                  className="w-full rounded-lg border px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-primary dark:secondary-border dark:g2color-bg dark:secondary-text"
                 />
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 gcolor-text" />
               </div>
@@ -157,15 +177,6 @@ const CollapsibleSidebar = ({
                     </button>
                   </>
                 )}
-              </div>
-            </div>
-
-            <div className="h-1/2 overflow-y-auto p-4">
-              <h2 className="mb-4 text-center text-xl font-bold dark:secondary-text">
-                Elements
-              </h2>
-              <div className="pr-2">
-                <Sidebar />
               </div>
             </div>
           </div>
