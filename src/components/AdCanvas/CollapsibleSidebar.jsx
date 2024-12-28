@@ -15,7 +15,6 @@ const CollapsibleSidebar = ({
   onDeleteLayoutClick,
   onStateChange,
   isVertical,
-  ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,15 +45,15 @@ const CollapsibleSidebar = ({
         className={`${
           isVertical
             ? `fixed bottom-0 left-0 w-full transition-all duration-300 ease-in-out ${
-                isOpen ? "h-[50vh]" : "h-12"
+                isOpen ? "h-[40vh]" : "h-12"
               }`
             : `fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out ${
-                isOpen ? "w-[25vw]" : "w-12"
+                isOpen ? "w-[17.5vw]" : "w-12"
               }`
         }`}
-        style={{ marginTop: isVertical ? "0" : "10vh" }}
+        style={{ paddingTop: isVertical ? "0" : "10vh" }}
       >
-        <div className="relative flex h-full w-full flex-col bg-white shadow-lg dark:bg-gray-800">
+        <div className="relative flex h-full w-full flex-col bg-gray-200 shadow-lg dark:bg-gray-900">
           <button
             onClick={() => setIsOpen(!isOpen)}
             className={`${
@@ -162,7 +161,7 @@ const CollapsibleSidebar = ({
             </div>
 
             <div className="h-1/2 overflow-y-auto p-4">
-              <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
+              <h2 className="mb-4 text-center text-xl font-bold dark:secondary-text">
                 Elements
               </h2>
               <div className="pr-2">

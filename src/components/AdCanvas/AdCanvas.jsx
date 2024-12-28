@@ -1038,11 +1038,10 @@ const AdCanvas = () => {
   const isVertical = ratio > 1;
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-auto light-bg dark:dark-bg">
+    <div className="flex h-full max-w-[100vw] flex-col overflow-y-auto overflow-x-hidden light-bg dark:dark-bg">
       <div
-        className={`flex ${isVertical ? "flex-col" : "flex-row"} h-full w-full`}
+        className={`flex ${isVertical ? "flex-col" : "flex-row"} min-h-full w-full`}
       >
-        {/* Main content container with conditional margin/height based on sidebar state */}
         <div
           className={`flex flex-col ${
             isVertical
@@ -1055,16 +1054,17 @@ const AdCanvas = () => {
               isVertical
                 ? "mx-auto w-[90vw]"
                 : sidebarOpen
-                  ? "ml-[25vw] w-[75vw] px-4"
+                  ? "ml-[17.5vw] w-[75vw] px-4"
                   : "ml-[5vw] w-[90vw]"
-            } flex flex-col items-center justify-center`}
+            } flex min-h-full flex-col items-center overflow-hidden`}
           >
-            <div className="text-3xl font-bold primary-text dark:secondary-text">
+            {/* Aspect Ratio */}
+            <div className="mt-24 text-3xl font-bold primary-text dark:secondary-text md:mt-28">
               Current Aspect Ratio: {aspectRatio}
             </div>
 
-            {/* Help icon */}
-            <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
+            {/* Help Icon */}
+            <div className="absolute right-4 top-[calc(9rem+1rem)] z-10 xl:top-[calc(9rem+3rem)]">
               <CircleHelp
                 className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
                   showHelp ? "pcolor-text" : "gcolor-text"
@@ -1075,7 +1075,7 @@ const AdCanvas = () => {
               />
             </div>
 
-            {/* Grid controls and cells */}
+            {/* Grid cells */}
             <div className="relative flex w-full max-w-[75vw] flex-col items-center">
               <div className="flex w-full flex-row items-stretch justify-center gap-2">
                 {/* Decrease Columns button */}
@@ -1093,7 +1093,7 @@ const AdCanvas = () => {
                   </div>
                 </div>
 
-                {/* Grid Container with aspect ratio wrapper */}
+                {/* Grid Container */}
                 <div className="flex w-80 flex-1 flex-col">
                   {/* Decrease Rows button */}
                   <div className="group py-2">
@@ -1111,7 +1111,7 @@ const AdCanvas = () => {
                   </div>
 
                   {/* Aspect ratio container */}
-                  <div className="relative h-full w-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
+                  <div className="relative h-full w-full pb-[56.5%] md:pb-[45%] lg:pb-[50%]">
                     {/* Grid cells container */}
                     <div
                       className="absolute left-0 top-0 grid h-full w-full auto-rows-fr gap-2.5"
@@ -1185,7 +1185,7 @@ const AdCanvas = () => {
               </div>
 
               {/* Navigation buttons */}
-              <div className="mt-[5vh] flex w-11/12 flex-row justify-between">
+              <div className="mb-[5vh] mt-[5vh] flex w-11/12 flex-row justify-between">
                 <MoveLeft
                   onClick={handleMoveLeft}
                   className="h-8 w-16 rounded-lg py-1 pcolor-bg secondary-text hover:cursor-pointer hover:p2color-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"

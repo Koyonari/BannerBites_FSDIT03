@@ -8,6 +8,15 @@
 }
 
 body {
+  @apply light-bg; /* Default to light background */
+  @apply transition-colors duration-300; /* Smooth background transition */
+}
+
+.dark body {
+  @apply dark-bg; /* Apply dark background when dark mode is active */
+}
+
+body {
   margin: 0;
   padding: 0;
   font-family: "InterVariable", sans-serif;
