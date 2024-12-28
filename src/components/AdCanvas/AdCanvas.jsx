@@ -1054,7 +1054,7 @@ const AdCanvas = () => {
               isVertical
                 ? "mx-auto w-[90vw]"
                 : sidebarOpen
-                  ? "ml-[17.5vw] w-[75vw] px-4"
+                  ? "ml-[27vw] w-[65vw] px-4"
                   : "ml-[5vw] w-[90vw]"
             } flex min-h-full flex-col items-center overflow-hidden`}
           >
