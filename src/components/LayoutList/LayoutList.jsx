@@ -103,7 +103,42 @@ const LayoutList = () => {
       const response = await axios.get(
         `http://localhost:5000/api/layouts/${layoutId}`,
       );
-      setSelectedLayout(response.data); // axios automatically parses JSON
+      const layoutData = response.data; // axios automatically parses JSON
+
+      // Extract unique adIds from scheduledAds
+      const adIdsSet = new Set();
+      layoutData.gridItems.forEach((item) => {
+        item.scheduledAds.forEach((scheduledAd) => {
+          if (scheduledAd.adId) {
+            adIdsSet.add(scheduledAd.adId);
+          }
+        });
+      });
+      const adIds = Array.from(adIdsSet);
+
+      // Fetch ad details
+      const adsResponse = await axios.post(
+        `http://localhost:5000/api/ads/batchGet`,
+        { adIds },
+      );
+      const ads = adsResponse.data;
+
+      // Map adId to ad details
+      const adsMap = {};
+      ads.forEach((ad) => {
+        adsMap[ad.adId] = ad;
+      });
+
+      // Attach ad details to scheduledAds
+      layoutData.gridItems = layoutData.gridItems.map((item) => {
+        const updatedScheduledAds = item.scheduledAds.map((scheduledAd) => ({
+          ...scheduledAd,
+          ad: adsMap[scheduledAd.adId] || null,
+        }));
+        return { ...item, scheduledAds: updatedScheduledAds };
+      });
+
+      setSelectedLayout(layoutData);
 
       // Set up WebSocket connection for real-time updates
       establishWebSocketConnection(layoutId);
@@ -198,7 +233,7 @@ const LayoutList = () => {
                 </div>
               )}
               {error && (
-                <div className="alert-bg alert2-text mb-4 rounded-lg p-4">
+                <div className="mb-4 rounded-lg p-4 alert-bg alert2-text">
                   Error: {error}
                 </div>
               )}
@@ -209,7 +244,7 @@ const LayoutList = () => {
                     className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
                       selectedLayout?.layoutId === layout.layoutId
                         ? "p2color-bg secondary-text"
-                        : "hover:g2color-bg gcolor-bg primary-text"
+                        : "gcolor-bg primary-text hover:g2color-bg"
                     }`}
                     onClick={() => handleLayoutSelect(layout.layoutId)}
                   >
@@ -236,7 +271,7 @@ const LayoutList = () => {
               {selectedLayout && !loading && (
                 <button
                   onClick={toggleFullscreen}
-                  className={`hover:g2color-bg absolute right-6 top-6 z-10 rounded-full p-2 transition-opacity duration-200 gcolor-bg secondary-text ${
+                  className={`absolute right-6 top-6 z-10 rounded-full p-2 transition-opacity duration-200 gcolor-bg secondary-text hover:g2color-bg ${
                     isHovering || isFullscreen ? "opacity-100" : "opacity-0"
                   }`}
                   aria-label={

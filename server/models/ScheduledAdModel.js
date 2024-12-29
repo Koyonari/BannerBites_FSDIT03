@@ -4,6 +4,7 @@ const {
   DeleteCommand,
   QueryCommand,
   ScanCommand,
+  BatchGetCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const { dynamoDb } = require("../middleware/awsClients");
 
@@ -13,15 +14,10 @@ const ScheduledAdModel = {
     const params = {
       TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
       Item: {
-        gridItemId: `${layoutId}#${gridIndex}`, // Composite key that acts as the primary key
-        id: scheduledAd.id, // Unique identifier for the scheduled ad
-        scheduledTime: scheduledAd.scheduledTime, // Composite sort key
-        ad: { //Nested ad object 
-          adId: scheduledAd.ad.adId,
-          type: scheduledAd.ad.type,
-          content: scheduledAd.ad.content,
-          styles: scheduledAd.ad.styles,
-        },
+        gridItemId: `${layoutId}#${gridIndex}`,
+        id: scheduledAd.id,
+        scheduledTime: scheduledAd.scheduledTime,
+        adId: scheduledAd.adId,  // Store adId reference
         index: gridIndex,
         layoutId: layoutId,
       },
@@ -44,6 +40,33 @@ const ScheduledAdModel = {
     const data = await dynamoDb.send(command);
     return data.Items;
   },
+
+  getScheduledAdsByGridItemIds: async (gridItemIds) => {
+    const scheduledAds = [];
+
+    // Loop through each gridItemId to fetch all ads related to it
+    for (const gridItemId of gridItemIds) {
+      const params = {
+        TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+        KeyConditionExpression: "gridItemId = :gridItemId",
+        ExpressionAttributeValues: {
+          ":gridItemId": gridItemId,
+        },
+      };
+
+      try {
+        const command = new QueryCommand(params);
+        const data = await dynamoDb.send(command);
+        scheduledAds.push(...data.Items);
+      } catch (error) {
+        console.error(`Error fetching scheduled ads for gridItemId: ${gridItemId}`, error);
+        throw error;
+      }
+    }
+
+    return scheduledAds;
+  },
+
   // Function to retrieve all scheduled ads
   getScheduledAdsByLayoutId: async (layoutId) => {
     const params = {

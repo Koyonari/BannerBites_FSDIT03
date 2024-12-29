@@ -5,7 +5,6 @@ import AdListPopup from "./AdListPopup";
 import { CircleMinus, View, Pencil } from "lucide-react";
 import StyledAlert from "../StyledAlert";
 
-// Checkbox component, used for multi-selecting cells
 const Checkbox = ({ checked, onChange, className, showHelp }) => (
   <div
     id="cellCheckbox"
@@ -46,13 +45,13 @@ const GridCell = ({
   onEdit,
   onUnmerge,
   item,
-  isSelected,
   onSelect,
+  onSelectMerged,
   isSelectionMode,
   setIsSelectionMode,
   showHelp,
+  selectedCells,
   selectedMergedCells = [],
-  onSelectMerged,
   getMainCellIndex,
 }) => {
   const [{ isOver }, drop] = useDrop(
@@ -79,7 +78,7 @@ const GridCell = ({
     setIsPopupOpen(!isPopupOpen);
   };
 
-  const showAlert = (message, title = "Alert", type = "info") => {
+  const showAlertMsg = (message, title = "Alert", type = "info") => {
     setAlertConfig({
       isOpen: true,
       title,
@@ -88,22 +87,16 @@ const GridCell = ({
     });
   };
 
-  // Check if this cell is selected
   const isCellSelected = item?.isMerged
-    ? selectedMergedCells.includes(index) || isSelected
-    : isSelected;
+    ? selectedMergedCells.includes(index)
+    : selectedCells.includes(index);
 
   const handleCheckboxChange = (checked) => {
     if (item && !item.hidden) {
-      if (!isSelectionMode) {
-        setIsSelectionMode(true);
-      }
-
       if (item.isMerged && typeof onSelectMerged === "function") {
-        // Toggle merged cell selection, affecting all cells within the merge
         onSelectMerged(index, checked);
       } else if (typeof onSelect === "function") {
-        onSelect(index);
+        onSelect(index, checked);
       }
     }
   };
@@ -112,16 +105,15 @@ const GridCell = ({
     e.stopPropagation();
     let cellIndex = index;
 
-    // If the cell is hidden, find the main cell index
     if (item.hidden) {
       if (typeof getMainCellIndex === "function") {
         cellIndex = getMainCellIndex(index);
         if (cellIndex === -1) {
-          showAlert("Could not find the main cell for editing.");
+          showAlertMsg("Could not find the main cell for editing.");
           return;
         }
       } else {
-        showAlert("Cannot edit a hidden cell.");
+        showAlertMsg("Cannot edit a hidden cell.");
         return;
       }
     }
@@ -149,11 +141,11 @@ const GridCell = ({
       if (typeof getMainCellIndex === "function") {
         cellIndex = getMainCellIndex(index);
         if (cellIndex === -1) {
-          showAlert("Could not find the main cell for removing.");
+          showAlertMsg("Could not find the main cell for removing.");
           return;
         }
       } else {
-        showAlert("Cannot remove from a hidden cell.");
+        showAlertMsg("Cannot remove from a hidden cell.");
         return;
       }
     }
@@ -190,13 +182,15 @@ const GridCell = ({
     }
   }
 
+  // Define renderAdContent function
   const renderAdContent = () => {
-    if (!adToDisplay || !adToDisplay.ad)
+    if (!adToDisplay || !adToDisplay.ad) {
       return (
         <div className="flex h-full w-full items-center justify-center">
           <p className="text-center xl:text-2xl 2xl:text-3xl">Drop ad here</p>
         </div>
       );
+    }
 
     const { type, content, styles } = adToDisplay.ad;
     const contentStyle = {
@@ -286,42 +280,21 @@ const GridCell = ({
 
   const mergedClass = item?.isMerged
     ? `${item.mergeDirection === "horizontal" ? "merged-horizontal" : "merged-vertical"}${
-        item.mergeError ? " merge-error" : ""
+        isCellSelected ? " selected" : ""
       }`
     : "";
 
   const selectionClass = isSelectionMode && !item?.hidden ? "selectable" : "";
   const selectedClass = isCellSelected ? "selected" : "";
 
-  console.log("index", index);
-  console.log("isCellSelected", isCellSelected);
-
   if (item?.hidden) {
     return null;
   }
 
-  const tooltipStyle = {
-    backgroundColor: "rgb(255, 255, 255)",
-    color: "black",
-    boxShadow:
-      "0 4px 6px -1px rgba(0, 0, 0, 1), 0 2px 4px -1px rgba(0, 0, 0, 1)",
-    border: "none",
-    borderRadius: "6px",
-    padding: "8px 12px",
-    fontSize: "14px",
-  };
-
-  const tooltipProps = {
-    className: "custom-tooltip",
-    style: tooltipStyle,
-    isOpen: showHelp,
-    place: "right",
-  };
-
   return (
     <div
       ref={drop}
-      className={`grid-cell relative box-border flex flex-col gap-2 border p-2 transition-transform duration-200 ease-in-out primary-border light-bg hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:p2color-bg hover:primary-outline ${isOver ? "p2color-bg primary-outline" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
+      className={`grid-cell hover:primary-outline relative box-border flex flex-col gap-2 border p-2 transition-transform duration-200 ease-in-out primary-border light-bg hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:p2color-bg ${isOver ? "primary-outline p2color-bg" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
       style={{
         gridRow: item?.rowSpan ? `span ${item.rowSpan}` : "auto",
         gridColumn: item?.colSpan ? `span ${item.colSpan}` : "auto",
@@ -335,7 +308,7 @@ const GridCell = ({
             className="transition-colors duration-200 ease-in-out"
             showHelp={showHelp}
           />
-          <Tooltip id="checkbox-tooltip" {...tooltipProps} />
+          <Tooltip id="checkbox-tooltip" />
         </div>
       )}
 
@@ -344,19 +317,19 @@ const GridCell = ({
       {adToDisplay && (
         <div className="actions mb-4 mt-auto flex flex-wrap items-center justify-center gap-8">
           <Pencil
-            className="z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text hover:pcolor-text hover:primary-fill"
+            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text hover:pcolor-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={handleEdit}
           />
           <View
-            className="z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text hover:pcolor-text hover:primary-fill"
+            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text hover:pcolor-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={togglePopup}
           />
           <CircleMinus
-            className="z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text hover:pcolor-text hover:primary-fill"
+            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text hover:pcolor-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={handleRemove}

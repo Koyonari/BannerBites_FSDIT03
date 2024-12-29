@@ -9,108 +9,105 @@ const { ScanCommand } = require("@aws-sdk/lib-dynamodb");
 
 /**
  * Fetch the complete layout data by layoutId, including gridItems and scheduledAds.
- * Utilizes parallel fetching to improve performance.
  * @param {string} layoutId - The ID of the layout to fetch.
  * @returns {Object|null} - The complete layout object or null if not found.
  */
 const fetchLayoutById = async (layoutId) => {
   try {
-    // Step 1: Get layout details
-    const layout = await LayoutModel.getLayoutById(layoutId);
+    console.log(`Fetching layout details for layoutId: ${layoutId}`);
 
+    // Step 1: Fetch layout from LayoutModel
+    const layout = await LayoutModel.getLayoutById(layoutId);
     if (!layout) {
-      console.warn(`Layout not found for layoutId: ${layoutId}`);
+      console.error(`Layout not found for layoutId: ${layoutId}`);
       return null;
     }
+    console.log(`Fetched layout: ${JSON.stringify(layout)}`);
 
-    // Step 2: Get grid items
+    // Step 2: Fetch all GridItems related to this layout
     const gridItems = await GridItemModel.getGridItemsByLayoutId(layoutId);
+    if (!gridItems || gridItems.length === 0) {
+      console.error(`No grid items found for layoutId: ${layoutId}`);
+    }
 
-    // Step 3: Get scheduled ads and ad details for each grid item
-    const gridItemsWithAds = await Promise.all(
-      gridItems.map(async (item) => {
-        try {
-          const scheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemId(
-            `${layoutId}#${item.index}`
-          );
+    // Step 3: Gather all gridItemIds to fetch related scheduled ads
+    const gridItemIds = gridItems.map((item) => item.gridItemId);
+    const allScheduledAds = await ScheduledAdModel.getScheduledAdsByGridItemIds(gridItemIds);
 
-          // Fetch all ads in parallel
-          const adsPromises = scheduledAds.map(async (scheduledAd) => {
-            try {
-              const adId = scheduledAd.ad?.adId; // Correct access
-              if (!adId) {
-                console.warn(`ScheduledAd with id: ${scheduledAd.id} is missing 'adId'.`);
-                return { ...scheduledAd, ad: null };
-              }
+    // Step 4: Collect unique adIds from scheduledAds to batch fetch ad details
+    const adIdsSet = new Set();
+    allScheduledAds.forEach((scheduledAd) => {
+      if (scheduledAd.adId) {
+        adIdsSet.add(scheduledAd.adId);
+      } else {
+        console.error(`ScheduledAd is missing adId for scheduledAd ID: ${scheduledAd.id}`);
+      }
+    });
+    const adIds = Array.from(adIdsSet);
 
-              const ad = await AdModel.getAdById(adId);
-              if (ad) {
-                console.log(`Attached Ad for scheduledAd ID: ${scheduledAd.id}`);
-              } else {
-                console.warn(`Ad not found for scheduledAd ID: ${scheduledAd.id}, adId: ${adId}`);
-              }
-              return { ...scheduledAd, ad };
-            } catch (adError) {
-              console.error(`Error fetching adId: ${scheduledAd.adId} for scheduledAd ID: ${scheduledAd.id}`, adError);
-              return { ...scheduledAd, ad: null }; // Handle missing ads gracefully
-            }
-          });
+    // Step 5: Fetch ads from Ads table
+    const ads = await AdModel.getAdsByIds(adIds);
+    const adsMap = new Map(ads.map((ad) => [ad.adId, ad]));
 
-          const scheduledAdsWithDetails = await Promise.all(adsPromises);
-          return { ...item, scheduledAds: scheduledAdsWithDetails };
-        } catch (scheduledAdsError) {
-          console.error(
-            `Error fetching scheduledAds for gridItemId: ${layoutId}#${item.index}`,
-            scheduledAdsError
-          );
-          return { ...item, scheduledAds: [] }; // Handle missing scheduledAds gracefully
-        }
-      })
-    );
+    // Step 6: Group scheduledAds by gridItemId
+    const scheduledAdsByGridItemId = allScheduledAds.reduce((acc, scheduledAd) => {
+      if (!acc[scheduledAd.gridItemId]) {
+        acc[scheduledAd.gridItemId] = [];
+      }
+      // Attach ad details to scheduledAd
+      scheduledAd.ad = adsMap.get(scheduledAd.adId) || null;
+      acc[scheduledAd.gridItemId].push(scheduledAd);
+      return acc;
+    }, {});
 
-    // Assemble the complete layout object
-    const completeLayout = { ...layout, gridItems: gridItemsWithAds };
-    console.log(`Complete layout fetched for layoutId: ${layoutId}`, completeLayout);
-    return completeLayout;
+    // Step 7: Attach scheduledAds to their respective grid items
+    gridItems.forEach((item) => {
+      item.scheduledAds = scheduledAdsByGridItemId[item.gridItemId] || [];
+    });
+
+    // Step 8: Attach grid items back to the layout
+    layout.gridItems = gridItems;
+
+    return layout;
   } catch (error) {
     console.error(`Error fetching layout data for layoutId: ${layoutId}`, error);
-    throw error; // Rethrow the error to be handled by the caller
+    throw error;
   }
 };
 
+
 /**
-* Map adId to layoutIds.
-* This function should return all layoutIds that include the specified adId.
-* Utilizes a table scan as a fallback in the absence of a GSI.
-* @param {string} adId - The ID of the ad.
-* @returns {Array<string>} - An array of associated layoutIds.
-*/
+ * Map adId to layoutIds.
+ * This function returns all layoutIds that include the specified adId.
+ * @param {string} adId - The ID of the ad.
+ * @returns {Array<string>} - An array of associated layoutIds.
+ */
 const getLayoutsByAdId = async (adId) => {
- try {
-   // Scan the ScheduledAds table to find all entries with the specified adId
-   const params = {
-     TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
-     FilterExpression: "adId = :adId",
-     ExpressionAttributeValues: {
-       ":adId": adId,
-     },
-   };
+  try {
+    // Scan the ScheduledAds table to find all entries with the specified adId
+    const params = {
+      TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+      FilterExpression: "adId = :adId",
+      ExpressionAttributeValues: {
+        ":adId": adId,
+      },
+    };
 
-   const command = new ScanCommand(params);
-   const data = await dynamoDb.send(command);
+    const command = new ScanCommand(params);
+    const data = await dynamoDb.send(command);
 
-   if (!data || !data.Items) {
-     console.warn(`No layouts found for adId: ${adId}`);
-     return [];
-   }
+    if (!data || !data.Items) {
+      console.warn(`No layouts found for adId: ${adId}`);
+      return [];
+    }
 
-   // Extract unique layoutIds from the scheduled ads that include the specified adId
-   const layoutIds = [...new Set(data.Items.map((item) => item.layoutId))];
-   return layoutIds;
- } catch (error) {
-   console.error(`Error mapping adId to layoutIds for adId: ${adId}`, error);
-   return [];
- }
+    // Extract unique layoutIds from the scheduled ads that include the specified adId
+    const layoutIds = [...new Set(data.Items.map((item) => item.layoutId))];
+    return layoutIds;
+  } catch (error) {
+    console.error(`Error mapping adId to layoutIds for adId: ${adId}`, error);
+    return [];
+  }
 };
 
 module.exports = { fetchLayoutById, getLayoutsByAdId };
