@@ -130,7 +130,7 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="h-full w-full appearance-none rounded-lg bg-transparent px-3 text-sm focus:outline-none dark:dark-bg dark:secondary-text sm:text-base lg:text-lg xl:text-2xl"
+              className="h-full w-full rounded-lg bg-transparent px-3 text-sm focus:outline-none dark:dark-bg dark:secondary-text sm:text-base lg:text-lg xl:text-2xl"
             >
               {sortOptions.map((option) => (
                 <option
