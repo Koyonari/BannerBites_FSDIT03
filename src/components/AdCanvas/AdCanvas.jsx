@@ -595,49 +595,6 @@ const AdCanvas = () => {
     }
   };
 
-  // Function to handle the selection of cells
-  // Function to handle the selection of cells
-  const handleCellSelection = (index) => {
-    const cell = gridItems[index];
-
-    // If the cell is merged
-    if (cell.isMerged && !cell.hidden) {
-      // For merged cells
-      setSelectedMergedCells((prev) => {
-        if (prev.includes(index)) {
-          // If the cell is already selected, remove it from the selection
-          const newSelection = prev.filter((i) => i !== index);
-          // If there are no more selected merged cells, exit selection mode
-          if (newSelection.length === 0) {
-            setIsSelectionMode(false);
-          }
-          return newSelection;
-        }
-        return [...prev, index];
-      });
-      setIsSelectionMode(true);
-      return;
-    }
-
-    // For non-merged cells
-    if (!cell.hidden) {
-      setSelectedCells((prev) => {
-        if (prev.includes(index)) {
-          // If the cell is already selected, remove it from the selection
-          const newSelection = prev.filter((i) => i !== index);
-          if (newSelection.length === 0) {
-            setIsSelectionMode(false);
-          }
-          return newSelection;
-        }
-        return [...prev, index];
-      });
-      if (!isSelectionMode) {
-        setIsSelectionMode(true);
-      }
-    }
-  };
-
   // Function to handle the merging of selected cells
   const handleMergeSelected = () => {
     // Case 1: Single merged cell selected - unmerge it
