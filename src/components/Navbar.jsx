@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
-import { HomeIcon, LayoutList, CircleUserRound } from "lucide-react";
+import { HomeIcon, LayoutList, CircleUserRound, ImagePlus } from "lucide-react";
 import Hamburger from "hamburger-react";
 import { useNavigate } from "react-router-dom";
 import React from "react";
@@ -38,17 +38,6 @@ function Navbar() {
     }
   }, [isDarkMode]);
 
-  const toggleDarkMode = (checked) => {
-    setDarkMode(checked);
-  };
-
-  const handleHome = () => {
-    navigate("/userhome");
-  };
-
-  const handleLayoutClick = () => {
-    navigate("/layouts");
-  };
   const useBreakpoint = (sizes) => {
     const [size, setSize] = useState(sizes.default);
 
@@ -95,6 +84,10 @@ function Navbar() {
               className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
               onClick={() => navigate("/layouts")}
             />
+            <ImagePlus
+              className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
+              onClick={() => navigate("/adunit")}
+            />
             <CircleUserRound
               className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
               onClick={() => navigate("/login")}
@@ -128,6 +121,7 @@ function Navbar() {
             {[
               { Icon: HomeIcon, path: "/userhome" },
               { Icon: LayoutList, path: "/layouts" },
+              { Icon: ImagePlus, path: "/adunit" },
               { Icon: CircleUserRound, path: "/login" },
             ].map(({ Icon, path }) => (
               <div

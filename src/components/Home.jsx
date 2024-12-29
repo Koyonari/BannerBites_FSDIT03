@@ -1,5 +1,5 @@
 import React from "react";
-import { HomeIcon, LayoutList } from "lucide-react";
+import { HomeIcon, LayoutList, ImagePlus } from "lucide-react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
@@ -10,6 +10,7 @@ const icons = {
     { href: "/userhome", icon: HomeIcon, label: "Home" },
     { href: "/layouts", icon: LayoutList, label: "LayoutList" },
     { href: "/login", icon: CircleUserRound, label: "Profile" },
+    { href: "/adunit", icon: ImagePlus, label: "AdUnit" },
   ],
 };
 

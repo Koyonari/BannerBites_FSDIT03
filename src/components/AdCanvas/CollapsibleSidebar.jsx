@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   LayoutGrid,
   ImagePlus,
-  Upload,
 } from "lucide-react";
 import Sidebar from "./Sidebar";
 
@@ -21,17 +20,11 @@ const CollapsibleSidebar = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeSection, setActiveSection] = useState(null);
+  const [activeSection, setActiveSection] = useState("layouts"); // Changed from null to "layouts"
 
   useEffect(() => {
     onStateChange?.(isOpen);
   }, [isOpen, onStateChange]);
-
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    // Handle the file upload logic here
-    console.log("File uploaded:", file);
-  };
 
   const filteredLayouts = layouts.filter((layout) =>
     layout.name?.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -223,22 +216,13 @@ const CollapsibleSidebar = ({
                     <div className="relative flex-1">
                       <input
                         type="text"
-                        placeholder="Search ads"
+                        placeholder="Search advertisements"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full rounded-lg border px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-primary dark:secondary-border dark:g2color-bg dark:secondary-text"
                       />
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 gcolor-text" />
                     </div>
-                    <label className="cursor-pointer rounded-lg border p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={handleFileUpload}
-                        accept="image/*,video/*"
-                      />
-                      <Upload className="h-5 w-5 gcolor-text" />
-                    </label>
                   </div>
                   <div className="flex flex-col gap-4">
                     <div className="h-24 w-full rounded-lg gcolor-bg dark:g2color-bg"></div>

@@ -123,41 +123,53 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
   return (
     <section className="min-h-screen light-bg dark:dark-bg">
       <Navbar />
-      <div className="flex h-12 justify-center gap-4 pt-4 md:px-4 xl:h-24">
-        <div className="flex h-full w-1/6 items-center rounded-md border px-4 py-2 secondary-border lg:text-xl xl:text-2xl">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="w-full bg-transparent primary-text focus:outline-none dark:dark-bg dark:secondary-text"
-          >
-            {sortOptions.map((option) => (
-              <option
-                key={option.value}
-                className="dark:primary-text"
-                value={option.value}
-              >
-                {option.label}
-              </option>
-            ))}
-          </select>
+      <div className="mx-auto flex w-full flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32">
+        {/* Sort Dropdown */}
+        <div className="w-full sm:w-1/6">
+          <div className="relative h-10 rounded-lg border secondary-border lg:h-16 xl:h-20">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="h-full w-full appearance-none rounded-lg bg-transparent px-3 text-sm focus:outline-none dark:dark-bg dark:secondary-text sm:text-base lg:text-lg xl:text-2xl"
+            >
+              {sortOptions.map((option) => (
+                <option
+                  key={option.value}
+                  className="dark:text-gray-200 lg:text-lg xl:text-2xl"
+                  value={option.value}
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div className="flex h-full w-1/2 items-center rounded-md border px-4 py-2 secondary-border dark:white-border">
-          <input
-            type="text"
-            placeholder="Search location"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent primary-text placeholder-primary focus:outline-none dark:secondary-text dark:placeholder-secondary lg:text-xl xl:text-2xl"
-          />
+
+        {/* Search Bar */}
+        <div className="w-full sm:w-3/5">
+          <div className="relative h-10 rounded-lg border secondary-border lg:h-16 lg:text-lg xl:h-20 xl:text-2xl">
+            <input
+              type="text"
+              placeholder="Search location"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-full w-full rounded-lg bg-transparent px-3 text-sm primary-text placeholder-primary focus:outline-none dark:secondary-text dark:placeholder-secondary sm:text-base lg:h-16 lg:text-lg xl:h-20 xl:text-2xl"
+            />
+          </div>
         </div>
-        <Link key="home" to={"/ad"} className="w-1/6">
-          <button className="h-full w-full rounded-md px-4 py-2 text-center text-xs font-bold transition-colors pcolor-bg secondary-text hover:p2color-bg md:text-base lg:text-xl xl:text-2xl">
-            Create New
-          </button>
-        </Link>
+
+        {/* Create New Button */}
+        <div className="w-full sm:w-1/6">
+          <Link to="/ad">
+            <button className="h-10 w-full rounded-lg text-sm font-bold transition-colors pcolor-bg secondary-text hover:p2color-bg lg:h-16 lg:text-lg xl:h-20 xl:text-2xl">
+              Create New
+            </button>
+          </Link>
+        </div>
       </div>
 
-      <div className="grid w-full grid-cols-1 justify-items-center gap-4 px-16 py-16 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+      {/* Card Component */}
+      <div className="grid w-full grid-cols-1 justify-items-center gap-4 px-8 py-8 md:grid-cols-2 lg:grid-cols-3 lg:gap-6 lg:px-16 xl:px-24 2xl:px-32">
         {sortedLocations.map((location) => (
           <Card
             key={location.locationId}
