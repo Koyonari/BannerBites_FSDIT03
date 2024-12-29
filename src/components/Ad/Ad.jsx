@@ -12,10 +12,9 @@ import ErrorBoundary from "../ErrorBoundary";
 import Navbar from "../Navbar";
 
 const Ad = () => {
-  const [selectedLayoutId, setSelectedLayoutId] = useState(null);
+  const [selectedLayoutId] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [selectedTVId, setSelectedTVId] = useState(null);
-  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
   // Handle selecting a location
   const handleSelectLocation = (locationId) => {
@@ -26,12 +25,6 @@ const Ad = () => {
   // Handle selecting a TV
   const handleSelectTV = (tvId) => {
     setSelectedTVId(tvId);
-  };
-
-  // Handle selecting a layout
-  const handleSelectLayout = (layoutId) => {
-    setSelectedLayoutId(layoutId);
-    setIsSelectorOpen(false);
   };
 
   return (

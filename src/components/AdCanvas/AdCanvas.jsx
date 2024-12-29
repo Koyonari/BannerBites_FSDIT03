@@ -20,8 +20,10 @@ const AdCanvas = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [ratio, setRatio] = useState(0);
   const [layouts, setLayouts] = useState([]); // List of available layouts
+  // eslint-disable-next-line
   const [isSelectingLayout, setIsSelectingLayout] = useState(true); // Flag for layout selection mode
   const [selectedLayout, setSelectedLayout] = useState(null); // Currently selected layout
+  // eslint-disable-next-line
   const [isSavedLayout, setIsSavedLayout] = useState(false); // Tracks if the layout is saved
 
   // Hint and Help State

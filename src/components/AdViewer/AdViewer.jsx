@@ -31,10 +31,10 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
     fontSize: styles.fontSize,
     color: styles.textColor,
     borderColor: styles.borderColor,
-    borderStyle: 'solid',
-    borderWidth: styles.borderColor ? '2px' : '0px',
-    padding: '10px',
-    boxSizing: 'border-box',
+    borderStyle: "solid",
+    borderWidth: styles.borderColor ? "2px" : "0px",
+    padding: "10px",
+    boxSizing: "border-box",
     ...styles,
   };
 
@@ -107,14 +107,7 @@ const AdViewer = ({ layout }) => {
       {gridItems.map((item, index) => {
         if (!item) return null;
 
-        const {
-          rowSpan,
-          colSpan,
-          scheduledAds,
-          hidden,
-          isMerged,
-          selectedCells,
-        } = item;
+        const { rowSpan, colSpan, scheduledAds, hidden, isMerged } = item;
 
         // Skip rendering if the cell is hidden
         if (hidden) {
@@ -175,7 +168,9 @@ const AdViewer = ({ layout }) => {
             style={{
               gridRow: `span ${rowSpan || 1}`,
               gridColumn: `span ${colSpan || 1}`,
-              border: styles?.borderColor ? `2px solid ${styles.borderColor}` : 'none',
+              border: styles?.borderColor
+                ? `2px solid ${styles.borderColor}`
+                : "none",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
