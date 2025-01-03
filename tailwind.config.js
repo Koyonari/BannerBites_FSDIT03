@@ -64,14 +64,20 @@ module.exports = {
   plugins: [
     function ({ addUtilities, theme }) {
       const newUtilities = {
-        ".outline-3": {
+        ".outline-8": {
           "-webkit-text-stroke": "8px",
+          "-webkit-text-stroke-color": theme("colors.base.black"),
+          "paint-order": "stroke fill",
+        },
+        ".outline-5": {
+          "-webkit-text-stroke": "5px",
           "-webkit-text-stroke-color": theme("colors.base.black"),
           "paint-order": "stroke fill",
         },
         ".outline-1": {
           "-webkit-text-stroke": "0.4px",
           "-webkit-text-stroke-color": theme("colors.base.black"),
+          "paint-order": "stroke fill",
         },
 
         // Border Colours

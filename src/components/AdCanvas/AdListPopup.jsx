@@ -6,21 +6,18 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center">
       {/* Backdrop */}
-      <div
-        className="neutralalt-bg fixed inset-0 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 backdrop-blur-xl" onClick={onClose} />
 
       {/* Popup Content */}
-      <div className="relative z-50 w-full max-w-2xl rounded-lg shadow-lg light-bg">
+      <div className="relative z-50 w-full max-w-2xl rounded-lg border shadow-lg secondary-border light-bg dark:primary-border">
         {/* Header */}
         <div className="flex items-center justify-between border-b p-4">
           <h3 className="text-lg font-semibold primary-text">Scheduled Ads</h3>
           <button
             onClick={onClose}
-            className="hover:neutral-bg rounded-full p-1"
+            className="rounded-full p-1 hover:neutral-bg"
           >
-            <X className="h-5 w-5 secondary-text" />
+            <X className="h-5 w-5 light-text" />
           </button>
         </div>
 
@@ -28,7 +25,7 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
         <div className="max-h-[60vh] overflow-y-auto p-4">
           {scheduledAds.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Clock className="neutral-text h-12 w-12" />
+              <Clock className="h-12 w-12 neutral-text" />
               <p className="mt-2 primary-text">No scheduled ads yet</p>
             </div>
           ) : (
@@ -54,7 +51,7 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
                         onClick={() => {
                           onEdit(scheduledAd);
                         }}
-                        className="hover:neutralalt-bg neutral-text rounded-md p-2"
+                        className="rounded-md p-2 neutral-text hover:neutralalt-bg"
                         title="Edit"
                       >
                         <Edit2 className="h-4 w-4" />

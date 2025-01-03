@@ -41,7 +41,7 @@ const ScheduleModal = ({
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       {/* Modal Backdrop */}
       <div
-        className="fixed inset-0 backdrop-blur-sm dark-bg"
+        className="fixed inset-0 blur-sm backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -50,23 +50,23 @@ const ScheduleModal = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-2">
-            <Calendar className="primary-bg h-5 w-5" />
-            <h2 className="neutral-text dark:neutral-text text-lg font-semibold">
+            <Calendar className="h-5 w-5 accent-text" />
+            <h2 className="text-lg font-semibold neutral-text dark:neutral-text">
               Schedule Ad
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="hover:neutralalt-bg rounded-full p-1"
+            className="rounded-full p-1 hover:neutralalt-bg"
           >
-            <X className="neutral-text h-5 w-5 dark:secondary-text hover:dark:primary-text" />
+            <X className="h-5 w-5 neutral-text dark:secondary-text hover:dark:primary-text" />
           </button>
         </div>
 
         {/* Body */}
         <div className="p-4">
           <label className="block space-y-2">
-            <span className="neutral-text text-lg font-medium dark:secondary-text">
+            <span className="text-lg font-medium neutral-text dark:secondary-text">
               <b>Select Time</b>
             </span>
             <input
@@ -87,7 +87,7 @@ const ScheduleModal = ({
         <div className="flex justify-end gap-3 border-t p-4">
           <button
             onClick={onClose}
-            className="hover:neutral-bg neutral-text rounded-md px-4 py-2 text-sm font-medium dark:secondary-text hover:dark:primary-text"
+            className="rounded-md px-4 py-2 text-sm font-medium neutral-text hover:neutral-bg dark:secondary-text hover:dark:primary-text"
           >
             <b>Cancel</b>
           </button>
@@ -96,7 +96,7 @@ const ScheduleModal = ({
             disabled={!!error}
             className={`rounded-md px-4 py-2 text-sm font-medium secondary-text focus:outline-none focus:ring-2 ${
               error
-                ? "neutral-bg cursor-not-allowed"
+                ? "cursor-not-allowed neutral-bg"
                 : "primary-bg hover:secondary-bg"
             }`}
           >

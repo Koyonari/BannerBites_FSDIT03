@@ -1099,7 +1099,7 @@ const AdCanvas = () => {
                     data-tooltip-id="remCols-tooltip"
                     data-tooltip-content={tooltips.remCols}
                     onClick={decreaseColumns}
-                    className="neutral-bg hover:neutralalt-bg flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 hover:cursor-pointer md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+                    className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
                   >
                     <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                       -
@@ -1116,7 +1116,7 @@ const AdCanvas = () => {
                       data-tooltip-id="remRows-tooltip"
                       data-tooltip-content={tooltips.remRows}
                       onClick={decreaseRows}
-                      className="neutral-bg hover:neutralalt-bg flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 hover:cursor-pointer md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                      className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
                     >
                       <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                         -
@@ -1175,7 +1175,7 @@ const AdCanvas = () => {
                       data-tooltip-id="addRows-tooltip"
                       data-tooltip-content={tooltips.addRows}
                       onClick={increaseRows}
-                      className="neutral-bg hover:neutralalt-bg flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 hover:cursor-pointer md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                      className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
                     >
                       <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                         +
@@ -1191,7 +1191,7 @@ const AdCanvas = () => {
                     data-tooltip-id="addCols-tooltip"
                     data-tooltip-content={tooltips.addCols}
                     onClick={increaseColumns}
-                    className="neutral-bg hover:neutralalt-bg flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 hover:cursor-pointer md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+                    className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
                   >
                     <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
                       +
@@ -1204,7 +1204,7 @@ const AdCanvas = () => {
               <div className="mb-[5vh] mt-[5vh] flex w-11/12 flex-row justify-between">
                 <MoveLeft
                   onClick={handleMoveLeft}
-                  className="primary-bg hover:secondary-bg h-8 w-16 rounded-lg py-1 secondary-text hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+                  className="h-8 w-16 rounded-lg py-1 primary-bg secondary-text hover:cursor-pointer hover:secondary-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
                 />
 
                 <div
@@ -1217,15 +1217,15 @@ const AdCanvas = () => {
                     disabled={!isMergeButtonActive}
                     className={`h-8 w-16 rounded-lg py-2 transition-colors duration-300 secondary-text sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
                       !isMergeButtonActive
-                        ? "neutralalt-bg cursor-not-allowed"
-                        : "primary-bg hover:secondary-bg hover:cursor-pointer"
+                        ? "cursor-not-allowed neutralalt-bg"
+                        : "primary-bg hover:cursor-pointer hover:secondary-bg"
                     }`}
                   />
                 </div>
 
                 <Check
                   onClick={handleOpenSelector}
-                  className="primary-bg hover:secondary-bg h-8 w-16 rounded-lg py-1.5 secondary-text hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
+                  className="h-8 w-16 rounded-lg py-1.5 primary-bg secondary-text hover:cursor-pointer hover:secondary-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
                 />
               </div>
             </div>

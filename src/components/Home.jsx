@@ -41,7 +41,7 @@ const Hero = () => {
       <div className="flex w-full max-w-lg flex-col items-center dark:dark-bg">
         <h1 className="mb-1 pb-1 text-center text-7xl font-bold primary-text dark:secondary-text md:text-7xl lg:text-5xl xl:text-6xl">
           Banner
-          <span className="accent-text outline-3">Bites</span>
+          <span className="outline-8 accent-text">Bites</span>
         </h1>
         <div className="light-white relative flex h-16 w-full max-w-72 justify-center rounded-lg border-2 p-4 primary-border dark:dark-bg md:p-6">
           <div className="flex w-full max-w-xs items-center justify-between">

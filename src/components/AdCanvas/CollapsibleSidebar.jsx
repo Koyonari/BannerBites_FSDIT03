@@ -55,6 +55,8 @@ const CollapsibleSidebar = ({
         <div className="relative flex h-full w-full flex-col shadow-lg">
           {/* Toggle Button */}
           <button
+            data-tooltip-id="sidebar-tooltip"
+            data-tooltip-content="Open to drag & drop element to add to grid"
             onClick={() => setIsOpen(!isOpen)}
             className={`${
               isVertical
@@ -216,9 +218,9 @@ const CollapsibleSidebar = ({
                         placeholder="Search advertisements"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="dark:neutralalt-bg w-full rounded-lg border px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-primary dark:secondary-border dark:secondary-text"
+                        className="w-full rounded-lg border px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-primary dark:secondary-border dark:neutralalt-bg dark:secondary-text"
                       />
-                      <Search className="neutral-text absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 neutral-text" />
                     </div>
                   </div>
                   <div className="flex flex-col gap-4">
