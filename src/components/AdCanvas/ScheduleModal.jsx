@@ -50,23 +50,23 @@ const ScheduleModal = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 pcolor-bg" />
-            <h2 className="text-lg font-semibold gcolor-text dark:gcolor-text">
+            <Calendar className="primary-bg h-5 w-5" />
+            <h2 className="neutral-text dark:neutral-text text-lg font-semibold">
               Schedule Ad
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="hover:g2color-bg rounded-full p-1"
+            className="hover:neutralalt-bg rounded-full p-1"
           >
-            <X className="h-5 w-5 gcolor-text dark:secondary-text hover:dark:primary-text" />
+            <X className="neutral-text h-5 w-5 dark:secondary-text hover:dark:primary-text" />
           </button>
         </div>
 
         {/* Body */}
         <div className="p-4">
           <label className="block space-y-2">
-            <span className="text-lg font-medium gcolor-text dark:secondary-text">
+            <span className="neutral-text text-lg font-medium dark:secondary-text">
               <b>Select Time</b>
             </span>
             <input
@@ -80,14 +80,14 @@ const ScheduleModal = ({
               }`}
             />
           </label>
-          {error && <p className="alert-text mt-2 text-sm">{error}</p>}
+          {error && <p className="mt-2 text-sm alert-text">{error}</p>}
         </div>
 
         {/* Footer */}
         <div className="flex justify-end gap-3 border-t p-4">
           <button
             onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm font-medium gcolor-text hover:gcolor-bg dark:secondary-text hover:dark:primary-text"
+            className="hover:neutral-bg neutral-text rounded-md px-4 py-2 text-sm font-medium dark:secondary-text hover:dark:primary-text"
           >
             <b>Cancel</b>
           </button>
@@ -96,8 +96,8 @@ const ScheduleModal = ({
             disabled={!!error}
             className={`rounded-md px-4 py-2 text-sm font-medium secondary-text focus:outline-none focus:ring-2 ${
               error
-                ? "cursor-not-allowed gcolor-bg"
-                : "pcolor-bg hover:p2color-bg"
+                ? "neutral-bg cursor-not-allowed"
+                : "primary-bg hover:secondary-bg"
             }`}
           >
             <b>Schedule</b>

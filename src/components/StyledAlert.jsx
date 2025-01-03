@@ -11,7 +11,7 @@ const StyledAlert = ({ isOpen, onClose, title, message, type = "info" }) => {
       >
         <button
           onClick={onClose}
-          className="absolute right-2 top-2 rounded-full p-1 hover:gcolor-bg dark:hover:g2color-bg"
+          className="hover:neutral-bg dark:hover:neutralalt-bg absolute right-2 top-2 rounded-full p-1"
         >
           <X className="h-5 w-5" />
         </button>

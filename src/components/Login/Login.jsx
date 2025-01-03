@@ -53,12 +53,12 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center gcolor-bg dark:dark-bg">
+    <div className="neutral-bg flex min-h-screen items-center justify-center dark:dark-bg">
       <div className="relative w-full max-w-md rounded-lg border p-20 shadow-lg secondary-border light-bg dark:dark-bg">
         {/* Close button */}
         <button
           onClick={() => navigate("/")}
-          className="absolute right-4 top-4 p-1 gcolor-text hover:primary-text dark:hover:secondary-text"
+          className="neutral-text absolute right-4 top-4 p-1 hover:primary-text dark:hover:secondary-text"
         >
           ✖
         </button>
@@ -70,8 +70,8 @@ const Login = () => {
               onClick={() => setRole("Operator")}
               className={`px-4 py-2 font-semibold transition-colors duration-300 ${
                 role === "Operator"
-                  ? "pcolor-bg secondary-text"
-                  : "g2color-bg primary-text"
+                  ? "primary-bg secondary-text"
+                  : "neutralalt-bg primary-text"
               }`}
             >
               Operator
@@ -80,8 +80,8 @@ const Login = () => {
               onClick={() => setRole("Admin")}
               className={`px-4 py-2 font-semibold transition-colors duration-300 ${
                 role === "Admin"
-                  ? "pcolor-bg secondary-text"
-                  : "g2color-bg primary-text"
+                  ? "primary-bg secondary-text"
+                  : "neutralalt-bg primary-text"
               }`}
             >
               Admin
@@ -99,7 +99,7 @@ const Login = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="focus:ring-primary w-full rounded-md border px-4 py-2 secondary-border placeholder-secondary focus:outline-none focus:ring-2"
+              className="w-full rounded-md border px-4 py-2 secondary-border placeholder-secondary focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <div>
@@ -111,12 +111,12 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="focus:ring-primary w-full rounded-md border border-gray-300 px-4 py-2 placeholder-primary focus:outline-none focus:ring-2"
+              className="w-full rounded-md border border-gray-300 px-4 py-2 placeholder-primary focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-md py-2 font-semibold pcolor-bg secondary-text hover:p2color-bg"
+            className="primary-bg hover:secondary-bg w-full rounded-md py-2 font-semibold secondary-text"
           >
             Login
           </button>

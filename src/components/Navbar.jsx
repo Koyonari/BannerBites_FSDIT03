@@ -69,7 +69,7 @@ function Navbar() {
           <div>
             <h1 className="text-3xl font-bold primary-text dark:secondary-text xl:text-5xl">
               Banner
-              <span className="outline-1 pcolor-text lg:outline-2 xl:outline-8">
+              <span className="accent-text outline-1 lg:outline-2 xl:outline-8">
                 Bites
               </span>
             </h1>

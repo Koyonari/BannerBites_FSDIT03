@@ -7,7 +7,7 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
     <div className="fixed inset-0 z-[999] flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="g2color-bg fixed inset-0 backdrop-blur-sm"
+        className="neutralalt-bg fixed inset-0 backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -18,7 +18,7 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
           <h3 className="text-lg font-semibold primary-text">Scheduled Ads</h3>
           <button
             onClick={onClose}
-            className="rounded-full p-1 hover:gcolor-bg"
+            className="hover:neutral-bg rounded-full p-1"
           >
             <X className="h-5 w-5 secondary-text" />
           </button>
@@ -28,7 +28,7 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
         <div className="max-h-[60vh] overflow-y-auto p-4">
           {scheduledAds.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Clock className="h-12 w-12 gcolor-text" />
+              <Clock className="neutral-text h-12 w-12" />
               <p className="mt-2 primary-text">No scheduled ads yet</p>
             </div>
           ) : (
@@ -54,14 +54,14 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
                         onClick={() => {
                           onEdit(scheduledAd);
                         }}
-                        className="hover:g2color-bg rounded-md p-2 gcolor-text"
+                        className="hover:neutralalt-bg neutral-text rounded-md p-2"
                         title="Edit"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => onRemove(scheduledAd)}
-                        className="alert-text hover:alert-bg rounded-md p-2"
+                        className="rounded-md p-2 alert-text hover:alert-bg"
                         title="Remove"
                       >
                         <Trash2 className="h-4 w-4" />

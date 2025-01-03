@@ -87,7 +87,7 @@ const AssignLayoutToTV = ({ tvId, onLayoutAssigned }) => {
 
         <button
           onClick={handleAssign}
-          className="mt-4 w-full rounded-md px-4 py-2 font-bold transition-colors duration-200 pcolor-bg secondary-text hover:p2color-bg hover:primary-text focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary lg:text-lg"
+          className="primary-bg hover:secondary-bg mt-4 w-full rounded-md px-4 py-2 font-bold transition-colors duration-200 secondary-text hover:primary-text focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary lg:text-lg"
         >
           Assign Layout
         </button>

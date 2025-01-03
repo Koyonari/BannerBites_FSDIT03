@@ -10,40 +10,40 @@ module.exports = {
       colors: {
         // Colours
         base: {
-          black: "rgb(0, 0, 0)",
-          white: "rgb(255, 255, 255)",
-          grey: "rgb(128, 128, 128)",
-          lightgrey: "rgb(211, 211, 211)",
+          black: "#000000",
+          white: "#FFFFFF",
+          grey: "#A0AEC0",
+          lightgrey: "#E2E8F0",
         },
         text: {
-          accent: "rgb(0, 217, 255)",
-          light: "rgb(46, 46, 46)",
-          dark: "rgb(250, 250, 250)",
-          sublight: "rgb(114, 114, 114)",
-          subdark: "rgb(122, 122, 122)",
-          alert: "rgb(255, 112, 112)",
-          subalert: "rgb(255, 31, 31)",
+          accent: "#1E90FF",
+          light: "#2D3748",
+          dark: "#E2E8F0",
+          sublight: "#718096",
+          subdark: "#A0AEC0",
+          alert: "#E53E3E",
+          subalert: "#C53030",
         },
         bg: {
-          accent: "rgb(0, 217, 255)",
-          subaccent: "rgb(161, 241, 255)",
-          light: "rgb(255, 255, 243)",
-          dark: "rgb(78, 76, 75)",
-          alert: "rgb(239, 68, 68)",
-          subalert: "rgb(185, 28, 28)",
+          accent: "#1E90FF",
+          subaccent: "#63B3ED",
+          light: "#F7FAFC",
+          dark: "#1A202C",
+          alert: "#E53E3E",
+          subalert: "#C53030",
         },
         border: {
-          light: "rgb(107, 114, 128)",
-          dark: "rgb(209, 213, 219)",
-          alert: "rgb(239, 68, 75)",
-          subalert: "rgb(209, 31, 31)",
+          light: "#CBD5E0",
+          dark: "#4A5568",
+          alert: "#E53E3E",
+          subalert: "#C53030",
         },
         ring: {
-          primary: "rgb(163 220 255)",
+          primary: "#90CDF4",
         },
         placeholder: {
-          light: "rgb(107, 114, 128)",
-          dark: "rgb(209, 213, 219)",
+          light: "#A0AEC0",
+          dark: "#718096",
         },
       },
     },
@@ -65,8 +65,9 @@ module.exports = {
     function ({ addUtilities, theme }) {
       const newUtilities = {
         ".outline-3": {
-          "-webkit-text-stroke": "3px",
+          "-webkit-text-stroke": "8px",
           "-webkit-text-stroke-color": theme("colors.base.black"),
+          "paint-order": "stroke fill",
         },
         ".outline-1": {
           "-webkit-text-stroke": "0.4px",
@@ -91,22 +92,22 @@ module.exports = {
         },
 
         // Background Colours
-        ".pcolor-bg": {
+        ".primary-bg": {
           backgroundColor: theme("colors.bg.accent"),
         },
-        ".p2color-bg": {
+        ".secondary-bg": {
           backgroundColor: theme("colors.bg.subaccent"),
         },
         ".accent-bg": {
           backgroundColor: theme("colors.bg.accent"),
         },
-        ".scolor-bg": {
+        ".tertiary-bg": {
           backgroundColor: theme("colors.base.grey"),
         },
-        ".gcolor-bg": {
+        ".neutral-bg": {
           backgroundColor: theme("colors.base.lightgrey"),
         },
-        ".g2color-bg": {
+        ".neutralalt-bg": {
           backgroundColor: theme("colors.base.grey"),
         },
         ".dark-bg": {
@@ -120,10 +121,10 @@ module.exports = {
         },
 
         // Text Colours
-        ".pcolor-text": {
+        ".accent-text": {
           color: theme("colors.text.accent"),
         },
-        ".gcolor-text": {
+        ".neutral-text": {
           color: theme("colors.text.sublight"),
         },
         ".primary-text": {
@@ -153,7 +154,7 @@ module.exports = {
         // Ring Colours
         ".ring-primary": {
           "--tw-ring-opacity": "1",
-          "--tw-ring-color": `(theme("colors.ring.primary") / var(--tw-ring-opacity)))`,
+          "--tw-ring-color": theme("colors.ring.primary"),
         },
       };
       addUtilities(newUtilities, ["responsive", "hover"]);

@@ -25,7 +25,7 @@ const AdUnit = () => {
         {/* Create New Button */}
         <div className="w-full sm:w-1/5">
           <Link to="/ad">
-            <button className="h-10 w-full rounded-lg text-sm font-bold transition-colors pcolor-bg secondary-text hover:p2color-bg lg:h-16 lg:text-lg xl:h-20 xl:text-2xl">
+            <button className="primary-bg hover:secondary-bg h-10 w-full rounded-lg text-sm font-bold transition-colors secondary-text lg:h-16 lg:text-lg xl:h-20 xl:text-2xl">
               Create New
             </button>
           </Link>

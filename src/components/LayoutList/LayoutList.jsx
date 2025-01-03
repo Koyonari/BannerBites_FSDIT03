@@ -209,7 +209,7 @@ const LayoutList = () => {
             <div className="mb-6 rounded-lg p-6 shadow light-bg dark:dark-bg dark:secondary-text md:mb-0">
               <h2 className="mb-4 text-xl font-bold">Available Layouts</h2>
               {loading && !selectedLayout && (
-                <div className="flex items-center justify-center p-4 gcolor-text">
+                <div className="neutral-text flex items-center justify-center p-4">
                   <svg
                     className="mr-2 h-5 w-5 animate-spin"
                     viewBox="0 0 24 24"
@@ -243,8 +243,8 @@ const LayoutList = () => {
                     key={layout.layoutId}
                     className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
                       selectedLayout?.layoutId === layout.layoutId
-                        ? "p2color-bg secondary-text"
-                        : "gcolor-bg primary-text hover:g2color-bg"
+                        ? "secondary-bg secondary-text"
+                        : "neutral-bg hover:neutralalt-bg primary-text"
                     }`}
                     onClick={() => handleLayoutSelect(layout.layoutId)}
                   >
@@ -253,7 +253,7 @@ const LayoutList = () => {
                 ))}
                 {hasMoreLayouts && (
                   <button
-                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors gcolor-bg gcolor-text hover:gcolor-bg"
+                    className="neutral-bg hover:neutral-bg neutral-text mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors"
                     onClick={() => setShowAllLayouts(!showAllLayouts)}
                   >
                     <span>{showAllLayouts ? "Show Less" : `Show More`}</span>
@@ -271,7 +271,7 @@ const LayoutList = () => {
               {selectedLayout && !loading && (
                 <button
                   onClick={toggleFullscreen}
-                  className={`absolute right-6 top-6 z-10 rounded-full p-2 transition-opacity duration-200 gcolor-bg secondary-text hover:g2color-bg ${
+                  className={`neutral-bg hover:neutralalt-bg absolute right-6 top-6 z-10 rounded-full p-2 transition-opacity duration-200 secondary-text ${
                     isHovering || isFullscreen ? "opacity-100" : "opacity-0"
                   }`}
                   aria-label={
@@ -292,7 +292,7 @@ const LayoutList = () => {
                 }`}
               >
                 {loading && selectedLayout && (
-                  <div className="flex h-full items-center justify-center p-4 gcolor-bg">
+                  <div className="neutral-bg flex h-full items-center justify-center p-4">
                     <svg
                       className="mr-2 h-5 w-5 animate-spin"
                       viewBox="0 0 24 24"
@@ -319,7 +319,7 @@ const LayoutList = () => {
                   <LayoutViewer layout={selectedLayout} />
                 )}
                 {!selectedLayout && !loading && (
-                  <div className="flex h-full items-center justify-center p-4 gcolor-text">
+                  <div className="neutral-text flex h-full items-center justify-center p-4">
                     Select a layout to preview
                   </div>
                 )}

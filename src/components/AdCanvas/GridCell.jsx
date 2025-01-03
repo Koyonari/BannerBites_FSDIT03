@@ -20,7 +20,7 @@ const Checkbox = ({ checked, onChange, className, showHelp }) => (
   >
     {checked && (
       <svg
-        className="h-3 w-3 pcolor-text"
+        className="accent-text h-3 w-3"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -218,7 +218,7 @@ const GridCell = ({
           className="flex h-full w-full items-center justify-center"
           style={contentStyle}
         >
-          <p className="text-center gcolor-text lg:text-2xl">{type} Ad</p>
+          <p className="neutral-text text-center lg:text-2xl">{type} Ad</p>
         </div>
       );
     }
@@ -294,7 +294,7 @@ const GridCell = ({
   return (
     <div
       ref={drop}
-      className={`grid-cell hover:primary-outline relative box-border flex flex-col gap-2 border p-2 transition-transform duration-200 ease-in-out primary-border light-bg hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:p2color-bg ${isOver ? "primary-outline p2color-bg" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
+      className={`grid-cell hover:primary-outline hover:secondary-bg relative box-border flex flex-col gap-2 border p-2 transition-transform duration-200 ease-in-out primary-border light-bg hover:outline hover:outline-2 hover:outline-offset-[-2px] ${isOver ? "primary-outline secondary-bg" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
       style={{
         gridRow: item?.rowSpan ? `span ${item.rowSpan}` : "auto",
         gridColumn: item?.colSpan ? `span ${item.colSpan}` : "auto",
@@ -317,19 +317,19 @@ const GridCell = ({
       {adToDisplay && (
         <div className="actions mb-4 mt-auto flex flex-wrap items-center justify-center gap-8">
           <Pencil
-            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text hover:pcolor-text"
+            className="hover:primary-fill hover:accent-text z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={handleEdit}
           />
           <View
-            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text hover:pcolor-text"
+            className="hover:primary-fill hover:accent-text z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={togglePopup}
           />
           <CircleMinus
-            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text hover:pcolor-text"
+            className="hover:primary-fill hover:accent-text z-0 h-6 w-6 cursor-pointer transition-colors duration-200 secondary-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={handleRemove}

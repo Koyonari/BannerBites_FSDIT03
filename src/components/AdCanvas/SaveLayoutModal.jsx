@@ -45,7 +45,7 @@ const SaveLayoutModal = ({ onSave, onClose }) => {
       />
       <div style={{ textAlign: "right" }} className="text-xs lg:text-sm">
         <button
-          className="rounded-md p-1 px-2.5 pcolor-bg secondary-text"
+          className="primary-bg rounded-md p-1 px-2.5 secondary-text"
           onClick={handleSave}
           style={{ marginRight: "10px" }}
         >
