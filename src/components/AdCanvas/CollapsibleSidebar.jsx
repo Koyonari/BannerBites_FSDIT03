@@ -38,7 +38,9 @@ const CollapsibleSidebar = ({
   return (
     <div
       className={`fixed ${
-        isVertical ? "bottom-0 left-0 w-full" : "left-0 top-0 w-[25vw]"
+        isVertical
+          ? "bottom-0 left-0 w-full"
+          : "left-0 top-[5rem] w-[25vw] xl:top-[8rem]"
       } z-50 flex transition-all duration-300 ease-in-out`}
     >
       <div
@@ -47,7 +49,7 @@ const CollapsibleSidebar = ({
             ? `fixed bottom-0 left-0 w-full ${
                 isOpen ? "h-[40vh]" : "h-12"
               } rounded-t-3xl border-t`
-            : `fixed left-0 top-0 h-screen ${
+            : `h-[calc(100vh-5rem)] xl:h-[calc(100vh-8rem)] ${
                 isOpen ? "w-[30vw]" : "w-12"
               } rounded-r-3xl border-r`
         } border-border-light bg-bg-light transition-all duration-300 ease-in-out dark:border-border-dark dark:bg-bg-dark`}
@@ -89,7 +91,9 @@ const CollapsibleSidebar = ({
               <h2 className="mb-4 text-center text-xl font-bold text-text-light dark:text-text-dark">
                 Elements
               </h2>
-              <Sidebar />
+              <div className={isVertical ? "flex justify-center" : ""}>
+                <Sidebar />
+              </div>
             </div>
 
             {/* Navigation Icons */}
