@@ -12,7 +12,7 @@ const LayoutList = () => {
   const [showAllLayouts, setShowAllLayouts] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
+  const [isHovering] = useState(false);
   const previewRef = useRef(null);
 
   const MOBILE_DISPLAY_LIMIT = 3;
