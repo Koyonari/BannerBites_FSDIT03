@@ -16,7 +16,7 @@ module.exports = {
           lightgrey: "#E2E8F0",
         },
         text: {
-          accent: "#1E90FF",
+          accent: "#1E9AFF",
           light: "#2D3748",
           dark: "#E2E8F0",
           sublight: "#718096",
@@ -25,7 +25,7 @@ module.exports = {
           subalert: "#C53030",
         },
         bg: {
-          accent: "#1E90FF",
+          accent: "#1E9AFF",
           subaccent: "#63B3ED",
           light: "#F7FAFC",
           dark: "#1A202C",
