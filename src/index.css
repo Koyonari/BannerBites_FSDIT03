@@ -2,9 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "InterVariable";
+  src: url("./fonts/Inter-VariableFont.ttf") format("truetype");
+}
+
+body {
+  @apply light-bg; /* Default to light background */
+  @apply transition-colors duration-300; /* Smooth background transition */
+}
+
+.dark body {
+  @apply dark-bg; /* Apply dark background when dark mode is active */
+}
+
 body {
   margin: 0;
   padding: 0;
-  font-family: "Helvetica Neue", sans-serif;
+  font-family: "InterVariable", sans-serif;
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }

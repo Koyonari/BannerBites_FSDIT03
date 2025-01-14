@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const express = require('express');
 const cors = require('cors');
 const { dynamoDb } = require('./awsMiddleware'); // Import dynamoDb from awsMiddleware
@@ -26,11 +27,42 @@ const s3Client = new S3Client({
 });
 
 // Middleware
+=======
+// index.js
+const express = require("express");
+const http = require("http");
+const WebSocket = require("ws");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const layoutRoutes = require("./routes/layoutRoutes");
+const locationRoutes = require("./routes/locationRoutes");
+const tvRoutes = require("./routes/tvRoutes");
+const authRoutes = require("./routes/authRoutes");
+const adsRoutes = require("./routes/adsRoutes");
+// Import the state management functions
+const { layoutUpdatesCache, addClient, removeClient, broadcastToClients } = require("./state");
+const { generatePresignedUrlController, fetchLayoutById } = require("./controllers/layoutController");
+const { listenToDynamoDbStreams } = require("./middleware/awsMiddleware");
+
+dotenv.config();
+
+// Create an Express server
+const app = express();
+// Create an HTTP server using the Express app
+const server = http.createServer(app);
+// Create a WebSocket server using the HTTP server
+const wss = new WebSocket.Server({ server });
+// Set the port
+const PORT = process.env.PORT || 5000;
+
+// Middleware to handle CORS
+>>>>>>> 4159325dc39cd13b0d48379cc2e0160be3fa773b
 app.use(cors({
   origin: 'http://localhost:5000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+<<<<<<< HEAD
 app.use(express.json({ limit: '10mb' }));
 
 // Login endpoint
@@ -57,6 +89,29 @@ const generatePresignedUrl = async (bucketName, key, contentType, expiresIn = 30
   const command = new PutObjectCommand(params);
   return await getSignedUrl(s3Client, command, { expiresIn });
 };
+=======
+// Middleware to parse JSON data
+app.use(express.json({ limit: "10mb" }));
+
+// Routes
+app.use("/api/layouts", layoutRoutes);
+app.use("/api/locations", locationRoutes);
+app.use("/api/tvs", tvRoutes);
+app.use("/api", authRoutes);
+app.post("/generate-presigned-url", generatePresignedUrlController);
+app.use('/api/ads', adsRoutes);
+
+// WebSocket Server Handling
+wss.on("connection", (ws) => {
+  console.log("[BACKEND] New WebSocket connection established");
+  // Handle incoming messages from the WebSocket clients
+  ws.on("message", async (message) => {
+    try {
+      // Parse the incoming message
+      const parsedMessage = JSON.parse(message);
+      if (parsedMessage.type === "subscribe" && parsedMessage.layoutId) {
+        const layoutId = parsedMessage.layoutId;
+>>>>>>> 4159325dc39cd13b0d48379cc2e0160be3fa773b
 
 // Generate a pre-signed URL for uploading media to S3
 app.post('/generate-presigned-url', async (req, res) => {

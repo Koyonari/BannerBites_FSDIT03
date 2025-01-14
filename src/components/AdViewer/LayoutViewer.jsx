@@ -25,6 +25,11 @@ const LayoutViewer = ({ layoutId }) => {
     }
   }, [layoutId]);
 
+<<<<<<< HEAD
+=======
+// LayoutViewer is a component that renders the layout of ads, wraps AdViewer component
+const LayoutViewer = ({ layout }) => {
+>>>>>>> 4159325dc39cd13b0d48379cc2e0160be3fa773b
   if (!layout) {
     return <div>Loading layout...</div>;
   }

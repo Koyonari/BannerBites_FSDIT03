@@ -8,15 +8,13 @@ import LayoutViewer from "../AdViewer/LayoutViewer";
 import LocationSelector from "../LocationSelector";
 import TVSelector from "../TVSelector";
 import AssignLayoutTab from "../AssignLayoutTab";
-import LayoutSelector from "../AdViewer/LayoutSelector";
 import ErrorBoundary from "../ErrorBoundary";
 import Navbar from "../Navbar";
 
 const Ad = () => {
-  const [selectedLayoutId, setSelectedLayoutId] = useState(null);
+  const [selectedLayoutId] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [selectedTVId, setSelectedTVId] = useState(null);
-  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
   // Handle selecting a location
   const handleSelectLocation = (locationId) => {
@@ -29,16 +27,10 @@ const Ad = () => {
     setSelectedTVId(tvId);
   };
 
-  // Handle selecting a layout
-  const handleSelectLayout = (layoutId) => {
-    setSelectedLayoutId(layoutId);
-    setIsSelectorOpen(false);
-  };
-
   return (
     <div>
       <Navbar />
-      <div className="px-8 pt-8 dark:bg-black">
+      <div className="px-8 dark:dark-bg md:mt-[-7.5vh] lg:mt-[-10vh]">
         <ErrorBoundary>
           <DndProvider backend={HTML5Backend}>
             <div>
@@ -81,12 +73,6 @@ const Ad = () => {
                 />
               </Routes>
             </div>
-            {isSelectorOpen && (
-              <LayoutSelector
-                onSelect={handleSelectLayout}
-                onClose={() => setIsSelectorOpen(false)}
-              />
-            )}
           </DndProvider>
         </ErrorBoundary>
       </div>

@@ -1,25 +1,23 @@
 import React from "react";
 import { X, Edit2, Trash2, Clock } from "lucide-react";
 
+// AdListPopup is a modal popup that displays a list of scheduled ads
 const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center">
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 backdrop-blur-xl" onClick={onClose} />
 
       {/* Popup Content */}
-      <div className="relative z-50 w-full max-w-2xl rounded-lg bg-white shadow-lg">
+      <div className="relative z-50 w-full max-w-2xl rounded-lg border shadow-lg secondary-border light-bg dark:primary-border">
         {/* Header */}
         <div className="flex items-center justify-between border-b p-4">
-          <h3 className="text-lg font-semibold text-gray-900">Scheduled Ads</h3>
+          <h3 className="text-lg font-semibold primary-text">Scheduled Ads</h3>
           <button
             onClick={onClose}
-            className="rounded-full p-1 hover:bg-gray-100"
+            className="rounded-full p-1 hover:neutral-bg"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 light-text" />
           </button>
         </div>
 
@@ -27,22 +25,22 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
         <div className="max-h-[60vh] overflow-y-auto p-4">
           {scheduledAds.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Clock className="h-12 w-12 text-gray-300" />
-              <p className="mt-2 text-gray-500">No scheduled ads yet</p>
+              <Clock className="h-12 w-12 neutral-text" />
+              <p className="mt-2 primary-text">No scheduled ads yet</p>
             </div>
           ) : (
             <ul className="space-y-3">
               {scheduledAds.map((scheduledAd) => (
                 <li
                   key={scheduledAd.id}
-                  className="rounded-lg border bg-white p-4 shadow-sm"
+                  className="rounded-lg border p-4 shadow-sm light-bg"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">
+                      <h4 className="font-medium primary-text">
                         {scheduledAd.ad.content.title}
                       </h4>
-                      <div className="mt-1 flex items-center gap-1 text-sm text-gray-500">
+                      <div className="mt-1 flex items-center gap-1 text-sm light-text">
                         <Clock className="h-4 w-4" />
                         <span>Scheduled for: {scheduledAd.scheduledTime}</span>
                       </div>
@@ -53,14 +51,14 @@ const AdListPopup = ({ scheduledAds, onClose, onEdit, onRemove }) => {
                         onClick={() => {
                           onEdit(scheduledAd);
                         }}
-                        className="rounded-md p-2 text-gray-500 hover:bg-gray-100"
+                        className="rounded-md p-2 neutral-text hover:neutralalt-bg"
                         title="Edit"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => onRemove(scheduledAd)}
-                        className="rounded-md p-2 text-red-500 hover:bg-red-50"
+                        className="rounded-md p-2 alert-text hover:alert-bg"
                         title="Remove"
                       >
                         <Trash2 className="h-4 w-4" />

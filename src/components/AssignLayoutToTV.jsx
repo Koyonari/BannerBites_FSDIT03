@@ -33,6 +33,7 @@ const AssignLayoutToTV = ({ tvId, onLayoutAssigned }) => {
   };
 
   return (
+<<<<<<< HEAD
     <div className="assign-layout">
       <h2>Assign Layout to TV</h2>
       <div>
@@ -40,6 +41,47 @@ const AssignLayoutToTV = ({ tvId, onLayoutAssigned }) => {
         <select
           value={selectedLayoutId}
           onChange={(e) => setSelectedLayoutId(e.target.value)}
+=======
+    <div className="mx-auto w-full max-w-xl rounded-lg p-6 shadow-lg light-bg">
+      <h2 className="mb-6 text-center text-5xl font-semibold primary-text xl:text-5xl">
+        Assign Layout
+      </h2>
+
+      <div className="space-y-4">
+        <div className="flex flex-col">
+          <label className="mb-1 text-sm font-medium primary-text lg:text-lg">
+            Select Layout:
+          </label>
+          <select
+            value={selectedLayoutId}
+            onChange={(e) => setSelectedLayoutId(e.target.value)}
+            className="w-full rounded-md border px-3 py-2 shadow-sm secondary-border light-bg focus:outline-none focus:ring-2 focus:primary-border focus:ring-primary lg:text-lg"
+          >
+            <option value="">Select Layout</option>
+            {layouts.map((layout) => (
+              <option key={layout.layoutId} value={layout.layoutId}>
+                {layout.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col">
+          <label className="mb-1 text-sm font-medium primary-text lg:text-lg">
+            Assign Date:
+          </label>
+          <input
+            type="datetime-local"
+            value={assignedDate}
+            onChange={(e) => setAssignedDate(e.target.value)}
+            className="w-full rounded-md border px-3 py-2 shadow-sm secondary-border light-bg focus:outline-none focus:ring-2 focus:primary-border focus:ring-primary lg:text-lg"
+          />
+        </div>
+
+        <button
+          onClick={handleAssign}
+          className="primary-bg hover:secondary-bg mt-4 w-full rounded-md px-4 py-2 font-bold transition-colors duration-200 secondary-text hover:primary-text focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary lg:text-lg"
+>>>>>>> 4159325dc39cd13b0d48379cc2e0160be3fa773b
         >
           <option value="">-- Select Layout --</option>
           {layouts.map((layout) => (

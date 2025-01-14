@@ -3,14 +3,15 @@ import { useDrop } from "react-dnd";
 import { Tooltip } from "react-tooltip";
 import AdListPopup from "./AdListPopup";
 import { CircleMinus, View, Pencil } from "lucide-react";
+import StyledAlert from "../StyledAlert";
 
 const Checkbox = ({ checked, onChange, className, showHelp }) => (
   <div
     id="cellCheckbox"
     data-tooltip-id="checkbox-tooltip"
     data-tooltip-content="Click to multi-select cells"
-    className={`flex h-4 w-4 cursor-pointer items-center justify-center border-2 bg-white hover:bg-gray-50 ${
-      checked ? "border-orange-500" : "border-gray-300"
+    className={`flex h-4 w-4 cursor-pointer items-center justify-center border-2 light-bg hover:bg-gray-50 ${
+      checked ? "primary-border" : "secondary-border"
     } ${className}`}
     onClick={(e) => {
       e.stopPropagation();
@@ -19,7 +20,7 @@ const Checkbox = ({ checked, onChange, className, showHelp }) => (
   >
     {checked && (
       <svg
-        className="h-3 w-3 text-orange-500"
+        className="h-3 w-3 accent-text"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -44,13 +45,14 @@ const GridCell = ({
   onEdit,
   onUnmerge,
   item,
-  isSelected,
   onSelect,
+  onSelectMerged,
   isSelectionMode,
   setIsSelectionMode,
   showHelp,
+  selectedCells,
   selectedMergedCells = [],
-  onSelectMerged,
+  getMainCellIndex,
 }) => {
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -64,41 +66,58 @@ const GridCell = ({
   );
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
 
   const togglePopup = (e) => {
     e.stopPropagation();
     setIsPopupOpen(!isPopupOpen);
   };
 
-  // Check if this cell is selected
+  const showAlertMsg = (message, title = "Alert", type = "info") => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
+
   const isCellSelected = item?.isMerged
     ? selectedMergedCells.includes(index)
-    : isSelected;
+    : selectedCells.includes(index);
 
   const handleCheckboxChange = (checked) => {
     if (item && !item.hidden) {
-      if (!isSelectionMode) {
-        setIsSelectionMode(true);
-      }
-
       if (item.isMerged && typeof onSelectMerged === "function") {
-        // Always call onSelectMerged for merged cells, regardless of current selection state
-        onSelectMerged(index);
+        onSelectMerged(index, checked);
       } else if (typeof onSelect === "function") {
-        onSelect(index);
+        onSelect(index, checked);
       }
-    }
-  };
-
-  const handleRemove = (e) => {
-    e.stopPropagation();
-    if (adToDisplay) {
-      onRemove(index, adToDisplay);
     }
   };
 
   const handleEdit = (e) => {
     e.stopPropagation();
+    let cellIndex = index;
+
+    if (item.hidden) {
+      if (typeof getMainCellIndex === "function") {
+        cellIndex = getMainCellIndex(index);
+        if (cellIndex === -1) {
+          showAlertMsg("Could not find the main cell for editing.");
+          return;
+        }
+      } else {
+        showAlertMsg("Cannot edit a hidden cell.");
+        return;
+      }
+    }
+
     if (adToDisplay) {
       const adToEdit = {
         ...adToDisplay,
@@ -110,7 +129,29 @@ const GridCell = ({
             : adToDisplay.ad.type,
         },
       };
-      onEdit(index, adToEdit);
+      onEdit(cellIndex, adToEdit);
+    }
+  };
+
+  const handleRemove = (e) => {
+    e.stopPropagation();
+    let cellIndex = index;
+
+    if (item.hidden) {
+      if (typeof getMainCellIndex === "function") {
+        cellIndex = getMainCellIndex(index);
+        if (cellIndex === -1) {
+          showAlertMsg("Could not find the main cell for removing.");
+          return;
+        }
+      } else {
+        showAlertMsg("Cannot remove from a hidden cell.");
+        return;
+      }
+    }
+
+    if (adToDisplay) {
+      onRemove(cellIndex, adToDisplay);
     }
   };
 
@@ -141,13 +182,15 @@ const GridCell = ({
     }
   }
 
+  // Define renderAdContent function
   const renderAdContent = () => {
-    if (!adToDisplay || !adToDisplay.ad)
+    if (!adToDisplay || !adToDisplay.ad) {
       return (
         <div className="flex h-full w-full items-center justify-center">
           <p className="text-center">Drop ad here</p>
         </div>
       );
+    }
 
     const { type, content, styles } = adToDisplay.ad;
     const contentStyle = {
@@ -175,7 +218,11 @@ const GridCell = ({
           className="flex h-full w-full items-center justify-center"
           style={contentStyle}
         >
+<<<<<<< HEAD
           <p className="text-center text-gray-500">{type} Ad</p>
+=======
+          <p className="text-center neutral-text lg:text-2xl">{type} Ad</p>
+>>>>>>> 4159325dc39cd13b0d48379cc2e0160be3fa773b
         </div>
       );
     }
@@ -237,7 +284,7 @@ const GridCell = ({
 
   const mergedClass = item?.isMerged
     ? `${item.mergeDirection === "horizontal" ? "merged-horizontal" : "merged-vertical"}${
-        item.mergeError ? " merge-error" : ""
+        isCellSelected ? " selected" : ""
       }`
     : "";
 
@@ -248,28 +295,14 @@ const GridCell = ({
     return null;
   }
 
-  const tooltipStyle = {
-    backgroundColor: "rgb(255, 255, 255)",
-    color: "black",
-    boxShadow:
-      "0 4px 6px -1px rgba(0, 0, 0, 1), 0 2px 4px -1px rgba(0, 0, 0, 1)",
-    border: "none",
-    borderRadius: "6px",
-    padding: "8px 12px",
-    fontSize: "14px",
-  };
-
-  const tooltipProps = {
-    className: "custom-tooltip",
-    style: tooltipStyle,
-    isOpen: showHelp,
-    place: "right",
-  };
-
   return (
     <div
       ref={drop}
+<<<<<<< HEAD
       className={`grid-cell relative box-border flex flex-col gap-2 border border-gray-400 bg-white p-2 transition-transform duration-200 ease-in-out hover:bg-orange-50 hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:outline-orange-300 ${isOver ? "bg-orange-50 outline-orange-300" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
+=======
+      className={`grid-cell hover:primary-outline relative box-border flex flex-col gap-2 border p-2 transition-transform duration-200 ease-in-out primary-border light-bg hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:secondary-bg ${isOver ? "primary-outline secondary-bg" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
+>>>>>>> 4159325dc39cd13b0d48379cc2e0160be3fa773b
       style={{
         gridRow: item?.rowSpan ? `span ${item.rowSpan}` : "auto",
         gridColumn: item?.colSpan ? `span ${item.colSpan}` : "auto",
@@ -283,7 +316,7 @@ const GridCell = ({
             className="transition-colors duration-200 ease-in-out"
             showHelp={showHelp}
           />
-          <Tooltip id="checkbox-tooltip" {...tooltipProps} />
+          <Tooltip id="checkbox-tooltip" />
         </div>
       )}
 
@@ -292,19 +325,19 @@ const GridCell = ({
       {adToDisplay && (
         <div className="actions mb-4 mt-auto flex flex-wrap items-center justify-center gap-8">
           <Pencil
-            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 light-text hover:accent-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={handleEdit}
           />
           <View
-            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 light-text hover:accent-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={togglePopup}
           />
           <CircleMinus
-            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 light-text hover:accent-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={handleRemove}
@@ -320,6 +353,14 @@ const GridCell = ({
           onRemove={(scheduledAd) => onRemove(index, scheduledAd)}
         />
       )}
+
+      <StyledAlert
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
     </div>
   );
 };
