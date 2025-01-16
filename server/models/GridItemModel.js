@@ -16,14 +16,13 @@ const GridItemModel = {
       Item: {
         layoutId: layoutId,
         index: gridItem.index,
-        row: gridItem.row,
-        column: gridItem.column,
-        scheduledAds: gridItem.scheduledAds,
-        isMerged: gridItem.isMerged,
+        gridItemId: gridItem.gridItemId,
         rowSpan: gridItem.rowSpan,
         colSpan: gridItem.colSpan,
         hidden: gridItem.hidden,
-        // Add other necessary fields
+        isMerged: gridItem.isMerged,
+        mergeDirection: gridItem.mergeDirection,
+        selectedCells: gridItem.selectedCells,
       },
     };
     const command = new PutCommand(params);
@@ -36,24 +35,26 @@ const GridItemModel = {
       TableName: process.env.DYNAMODB_TABLE_GRIDITEMS,
       Key: { layoutId, index },
       UpdateExpression:
-        "set #row = :row, #column = :column, #scheduledAds = :scheduledAds, #isMerged = :isMerged, #rowSpan = :rowSpan, #colSpan = :colSpan, #hidden = :hidden",
+        "set #rowSpan = :rowSpan, #colSpan = :colSpan, #hidden = :hidden, #isMerged = :isMerged, #mergeDirection = :mergeDirection, #selectedCells = :selectedCells",
       ExpressionAttributeNames: {
-        "#row": "row",
-        "#column": "column",
-        "#scheduledAds": "scheduledAds",
-        "#isMerged": "isMerged",
         "#rowSpan": "rowSpan",
         "#colSpan": "colSpan",
         "#hidden": "hidden",
+        "#isMerged": "isMerged",
+        "#mergeDirection": "mergeDirection",
+        "#selectedCells": "selectedCells",
+        // Exclude scheduledAds
+        // "#scheduledAds": "scheduledAds",
       },
       ExpressionAttributeValues: {
-        ":row": gridItem.row,
-        ":column": gridItem.column,
-        ":scheduledAds": gridItem.scheduledAds,
-        ":isMerged": gridItem.isMerged,
         ":rowSpan": gridItem.rowSpan,
         ":colSpan": gridItem.colSpan,
         ":hidden": gridItem.hidden,
+        ":isMerged": gridItem.isMerged,
+        ":mergeDirection": gridItem.mergeDirection,
+        ":selectedCells": gridItem.selectedCells,
+        // Exclude scheduledAds
+        // ":scheduledAds": gridItem.scheduledAds,
       },
     };
     // Update the grid item in DynamoDB

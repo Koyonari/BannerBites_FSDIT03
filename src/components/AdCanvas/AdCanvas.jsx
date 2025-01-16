@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
-import Sidebar from "./Sidebar";
+import CollapsibleSidebar from "./CollapsibleSidebar";
 import GridCell from "./GridCell";
 import EditModal from "./EditModal";
 import ScheduleModal from "./ScheduleModal";
@@ -11,18 +11,23 @@ import StyledAlert from "../StyledAlert";
 import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
-import LayoutSelector from "../AdViewer/LayoutSelector";
 import DeleteConfirmationModal from "../Modal/DeleteConfirmationModal";
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 // Main AdCanvas component, responsible for facilitating CRUD operations on ad layouts
 const AdCanvas = () => {
   // Layout Selection State
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [ratio, setRatio] = useState(0);
   const [layouts, setLayouts] = useState([]); // List of available layouts
+  // eslint-disable-next-line
   const [isSelectingLayout, setIsSelectingLayout] = useState(true); // Flag for layout selection mode
   const [selectedLayout, setSelectedLayout] = useState(null); // Currently selected layout
+  // eslint-disable-next-line
   const [isSavedLayout, setIsSavedLayout] = useState(false); // Tracks if the layout is saved
-
+  // New state to hold ad details
+  const [adDetailsMap, setAdDetailsMap] = useState({});
+  const [removedAds, setRemovedAds] = useState([]);
   // Hint and Help State
   const [showHelp, setShowHelp] = useState(false); // Toggle for displaying help hints
 
@@ -40,6 +45,11 @@ const AdCanvas = () => {
       colSpan: 1,
     })),
   );
+
+  // Sidebar
+  const handleSidebarStateChange = (isOpen) => {
+    setSidebarOpen(isOpen);
+  };
 
   // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Controls delete modal visibility
@@ -93,30 +103,17 @@ const AdCanvas = () => {
         const item = selectedLayout.gridItems.find((gi) => gi.index === index);
 
         if (item) {
-          // If the item is not merged, remove merge-related attributes
-          if (!item.isMerged) {
-            return {
-              ...item,
-              isMerged: false,
-              hidden: false,
-              rowSpan: 1,
-              colSpan: 1,
-              mergeDirection: null,
-              selectedCells: [],
-            };
-          }
+          // Process scheduledAds to ensure they have adId
+          const scheduledAds = (item.scheduledAds || []).map((scheduledAd) => ({
+            ...scheduledAd,
+            id: scheduledAd.id || uuidv4(),
+            adId: scheduledAd.adId, // Ensure adId is set
+            // Remove nested ad object if present
+          }));
 
-          // If the item is merged, retain the necessary merge attributes
           return {
             ...item,
-            scheduledAds: item.scheduledAds.map((scheduledAd) => ({
-              ...scheduledAd,
-              id: scheduledAd.id || uuidv4(),
-              ad: {
-                ...scheduledAd.ad,
-                id: scheduledAd.ad.adId || uuidv4(),
-              },
-            })),
+            scheduledAds,
             isMerged: item.isMerged || false,
             hidden: item.hidden || false,
             rowSpan: item.rowSpan || 1,
@@ -145,6 +142,61 @@ const AdCanvas = () => {
       setGridItems(newGridItems);
       console.log("Updated Grid Items State:", newGridItems);
       setIsSelectingLayout(false);
+
+      // Move fetchAdDetails inside useEffect
+      const fetchAdDetails = async (gridItems) => {
+        try {
+          // Collect all unique adIds from scheduledAds
+          const adIdsSet = new Set();
+          gridItems.forEach((item) => {
+            item.scheduledAds.forEach((scheduledAd) => {
+              if (scheduledAd.adId) {
+                adIdsSet.add(scheduledAd.adId);
+              }
+            });
+          });
+          const adIds = Array.from(adIdsSet);
+
+          if (adIds.length === 0) {
+            return;
+          }
+
+          // Fetch ad details from the backend
+          const response = await axios.post(`${apiUrl}/api/ads/batchGet`, {
+            adIds,
+          });
+          const ads = response.data;
+
+          // Create a map of adId to ad details
+          const adsMap = {};
+          ads.forEach((ad) => {
+            adsMap[ad.adId] = ad;
+          });
+
+          setAdDetailsMap(adsMap);
+
+          // Attach ad details to scheduledAds
+          const updatedGridItems = gridItems.map((item) => {
+            const updatedScheduledAds = item.scheduledAds.map(
+              (scheduledAd) => ({
+                ...scheduledAd,
+                ad: adsMap[scheduledAd.adId] || null,
+              }),
+            );
+            return {
+              ...item,
+              scheduledAds: updatedScheduledAds,
+            };
+          });
+
+          setGridItems(updatedGridItems);
+        } catch (error) {
+          console.error("Error fetching ad details:", error);
+          showAlert("Failed to load ad details. Please try again.");
+        }
+      };
+
+      fetchAdDetails(newGridItems);
     }
   }, [selectedLayout]);
 
@@ -192,6 +244,37 @@ const AdCanvas = () => {
   // Function to handle the creation of a new layout
   const handleOpenSelector = async () => {
     setIsNamingLayout(true);
+  };
+
+  const handleSelectCell = (index, checked) => {
+    if (checked) {
+      setSelectedCells((prev) => [...prev, index]);
+    } else {
+      setSelectedCells((prev) => prev.filter((i) => i !== index));
+    }
+
+    // Update selection mode based on current selections
+    if (checked) {
+      setIsSelectionMode(true);
+    } else if (selectedCells.length === 1 && selectedMergedCells.length === 0) {
+      setIsSelectionMode(false);
+    }
+  };
+
+  // Function to handle the selection of merged cells
+  const handleSelectMerged = (index, checked) => {
+    if (checked) {
+      setSelectedMergedCells((prev) => [...prev, index]);
+    } else {
+      setSelectedMergedCells((prev) => prev.filter((i) => i !== index));
+    }
+
+    // Update selection mode based on current selections
+    if (checked) {
+      setIsSelectionMode(true);
+    } else if (selectedMergedCells.length === 1 && selectedCells.length === 0) {
+      setIsSelectionMode(false);
+    }
   };
 
   // Function to handle the creation of a new layout
@@ -512,48 +595,6 @@ const AdCanvas = () => {
     }
   };
 
-  // Function to handle the selection of cells
-  const handleCellSelection = (index) => {
-    const cell = gridItems[index];
-
-    // If the cell is merged
-    if (cell.isMerged && !cell.hidden) {
-      // For merged cells
-      setSelectedMergedCells((prev) => {
-        if (prev.includes(index)) {
-          // If the cell is already selected, remove it from the selection
-          const newSelection = prev.filter((i) => i !== index);
-          // If there are no more selected merged cells, exit selection mode
-          if (newSelection.length === 0) {
-            setIsSelectionMode(false);
-          }
-          return newSelection;
-        }
-        return [...prev, index];
-      });
-      setIsSelectionMode(true);
-      return;
-    }
-
-    // For non-merged cells
-    if (!cell.hidden) {
-      setSelectedCells((prev) => {
-        if (prev.includes(index)) {
-          // If the cell is already selected, remove it from the selection
-          const newSelection = prev.filter((i) => i !== index);
-          if (newSelection.length === 0) {
-            setIsSelectionMode(false);
-          }
-          return newSelection;
-        }
-        return [...prev, index];
-      });
-      if (!isSelectionMode) {
-        setIsSelectionMode(true);
-      }
-    }
-  };
-
   // Function to handle the merging of selected cells
   const handleMergeSelected = () => {
     // Case 1: Single merged cell selected - unmerge it
@@ -666,65 +707,47 @@ const AdCanvas = () => {
 
   // Function to handle the scheduling of ads
   const handleScheduleSave = (adItem, scheduledTime, index) => {
-    if (!adItem.content) {
-      console.error("AdItem is missing the 'content' property:", adItem);
-      showAlert("Failed to schedule the ad. Missing content information.");
+    if (!adItem.adId) {
+      console.error("AdItem is missing the 'adId' property:", adItem);
+      showAlert("Failed to schedule the ad. Missing adId.");
       return;
     }
-    // Create a deep copy of the gridItems state to prevent accidental state mutation
     const updatedGrid = [...gridItems];
-    // Define the scheduled ad object
     const scheduledAd = {
       id: uuidv4(),
-      ad: {
-        ...adItem,
-        adId: adItem.adId || uuidv4(), // Ensure `adId` is assigned
-      },
-      scheduledTime, // Store the selected scheduled time
+      adId: adItem.adId,
+      scheduledTime,
+      ad: adItem, // Optionally include ad details for local use
     };
-    // Update the grid cell with the scheduled ad
     updatedGrid[index].scheduledAds.push(scheduledAd);
     setGridItems(updatedGrid);
+
+    // Update adDetailsMap
+    setAdDetailsMap((prevMap) => ({
+      ...prevMap,
+      [adItem.adId]: adItem,
+    }));
+
     setIsScheduling(false);
     setCurrentScheduleAd(null);
   };
 
   // Handles removing ads from a grid cell
   const handleRemove = (index, scheduledAd) => {
-    // Create a deep copy of the gridItems state to prevent accidental state mutation
-    const updatedGrid = gridItems.map((item) => ({
-      ...item,
-      scheduledAds: item.scheduledAds ? [...item.scheduledAds] : [], // Ensure each scheduledAds is properly cloned
-    }));
-
+    const updatedGrid = [...gridItems];
     const cell = updatedGrid[index];
 
-    // Check if the scheduledAd has a unique identifier to remove the specific one
+    // Update scheduledAds within the local grid state
     if (cell.scheduledAds && cell.scheduledAds.length > 0) {
       updatedGrid[index].scheduledAds = cell.scheduledAds.filter(
         (ad) => ad.id !== scheduledAd.id,
       );
     }
 
-    // Ensure that the removal logic properly considers the updated state of scheduledAds
-    if (updatedGrid[index].scheduledAds.length === 0 && cell.isMerged) {
-      const cellsToUnmerge =
-        cell.selectedCells && cell.selectedCells.length > 0
-          ? cell.selectedCells
-          : [index];
+    // Add the removed ad to removedAds to track it for future deletion upon save
+    setRemovedAds((prev) => [...prev, scheduledAd]);
 
-      cellsToUnmerge.forEach((idx) => {
-        updatedGrid[idx] = {
-          scheduledAds: [],
-          isMerged: false,
-          hidden: false,
-          rowSpan: 1,
-          colSpan: 1,
-        };
-      });
-    }
-
-    // Update the state with the new grid configuration
+    // Update the gridItems state
     setGridItems(updatedGrid);
   };
 
@@ -742,6 +765,24 @@ const AdCanvas = () => {
             "Content-Type": "application/json",
           },
         });
+
+        // Delete scheduledAds that were marked for removal
+        for (const removedAd of removedAds) {
+          try {
+            await axios.delete(`${apiUrl}/api/scheduledAds`, {
+              data: {
+                gridItemId: removedAd.gridItemId,
+                scheduledTime: removedAd.scheduledTime,
+              },
+            });
+          } catch (error) {
+            console.error("Error deleting scheduled ad:", error);
+          }
+        }
+
+        // Reset the removedAds state after successfully saving
+        setRemovedAds([]);
+
         showAlert("Layout updated successfully!");
       } else {
         // Save a new layout
@@ -752,6 +793,7 @@ const AdCanvas = () => {
         });
         showAlert("Layout saved successfully!");
       }
+
       setIsNamingLayout(false);
       fetchLayouts();
     } catch (error) {
@@ -765,7 +807,6 @@ const AdCanvas = () => {
     const { rows, columns, gridItems } = layout;
     const totalCells = rows * columns;
     const cleanedGridItems = [];
-    // Loop through each grid item and clean up the data
     for (let index = 0; index < totalCells; index++) {
       const item = gridItems[index] || {
         index,
@@ -779,26 +820,16 @@ const AdCanvas = () => {
         mergeDirection: null,
         selectedCells: [],
       };
-      // Clean up the scheduled ads for each grid item
       const cleanedItem = {
         index,
         row: item.row,
         column: item.column,
-        scheduledAds: (item.scheduledAds || []).map((scheduledAd) => {
-          const ad = scheduledAd.ad;
-          const isNewAd = ad.id && ad.id.startsWith("sidebar-");
-          const adData = {
-            adId: isNewAd ? uuidv4() : ad.adId,
-            type: ad.type.toLowerCase(),
-            content: { ...ad.content },
-            styles: { ...ad.styles },
-          };
-          return {
-            id: scheduledAd.id,
-            scheduledTime: scheduledAd.scheduledTime,
-            ad: adData,
-          };
-        }),
+        scheduledAds: (item.scheduledAds || []).map((scheduledAd) => ({
+          id: scheduledAd.id,
+          scheduledTime: scheduledAd.scheduledTime,
+          adId: scheduledAd.adId,
+          ad: scheduledAd.ad, // Include the ad object
+        })),
         isMerged: item.isMerged,
         rowSpan: item.rowSpan,
         colSpan: item.colSpan,
@@ -806,10 +837,8 @@ const AdCanvas = () => {
         selectedCells: item.selectedCells,
         hidden: item.hidden,
       };
-      // Add the cleaned item to the list
       cleanedGridItems.push(cleanedItem);
     }
-    // Return the cleaned layout object
     return {
       layoutId: layout.layoutId,
       name: layout.name,
@@ -821,28 +850,17 @@ const AdCanvas = () => {
 
   // Function to handle the editing of ads
   const handleEdit = (index, scheduledAd) => {
-    let actualIndex = index;
-    if (gridItems[index].hidden) {
-      // Find the main cell for editing
-      actualIndex = gridItems.findIndex((item) => {
-        return (
-          !item.hidden &&
-          item.isMerged &&
-          item.selectedCells &&
-          item.selectedCells.includes(index)
-        );
-      });
-      if (actualIndex === -1) {
-        showAlert("Could not find the main cell for editing.");
-        return;
-      }
+    // Ensure ad details are present
+    const adDetails = scheduledAd.ad || adDetailsMap[scheduledAd.adId];
+    if (!adDetails) {
+      showAlert("Ad details not found for editing.");
+      return;
     }
-    // Update the current ad state with the selected ad
     setCurrentAd({
-      index: actualIndex,
+      index,
       scheduledAd: {
         ...scheduledAd,
-        scheduledTime: scheduledAd.scheduledTime || "00:00", // Ensure it keeps the correct time or defaults to "00:00"
+        ad: adDetails,
       },
     });
     setIsEditing(true);
@@ -864,37 +882,38 @@ const AdCanvas = () => {
   const handleSave = (updatedAdData, updatedScheduledTime) => {
     setGridItems((prevGridItems) => {
       const updatedGrid = [...prevGridItems];
-      // Check if the current ad is in a hidden cell
       let mainIndex = currentAd.index;
       if (updatedGrid[mainIndex].hidden) {
-        // Find the main cell for editing
         mainIndex = getMainCellIndex(mainIndex);
         if (mainIndex === -1) {
           showAlert("Could not find the main cell for saving.");
           return prevGridItems;
         }
       }
-      // Update the scheduled ad with the new data
       const cellToUpdate = { ...updatedGrid[mainIndex] };
       const scheduledAds = cellToUpdate.scheduledAds.map((ad) =>
         ad.id === currentAd.scheduledAd.id
           ? {
               ...ad,
+              scheduledTime: updatedScheduledTime,
               ad: {
                 ...ad.ad,
                 ...updatedAdData,
               },
-              scheduledTime: updatedScheduledTime,
             }
           : ad,
       );
-      // Update the cell with the new scheduled ads
       cellToUpdate.scheduledAds = scheduledAds;
       updatedGrid[mainIndex] = cellToUpdate;
-      // Return the updated grid
+
+      // Update adDetailsMap
+      setAdDetailsMap((prevMap) => ({
+        ...prevMap,
+        [updatedAdData.adId]: updatedAdData,
+      }));
+
       return updatedGrid;
     });
-    // Reset the editing state
     setIsEditing(false);
     setCurrentAd(null);
   };
@@ -995,6 +1014,7 @@ const AdCanvas = () => {
 
   const isMergeButtonActive =
     selectedCells.length >= 2 || selectedMergedCells.length >= 1;
+
   const mergeButtonTooltip =
     selectedMergedCells.length === 1
       ? "Click to merge/unmerge selected cells"
@@ -1019,168 +1039,220 @@ const AdCanvas = () => {
     }
   }
 
+  // Responsive Ad Canvas with Sidebar
+  useEffect(() => {
+    const updateDimensions = () => {
+      setRatio(window.innerHeight / window.innerWidth);
+    };
+    window.addEventListener("resize", updateDimensions);
+    updateDimensions();
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
+
+  const isVertical = ratio > 1;
+
   return (
-    <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center pt-[10vh] text-center">
-      <div className="text-3xl font-bold text-black dark:text-white">
-        Current Aspect Ratio: {aspectRatio}
-      </div>
-
-      <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
-        <CircleHelp
-          className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
-            showHelp ? "text-orange-500" : "text-gray-600"
-          }`}
-          fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
-          strokeWidth={2}
-          onClick={() => setShowHelp(!showHelp)}
-        />
-      </div>
-      <div className="flex w-full max-w-[75vw] flex-row items-stretch justify-center gap-2 pt-[-2]">
-        {/* Decrease Columns button */}
-        <div className="group flex flex-col justify-center">
-          <div
-            id="remCols"
-            data-tooltip-id="remCols-tooltip"
-            data-tooltip-content={tooltips.remCols}
-            onClick={decreaseColumns}
-            className="flex h-5/6 w-4 items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
-          >
-            <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-              -
-            </span>
-          </div>
-        </div>
-
-        {/* Grid Container with aspect ratio wrapper */}
-        <div className="flex w-80 flex-1 flex-col">
-          {/* Decrease Rows button */}
-          <div className="group py-2">
-            <div
-              id="remRows"
-              data-tooltip-id="remRows-tooltip"
-              data-tooltip-content={tooltips.remRows}
-              onClick={decreaseRows}
-              className="flex h-4 w-full items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
-            >
-              <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-                -
-              </span>
-            </div>
-          </div>
-
-          {/* Aspect ratio container */}
-          <div className="relative h-full w-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
-            {/* Grid cells container */}
-            <div
-              className="absolute left-0 top-0 grid h-full w-full auto-rows-fr gap-2.5"
-              style={{
-                gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
-                gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
-                gridAutoFlow: "dense",
-                "--rows": rows,
-                "--columns": columns,
-              }}
-            >
-              {/*Loop through each grid item and render the grid cell*/}
-              {gridItems.map((item, index) => {
-                const rowIndex = Math.floor(index / columns);
-                const colIndex = index % columns;
-                // Render each grid cell
-                return (
-                  <GridCell
-                    key={index}
-                    index={index}
-                    rowIndex={rowIndex}
-                    colIndex={colIndex}
-                    item={item}
-                    onDrop={handleDrop}
-                    onRemove={handleRemove}
-                    onEdit={handleEdit}
-                    onMerge={handleMerge}
-                    isSelected={selectedCells.includes(index)}
-                    onSelect={handleCellSelection}
-                    isSelectionMode={isSelectionMode}
-                    setIsSelectionMode={setIsSelectionMode}
-                    columns={columns}
-                    totalCells={totalCells}
-                    onUnmerge={handleUnmerge}
-                    showHelp={showHelp}
-                    getMainCellIndex={getMainCellIndex}
-                  />
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Increase Rows button */}
-          <div className="group py-2">
-            <div
-              id="addRows"
-              data-tooltip-id="addRows-tooltip"
-              data-tooltip-content={tooltips.addRows}
-              onClick={increaseRows}
-              className="flex h-4 w-full items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
-            >
-              <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-                +
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Increase Columns button */}
-        <div className="group flex flex-col justify-center">
-          <div
-            id="addCols"
-            data-tooltip-id="addCols-tooltip"
-            data-tooltip-content={tooltips.addCols}
-            onClick={increaseColumns}
-            className="flex h-5/6 w-4 items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
-          >
-            <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-              +
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Popup when in selection mode */}
-      <SelectionModePopup isVisible={isSelectionMode} />
-
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Navigation buttons */}
-      <div className="mx-auto flex w-4/5 flex-row justify-between py-4 lg:py-8">
-        <MoveLeft
-          onClick={handleMoveLeft}
-          className="h-8 w-16 rounded-lg bg-orange-500 py-1 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
-        />
-
+    <div className="flex h-full max-w-[100vw] flex-col overflow-y-auto overflow-x-hidden light-bg dark:dark-bg">
+      <div
+        className={`flex ${isVertical ? "flex-col" : "flex-row"} min-h-full w-full`}
+      >
         <div
-          id="merge"
-          data-tooltip-id="merge-tooltip"
-          data-tooltip-content={mergeButtonTooltip}
+          className={`flex flex-col ${
+            isVertical
+              ? `${sidebarOpen ? "h-[50vh]" : "h-[66.666667%]"} w-full transition-all duration-300`
+              : "h-full w-full"
+          }`}
         >
-          {/* Merge button */}
-          <Merge
-            onClick={handleMergeSelected}
-            disabled={!isMergeButtonActive}
-            className={`h-8 w-16 rounded-lg py-2 text-white transition-colors duration-300 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
-              !isMergeButtonActive
-                ? "cursor-not-allowed bg-gray-400"
-                : "bg-orange-500 hover:cursor-pointer hover:bg-orange-600"
-            }`}
-          />
+          <div
+            className={`transition-all duration-300 ${
+              isVertical
+                ? "mx-auto w-[90vw]"
+                : sidebarOpen
+                  ? "ml-[27vw] w-[65vw] px-4"
+                  : "ml-[5vw] w-[90vw]"
+            } flex min-h-full flex-col items-center overflow-hidden`}
+          >
+            {/* Aspect Ratio */}
+            <div className="mt-24 text-3xl font-bold primary-text dark:secondary-text md:mt-28">
+              Current Aspect Ratio: {aspectRatio}
+            </div>
+
+            {/* Help Icon */}
+            <div className="absolute right-4 top-[calc(9rem+1rem)] z-10 xl:top-[calc(9rem+3rem)]">
+              <CircleHelp
+                className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
+                  showHelp ? "accent-text" : "neutral-text"
+                }`}
+                fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
+                strokeWidth={2}
+                onClick={() => setShowHelp(!showHelp)}
+              />
+            </div>
+
+            {/* Grid cells */}
+            <div className="relative flex w-full max-w-[75vw] flex-col items-center">
+              <div className="flex w-full flex-row items-stretch justify-center gap-2">
+                {/* Decrease Columns button */}
+                <div className="group flex flex-col justify-center">
+                  <div
+                    id="remCols"
+                    data-tooltip-id="remCols-tooltip"
+                    data-tooltip-content={tooltips.remCols}
+                    onClick={decreaseColumns}
+                    className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+                  >
+                    <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                      -
+                    </span>
+                  </div>
+                </div>
+
+                {/* Grid Container */}
+                <div className="flex w-80 flex-1 flex-col">
+                  {/* Decrease Rows button */}
+                  <div className="group py-2">
+                    <div
+                      id="remRows"
+                      data-tooltip-id="remRows-tooltip"
+                      data-tooltip-content={tooltips.remRows}
+                      onClick={decreaseRows}
+                      className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                    >
+                      <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                        -
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Aspect ratio container */}
+                  <div className="relative h-full w-full pb-[56.5%] md:pb-[45%] lg:pb-[50%]">
+                    {/* Grid cells container */}
+                    <div
+                      className="absolute left-0 top-0 grid h-full w-full auto-rows-fr gap-2.5"
+                      style={{
+                        gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
+                        gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
+                        gridAutoFlow: "dense",
+                        "--rows": rows,
+                        "--columns": columns,
+                      }}
+                    >
+                      {gridItems.map((item, index) => {
+                        const rowIndex = Math.floor(index / columns);
+                        const colIndex = index % columns;
+                        return (
+                          <GridCell
+                            key={index}
+                            index={index}
+                            rowIndex={rowIndex}
+                            colIndex={colIndex}
+                            item={item}
+                            onDrop={handleDrop}
+                            onRemove={handleRemove}
+                            onEdit={handleEdit}
+                            onMerge={handleMerge}
+                            onUnmerge={handleUnmerge}
+                            onSelect={handleSelectCell} // For individual cells
+                            onSelectMerged={handleSelectMerged} // For merged cells
+                            isSelectionMode={isSelectionMode}
+                            setIsSelectionMode={setIsSelectionMode}
+                            selectedCells={selectedCells}
+                            selectedMergedCells={selectedMergedCells} // Pass selectedMergedCells
+                            columns={columns}
+                            totalCells={totalCells}
+                            showHelp={showHelp}
+                            getMainCellIndex={getMainCellIndex}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Increase Rows button */}
+                  <div className="group py-2">
+                    <div
+                      id="addRows"
+                      data-tooltip-id="addRows-tooltip"
+                      data-tooltip-content={tooltips.addRows}
+                      onClick={increaseRows}
+                      className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                    >
+                      <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                        +
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Increase Columns button */}
+                <div className="group flex flex-col justify-center">
+                  <div
+                    id="addCols"
+                    data-tooltip-id="addCols-tooltip"
+                    data-tooltip-content={tooltips.addCols}
+                    onClick={increaseColumns}
+                    className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+                  >
+                    <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                      +
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation buttons */}
+              <div className="mb-[5vh] mt-[5vh] flex w-11/12 flex-row justify-between">
+                <MoveLeft
+                  onClick={handleMoveLeft}
+                  className="h-8 w-16 rounded-lg py-1 primary-bg secondary-text hover:cursor-pointer hover:secondary-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+                />
+
+                <div
+                  id="merge"
+                  data-tooltip-id="merge-tooltip"
+                  data-tooltip-content={mergeButtonTooltip}
+                >
+                  <Merge
+                    onClick={handleMergeSelected}
+                    disabled={!isMergeButtonActive}
+                    className={`h-8 w-16 rounded-lg py-2 transition-colors duration-300 secondary-text sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
+                      !isMergeButtonActive
+                        ? "cursor-not-allowed neutralalt-bg"
+                        : "primary-bg hover:cursor-pointer hover:secondary-bg"
+                    }`}
+                  />
+                </div>
+
+                <Check
+                  onClick={handleOpenSelector}
+                  className="h-8 w-16 rounded-lg py-1.5 primary-bg secondary-text hover:cursor-pointer hover:secondary-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
+                />
+              </div>
+            </div>
+
+            {/* Selection mode popup */}
+            <SelectionModePopup isVisible={isSelectionMode} />
+          </div>
+
+          <div
+            className={`flex ${
+              isVertical
+                ? `${sidebarOpen ? "h-[50vh]" : "h-[33.333333%]"} w-full`
+                : "h-full"
+            } transition-all duration-300`}
+          >
+            <CollapsibleSidebar
+              layouts={layouts}
+              onSelectLayout={handleSelectLayout}
+              onDeleteLayoutClick={handleDeleteLayoutClick}
+              onStateChange={handleSidebarStateChange}
+              isVertical={isVertical}
+            />
+          </div>
         </div>
-        {/* Check render*/}
-        <Check
-          onClick={handleOpenSelector}
-          className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
-        />
       </div>
 
-      {/* Tooltip components */}
+      {/* Tooltips */}
       <Tooltip id="sidebar-tooltip" {...tooltipPropsRight} />
       <Tooltip id="merge-tooltip" {...tooltipPropsRight} />
       <Tooltip id="addRows-tooltip" {...tooltipPropsRight} />
@@ -1195,7 +1267,6 @@ const AdCanvas = () => {
           onClose={() => setIsNamingLayout(false)}
         />
       )}
-      {/* Edit Modal */}
       {isEditing && currentAd && currentAd.scheduledAd && (
         <EditModal
           ad={currentAd.scheduledAd.ad}
@@ -1207,11 +1278,10 @@ const AdCanvas = () => {
           }}
         />
       )}
-      {/* Schedule Modal */}
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
           ad={currentScheduleAd.item}
-          scheduledTime={currentScheduleAd.scheduledTime} // Pass scheduledTime to modal
+          scheduledTime={currentScheduleAd.scheduledTime}
           onSave={(scheduledDateTime) =>
             handleScheduleSave(
               currentScheduleAd.item,
@@ -1237,13 +1307,6 @@ const AdCanvas = () => {
         title={alertConfig.title}
         message={alertConfig.message}
         type={alertConfig.type}
-      />
-
-      {/* LayoutSelector */}
-      <LayoutSelector
-        layouts={layouts}
-        onSelect={handleSelectLayout}
-        onDeleteLayoutClick={handleDeleteLayoutClick}
       />
 
       {/* Delete Confirmation Modal */}
