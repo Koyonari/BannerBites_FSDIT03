@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Modal from "../Modal/Modal";
 import StyledAlert from "../StyledAlert";
 
+// SaveLayoutModal is a modal popup that allows the user to save the current layout
 const SaveLayoutModal = ({ onSave, onClose }) => {
   const [layoutName, setLayoutName] = useState("");
   const [alertConfig, setAlertConfig] = useState({
@@ -11,7 +12,7 @@ const SaveLayoutModal = ({ onSave, onClose }) => {
     message: "",
     type: "info",
   });
-
+  // showAlert is a function that displays an alert message
   const showAlert = (message, title = "Alert", type = "info") => {
     setAlertConfig({
       isOpen: true,
@@ -20,7 +21,7 @@ const SaveLayoutModal = ({ onSave, onClose }) => {
       type,
     });
   };
-
+  // handleSave is a function that saves the current layout
   const handleSave = () => {
     if (layoutName.trim() === "") {
       showAlert("Please enter a name for the layout.");
@@ -35,7 +36,7 @@ const SaveLayoutModal = ({ onSave, onClose }) => {
         <b>Save Layout</b>
       </h2>
       <input
-        className="mt-3 rounded-md border border-gray-300 text-sm"
+        className="mt-3 rounded-md border text-sm secondary-border"
         type="text"
         value={layoutName}
         onChange={(e) => setLayoutName(e.target.value)}
@@ -44,7 +45,7 @@ const SaveLayoutModal = ({ onSave, onClose }) => {
       />
       <div style={{ textAlign: "right" }} className="text-xs lg:text-sm">
         <button
-          className="rounded-md bg-orange-500 p-1 px-2.5 text-white"
+          className="primary-bg rounded-md p-1 px-2.5 secondary-text"
           onClick={handleSave}
           style={{ marginRight: "10px" }}
         >

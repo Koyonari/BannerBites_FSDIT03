@@ -1,15 +1,6 @@
-const { DynamoDBClient, ScanCommand } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
-
-// Initialize DynamoDB Client
-const dynamoDbClient = new DynamoDBClient({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
-const dynamoDb = DynamoDBDocumentClient.from(dynamoDbClient);
+// Import DynamoDB Document Client from the middleware
+const { dynamoDb } = require('../middleware/awsClients');
+const { ScanCommand } = require('@aws-sdk/client-dynamodb');
 
 // Function to get user by username
 const getUserByUsername = async (username) => {
@@ -32,7 +23,7 @@ const getUserByUsername = async (username) => {
       username: item.username.S,
       password: item.password.S,
       roles: item.roles ? item.roles.M : null,
-      userId: item.userId.S
+      userId: item.userId.S,
     };
   } else {
     throw new Error("User not found");

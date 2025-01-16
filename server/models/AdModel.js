@@ -1,24 +1,25 @@
 // models/AdModel.js
-const { PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, BatchGetCommand } = require("@aws-sdk/lib-dynamodb");
 const { dynamoDb } = require("../middleware/awsClients");
+const tableName = process.env.DYNAMODB_TABLE_ADS;
 
 const AdModel = {
-  // Retrieve an ad by adId
+  // Function to retrieve an ad by adId
   getAdById: async (adId) => {
     try {
       console.log(`Fetching Ad with adId: ${adId}, type of adId: ${typeof adId}`);
-  
+      // Define the key for the GetCommand
       const key = {
         adId: adId, // Ensure this matches your DynamoDB key schema exactly
       };
   
       console.log(`Using key for GetCommand in Ads table: ${JSON.stringify(key)}`);
-  
+      // Use the GetCommand to fetch the Ad from DynamoDB
       const adResult = await dynamoDb.send(new GetCommand({
         TableName: process.env.DYNAMODB_TABLE_ADS,
         Key: key,
       }));
-  
+      // Check if the Ad was found
       if (!adResult.Item) {
         console.error(`No Ad found with adId: ${adId}`);
         return null; // Ad not found
@@ -33,9 +34,38 @@ const AdModel = {
     }
   },
 
-  // Save or update an ad using adId
+  // Function to retrieve all ads
+  getAdsByIds: async (adIds) => {
+    if (!adIds || adIds.length === 0) {
+      return [];
+    }
+
+    try {
+      const keys = adIds.map((adId) => ({ adId }));
+
+      const params = {
+        RequestItems: {
+          [process.env.DYNAMODB_TABLE_ADS]: {
+            Keys: keys,
+          },
+        },
+      };
+
+      const command = new BatchGetCommand(params);
+      const response = await dynamoDb.send(command);
+
+      const ads = response.Responses[process.env.DYNAMODB_TABLE_ADS];
+      return ads || [];
+    } catch (error) {
+      console.error(`Error fetching ads by adIds: ${adIds}`, error);
+      throw error;
+    }
+  },
+
+  // Function to save or update an ad using adId
   saveAd: async (ad) => {
     console.log(`Saving/Updating Ad with adId: ${ad.adId}`);
+    // Define the parameters for the UpdateCommand
     const params = {
       TableName: process.env.DYNAMODB_TABLE_ADS,
       Key: { adId: ad.adId }, // Use 'adId' instead of 'id'
@@ -62,15 +92,17 @@ const AdModel = {
         ":createdAt": ad.createdAt || new Date().toISOString(),
       },
     };
-    const command = new UpdateCommand(params);
+    // Use the UpdateCommand to save or update the Ad in DynamoDB
+    const command = new PutCommand(params);
     const result = await dynamoDb.send(command);
     console.log(`Ad ${ad.adId} saved/updated successfully.`);
     return result;
   },
 
-  // Optional: Explicit update method using adId
+  // Function to update an ad explicitly
   updateAd: async (ad) => {
     console.log(`Explicitly updating Ad with adId: ${ad.adId}`);
+    // Define the parameters for the UpdateCommand
     const params = {
       TableName: process.env.DYNAMODB_TABLE_ADS,
       Key: { adId: ad.adId }, // Use 'adId' instead of 'id'
@@ -94,17 +126,21 @@ const AdModel = {
         ":updatedAt": new Date().toISOString(),
       },
     };
+    // Use the UpdateCommand to explicitly update the Ad in DynamoDB
     const command = new UpdateCommand(params);
     const result = await dynamoDb.send(command);
     console.log(`Ad ${ad.adId} explicitly updated successfully.`);
     return result;
   },
   
+  // Function to delete ad by adId
   deleteAdById: async (adId) => {
+    // Define the parameters for the DeleteCommand
     const params = {
       TableName: process.env.DYNAMODB_TABLE_ADS,
       Key: { adId },
     };
+    // Use the DeleteCommand to delete the Ad from DynamoDB
     const command = new DeleteCommand(params);
     try {
       await dynamoDb.send(command);
