@@ -28,6 +28,7 @@ In recent years, the advertising industry has undergone significant
   -2. Real time communication
   -3. Improved UI/UX for Operators
 
+
 ## Project Structure
 
 - **Frontend**: React.js for the user interface, incorporating libraries for AWS integration, WebSocket, and UI styling.
