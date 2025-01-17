@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
-import { HomeIcon, LayoutList, CircleUserRound, ImagePlus } from "lucide-react";
+import { HomeIcon, LayoutList, CircleUserRound, ImagePlus, UserRoundPen } from "lucide-react";
 import Hamburger from "hamburger-react";
 import { useNavigate } from "react-router-dom";
 import React from "react";
@@ -89,6 +89,10 @@ function Navbar() {
             <CircleUserRound
               className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
               onClick={() => navigate("/login")}
+            />
+            <UserRoundPen
+              className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
+              onClick={() => navigate("/customrole")}
             />
             <DarkModeSwitch
               checked={isDarkMode}
