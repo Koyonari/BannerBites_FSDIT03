@@ -6,7 +6,7 @@ import KalmanFilter from "../../utils/KalmanFilter";
 const GazeTrackingComponent = ({
   isActive,
   onGaze,
-  smoothingMethod = "kalman", // "kalman" or "movingAverage"
+  smoothingMethod = "kalman", // Options: "kalman" or "movingAverage"
   smoothingWindow = 10,
   minMove = 0,
 }) => {
@@ -25,29 +25,29 @@ const GazeTrackingComponent = ({
     if (isActive) {
       WebGazerSingleton.initialize((data) => {
         if (!data) return;
-
         let output;
         if (smoothingMethod === "kalman") {
           const filteredX = kalmanFilterXRef.current.filter(data.x);
           const filteredY = kalmanFilterYRef.current.filter(data.y);
           output = { x: filteredX, y: filteredY };
         } else {
-          // Use simple moving average as fallback
+          // Fallback: simple moving average.
           const buffer = movingBufferRef.current;
           buffer.push({ x: data.x, y: data.y });
           if (buffer.length > smoothingWindow) buffer.shift();
           let sumX = 0, sumY = 0;
-          buffer.forEach(pt => { sumX += pt.x; sumY += pt.y; });
+          buffer.forEach(pt => {
+            sumX += pt.x;
+            sumY += pt.y;
+          });
           output = { x: sumX / buffer.length, y: sumY / buffer.length };
         }
-
         if (minMove > 0 && lastOutputRef.current.x !== null) {
           const dx = output.x - lastOutputRef.current.x;
           const dy = output.y - lastOutputRef.current.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < minMove) return;
         }
-
         lastOutputRef.current = output;
         onGaze(output);
       })

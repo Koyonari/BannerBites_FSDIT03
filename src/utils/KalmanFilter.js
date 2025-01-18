@@ -1,14 +1,13 @@
 // src/utils/KalmanFilter.js
 export default class KalmanFilter {
   constructor({ R = 0.05, Q = 1, A = 1, B = 0, C = 1 } = {}) {
-    this.R = R; // measurement noise variance
-    this.Q = Q; // process noise variance
-    this.A = A; // state transition coefficient
-    this.B = B; // control coefficient, typically 0 in our case
-    this.C = C; // measurement coefficient
-
+    this.R = R; // Measurement noise variance.
+    this.Q = Q; // Process noise variance.
+    this.A = A;
+    this.B = B;
+    this.C = C;
     this.cov = NaN;
-    this.x = NaN; // estimated signal (e.g., gaze coordinate)
+    this.x = NaN; // Estimated value.
   }
 
   filter(z, u = 0) {

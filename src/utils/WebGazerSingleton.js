@@ -11,10 +11,10 @@ class WebGazerSingleton {
     }
     try {
       const { default: webgazer } = await import("webgazer");
-      // Set options as recommended by WebGazer
+      // Adjust these settings based on GitHub recommendations and your testing.
       webgazer
-        .setRegression("weightedRidge") // or try "ridge"
-        .setTracker("TFFacemesh")        // experiment with available tracker options
+        .setRegression("weightedRidge") // Try "ridge" if necessary
+        .setTracker("TFFacemesh")        // Alternatively, check available tracker options
         .saveDataAcrossSessions(true);
       this.modelPreloaded = true;
       console.log("Model preloaded.");

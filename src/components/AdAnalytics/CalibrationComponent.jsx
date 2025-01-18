@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import WebGazerSingleton from "../../utils/WebGazerSingleton";
 
 const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => {
-  // Expanded set of calibration points for improved spatial coverage:
+  // Expanded set of calibration points as recommended in the GitHub wiki and usage guides.
   const points = [
     { xPercent: 10, yPercent: 10 },
     { xPercent: 50, yPercent: 10 },
@@ -22,7 +22,6 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
   const [dotFeedback, setDotFeedback] = useState(false);
 
   useEffect(() => {
-    // Ensure that WebGazer is properly initialized
     (async () => {
       try {
         const wg = await WebGazerSingleton.initialize();
@@ -34,6 +33,7 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
   }, []);
 
   const handleDotClick = async () => {
+    // Provide immediate visual feedback
     setDotFeedback(true);
     setTimeout(() => setDotFeedback(false), 80);
 
@@ -82,7 +82,9 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
           cursor: "pointer",
         }}
       />
-      <p className="mt-4 text-white">Point {currentPointIndex + 1} of {calibrationPoints.length}</p>
+      <p className="mt-4 text-white">
+        Point {currentPointIndex + 1} of {calibrationPoints.length}
+      </p>
       <p className="text-white">Clicks: {clickCount} / {requiredClicks}</p>
     </div>
   );
