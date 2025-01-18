@@ -3,16 +3,17 @@ export default class KalmanFilter {
   constructor({ R = 0.05, Q = 1, A = 1, B = 0, C = 1 } = {}) {
     this.R = R; // measurement noise variance
     this.Q = Q; // process noise variance
-    this.A = A;
-    this.B = B;
-    this.C = C;
+    this.A = A; // state transition coefficient
+    this.B = B; // control coefficient, typically 0 in our case
+    this.C = C; // measurement coefficient
+
     this.cov = NaN;
-    this.x = NaN;
+    this.x = NaN; // estimated signal (e.g., gaze coordinate)
   }
 
   filter(z, u = 0) {
     if (isNaN(this.x)) {
-      this.x = (1 / this.C) * z;
+      this.x = z / this.C;
       this.cov = 1 / this.C;
     } else {
       const predX = this.A * this.x + this.B * u;

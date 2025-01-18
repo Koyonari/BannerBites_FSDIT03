@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import WebGazerSingleton from "../../utils/WebGazerSingleton";
 
 const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => {
-  // Adding more calibration points for better coverage
+  // Expanded set of calibration points for improved spatial coverage:
   const points = [
     { xPercent: 10, yPercent: 10 },
     { xPercent: 50, yPercent: 10 },
@@ -15,13 +15,14 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
     { xPercent: 50, yPercent: 90 },
     { xPercent: 90, yPercent: 90 },
   ];
-
+  
   const [calibrationPoints] = useState(points);
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
   const [clickCount, setClickCount] = useState(0);
   const [dotFeedback, setDotFeedback] = useState(false);
 
   useEffect(() => {
+    // Ensure that WebGazer is properly initialized
     (async () => {
       try {
         const wg = await WebGazerSingleton.initialize();
@@ -55,7 +56,7 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
           setCurrentPointIndex(nextIndex);
           return 0;
         } else {
-          if (onCalibrationComplete) onCalibrationComplete();
+          onCalibrationComplete && onCalibrationComplete();
         }
       }
       return newCount;

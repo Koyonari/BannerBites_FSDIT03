@@ -11,10 +11,10 @@ class WebGazerSingleton {
     }
     try {
       const { default: webgazer } = await import("webgazer");
-      // Experiment with these settings
+      // Set options as recommended by WebGazer
       webgazer
-        .setRegression("weightedRidge") // Or try "ridge" if needed
-        .setTracker("TFFacemesh")        // Some alternative trackers may work better depending on conditions
+        .setRegression("weightedRidge") // or try "ridge"
+        .setTracker("TFFacemesh")        // experiment with available tracker options
         .saveDataAcrossSessions(true);
       this.modelPreloaded = true;
       console.log("Model preloaded.");
@@ -41,7 +41,7 @@ class WebGazerSingleton {
       if (!this.instance) {
         this.instance = webgazer;
         this.instance
-          .setRegression("weightedRidge") // adjust as needed here
+          .setRegression("weightedRidge")
           .setTracker("TFFacemesh")
           .saveDataAcrossSessions(true);
       }
@@ -66,7 +66,7 @@ class WebGazerSingleton {
       this.instance.end();
       this.instance = null;
       this.trackingStarted = false;
-      console.log("Ended successfully.");
+      console.log("Tracking ended successfully.");
     } else {
       console.warn("No active instance to end.");
     }
