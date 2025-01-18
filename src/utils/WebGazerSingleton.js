@@ -1,31 +1,40 @@
+// src/WebGazerSingleton.js
 
-import webgazer from "webgazer";
 class WebGazerSingleton {
   static instance = null;
 
-  static async initialize(onGazeListener) {
+  static async initialize(onGazeListener = null) {
     if (this.instance) {
       console.log("[WebGazerSingleton] Already initialized.");
+      // Optionally update the listener
+      if (onGazeListener) {
+        this.instance.setGazeListener((data, elapsedTime) => {
+          if (data) onGazeListener(data);
+        });
+      }
       return this.instance;
     }
 
     try {
-      const webgazer = await import("webgazer").then((module) => module.default);
+      const webgazerModule = await import("webgazer");
+      const webgazer = webgazerModule.default;
 
       webgazer
         .setRegression("ridge")
         .setTracker("TFFacemesh")
-        .setGazeListener((data, elapsedTime) => {
-          if (data) {
-            onGazeListener(data);
-          }
-        })
         .saveDataAcrossSessions(true);
+
+      // If you provide a listener, attach it.
+      if (onGazeListener) {
+        webgazer.setGazeListener((data, elapsedTime) => {
+          if (data) onGazeListener(data);
+        });
+      }
 
       await webgazer.begin();
       console.log("[WebGazerSingleton] Initialized successfully.");
-      this.instance = webgazer;
 
+      this.instance = webgazer;
       return this.instance;
     } catch (error) {
       console.error("[WebGazerSingleton] Initialization error:", error);
@@ -35,6 +44,7 @@ class WebGazerSingleton {
 
   static end() {
     if (this.instance) {
+      this.instance.clearGazeListener();
       this.instance.end();
       this.instance = null;
       console.log("[WebGazerSingleton] Ended successfully.");

@@ -17,6 +17,7 @@
     "aws-amplify": "^6.6.7",
     "aws-sdk": "^2.1691.0",
     "axios": "^1.7.7",
+    "gazer": "^1.0.0",
     "hamburger-react": "^2.5.1",
     "iodash": "^0.0.1-security",
     "lucide-react": "^0.453.0",

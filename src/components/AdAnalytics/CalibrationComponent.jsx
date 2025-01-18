@@ -1,59 +1,59 @@
-import React, { useState, useEffect } from 'react';
+// src/components/AdAnalytics/CalibrationComponent.jsx
+import React, { useState, useEffect } from "react";
+import WebGazerSingleton from "../../utils/WebGazerSingleton";
 
-const generateRandomPoints = (numPoints) => {
-  return Array.from({ length: numPoints }, () => ({
-    xPercent: Math.random() * 80 + 10,
-    yPercent: Math.random() * 80 + 10,
-  }));
-};
+// A fixed set of calibration points, or random if you prefer
+const cornerPoints = [
+  { xPercent: 10, yPercent: 10 },  // top-left
+  { xPercent: 90, yPercent: 10 },  // top-right
+  { xPercent: 50, yPercent: 50 },  // center
+  { xPercent: 10, yPercent: 90 },  // bottom-left
+  { xPercent: 90, yPercent: 90 },  // bottom-right
+];
 
 const CalibrationComponent = ({ onCalibrationComplete }) => {
-  const [calibrationPoints] = useState(generateRandomPoints(9));
+  const [calibrationPoints] = useState(cornerPoints);
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
   const [clickCount, setClickCount] = useState(0);
+
+  // Number of clicks required per point
   const requiredClicks = 5;
 
   useEffect(() => {
-    let webgazerInstance = null;
-
-    import('webgazer')
-      .then((module) => {
-        webgazerInstance = module.default;
-        webgazerInstance
-          .setRegression('ridge')
-          .saveDataAcrossSessions(true)
-          .begin();
-      })
-      .catch((error) => {
-        console.error('Error initializing WebGazer:', error);
-      });
-
-    return () => {
-      if (webgazerInstance) {
-        webgazerInstance.end();
-        webgazerInstance.clearData();
+    // We can optionally ensure the singleton is loaded
+    (async () => {
+      try {
+        await WebGazerSingleton.initialize();
+      } catch (err) {
+        console.error("Error initializing WebGazer in CalibrationComponent:", err);
       }
-    };
+    })();
+
+    // No cleanup needed here usually
   }, []);
 
-  const handleDotClick = () => {
+  const handleDotClick = async () => {
     const { xPercent, yPercent } = calibrationPoints[currentPointIndex];
     const x = (xPercent / 100) * window.innerWidth;
     const y = (yPercent / 100) * window.innerHeight;
 
-    // Record gaze data for the current point
-    import('webgazer').then((module) => {
-      module.default.recordScreenPosition(x, y);
-    });
+    try {
+      // Get the already loaded instance
+      const wg = await WebGazerSingleton.initialize();
+      wg.recordScreenPosition(x, y);
+    } catch (err) {
+      console.error("Error recording screen position:", err);
+    }
 
     setClickCount((prev) => {
+      // If we’ve hit requiredClicks, move on to next point
       if (prev + 1 >= requiredClicks) {
-        // Move to the next point
+        // Are there more points left?
         if (currentPointIndex + 1 < calibrationPoints.length) {
           setCurrentPointIndex((prevIndex) => prevIndex + 1);
-          return 0; // Reset click count
+          return 0; // reset click count
         } else {
-          // Calibration complete
+          // If no more points, calibration is complete
           onCalibrationComplete();
         }
       }
@@ -62,27 +62,29 @@ const CalibrationComponent = ({ onCalibrationComplete }) => {
   };
 
   return (
-    <div className="calibration-overlay fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center">
+    <div className="calibration-overlay fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-[9999]">
       <p className="mb-4 text-white text-lg">
         Click the dot {requiredClicks} times to calibrate.
       </p>
+
       {currentPointIndex < calibrationPoints.length && (
         <div
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: `${calibrationPoints[currentPointIndex].xPercent}%`,
             top: `${calibrationPoints[currentPointIndex].yPercent}%`,
-            transform: 'translate(-50%, -50%)',
+            transform: "translate(-50%, -50%)",
             width: 20,
             height: 20,
-            borderRadius: '50%',
-            backgroundColor: 'red',
-            border: '2px solid white',
-            cursor: 'pointer',
+            borderRadius: "50%",
+            backgroundColor: clickCount >= requiredClicks - 1 ? "green" : "red",
+            border: "2px solid white",
+            cursor: "pointer",
           }}
           onClick={handleDotClick}
         />
       )}
+
       <p className="mt-4 text-white">
         Point {currentPointIndex + 1} of {calibrationPoints.length}
       </p>
