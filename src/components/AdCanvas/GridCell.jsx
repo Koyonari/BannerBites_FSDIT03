@@ -10,8 +10,8 @@ const Checkbox = ({ checked, onChange, className, showHelp }) => (
     id="cellCheckbox"
     data-tooltip-id="checkbox-tooltip"
     data-tooltip-content="Click to multi-select cells"
-    className={`flex h-4 w-4 cursor-pointer items-center justify-center border-2 bg-white hover:bg-gray-50 ${
-      checked ? "border-orange-500" : "border-gray-300"
+    className={`flex h-4 w-4 cursor-pointer items-center justify-center border-2 light-bg hover:bg-gray-50 ${
+      checked ? "primary-border" : "secondary-border"
     } ${className}`}
     onClick={(e) => {
       e.stopPropagation();
@@ -20,7 +20,7 @@ const Checkbox = ({ checked, onChange, className, showHelp }) => (
   >
     {checked && (
       <svg
-        className="h-3 w-3 text-orange-500"
+        className="h-3 w-3 accent-text"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -62,7 +62,7 @@ const GridCell = ({
         isOver: monitor.isOver(),
       }),
     }),
-    [onDrop, index, rowIndex, colIndex]
+    [onDrop, index, rowIndex, colIndex],
   );
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -218,7 +218,7 @@ const GridCell = ({
           className="flex h-full w-full items-center justify-center"
           style={contentStyle}
         >
-          <p className="text-center text-gray-500 lg:text-2xl">{type} Ad</p>
+          <p className="text-center neutral-text lg:text-2xl">{type} Ad</p>
         </div>
       );
     }
@@ -294,12 +294,7 @@ const GridCell = ({
   return (
     <div
       ref={drop}
-      className={`grid-cell relative box-border flex flex-col gap-2 border border-gray-300 bg-white p-2
-        transition-transform duration-200 ease-in-out hover:bg-orange-50 hover:outline
-        hover:outline-2 hover:outline-offset-[-2px] hover:outline-orange-300
-        ${isOver ? "bg-orange-50 outline-orange-300" : ""} ${mergedClass} ${selectionClass} ${selectedClass}
-        ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} 
-        ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
+      className={`grid-cell hover:primary-outline relative box-border flex flex-col gap-2 border p-2 transition-transform duration-200 ease-in-out primary-border light-bg hover:outline hover:outline-2 hover:outline-offset-[-2px] hover:secondary-bg ${isOver ? "primary-outline secondary-bg" : ""} ${mergedClass} ${selectionClass} ${selectedClass} ${item?.isHidden ? "hidden" : ""} ${item?.isEmpty ? "invisible" : ""} ${item?.isSelectable ? "cursor-pointer transition-all" : ""} ${item?.mergeError ? "merge-error-background" : ""}`}
       style={{
         gridRow: item?.rowSpan ? `span ${item.rowSpan}` : "auto",
         gridColumn: item?.colSpan ? `span ${item.colSpan}` : "auto",
@@ -322,19 +317,19 @@ const GridCell = ({
       {adToDisplay && (
         <div className="actions mb-4 mt-auto flex flex-wrap items-center justify-center gap-8">
           <Pencil
-            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 light-text hover:accent-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={handleEdit}
           />
           <View
-            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 light-text hover:accent-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={togglePopup}
           />
           <CircleMinus
-            className="z-0 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-200 hover:fill-white hover:text-orange-500"
+            className="hover:primary-fill z-0 h-6 w-6 cursor-pointer transition-colors duration-200 light-text hover:accent-text"
             fill="#D9D9D9"
             strokeWidth={2}
             onClick={handleRemove}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
-import Sidebar from "./Sidebar";
+import CollapsibleSidebar from "./CollapsibleSidebar";
 import GridCell from "./GridCell";
 import EditModal from "./EditModal";
 import ScheduleModal from "./ScheduleModal";
@@ -11,16 +11,19 @@ import StyledAlert from "../StyledAlert";
 import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
-import LayoutSelector from "../AdViewer/LayoutSelector";
 import DeleteConfirmationModal from "../Modal/DeleteConfirmationModal";
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 // Main AdCanvas component, responsible for facilitating CRUD operations on ad layouts
 const AdCanvas = () => {
   // Layout Selection State
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [ratio, setRatio] = useState(0);
   const [layouts, setLayouts] = useState([]); // List of available layouts
+  // eslint-disable-next-line
   const [isSelectingLayout, setIsSelectingLayout] = useState(true); // Flag for layout selection mode
   const [selectedLayout, setSelectedLayout] = useState(null); // Currently selected layout
+  // eslint-disable-next-line
   const [isSavedLayout, setIsSavedLayout] = useState(false); // Tracks if the layout is saved
   // New state to hold ad details
   const [adDetailsMap, setAdDetailsMap] = useState({});
@@ -42,6 +45,11 @@ const AdCanvas = () => {
       colSpan: 1,
     })),
   );
+
+  // Sidebar
+  const handleSidebarStateChange = (isOpen) => {
+    setSidebarOpen(isOpen);
+  };
 
   // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Controls delete modal visibility
@@ -587,49 +595,6 @@ const AdCanvas = () => {
     }
   };
 
-  // Function to handle the selection of cells
-  // Function to handle the selection of cells
-  const handleCellSelection = (index) => {
-    const cell = gridItems[index];
-
-    // If the cell is merged
-    if (cell.isMerged && !cell.hidden) {
-      // For merged cells
-      setSelectedMergedCells((prev) => {
-        if (prev.includes(index)) {
-          // If the cell is already selected, remove it from the selection
-          const newSelection = prev.filter((i) => i !== index);
-          // If there are no more selected merged cells, exit selection mode
-          if (newSelection.length === 0) {
-            setIsSelectionMode(false);
-          }
-          return newSelection;
-        }
-        return [...prev, index];
-      });
-      setIsSelectionMode(true);
-      return;
-    }
-
-    // For non-merged cells
-    if (!cell.hidden) {
-      setSelectedCells((prev) => {
-        if (prev.includes(index)) {
-          // If the cell is already selected, remove it from the selection
-          const newSelection = prev.filter((i) => i !== index);
-          if (newSelection.length === 0) {
-            setIsSelectionMode(false);
-          }
-          return newSelection;
-        }
-        return [...prev, index];
-      });
-      if (!isSelectionMode) {
-        setIsSelectionMode(true);
-      }
-    }
-  };
-
   // Function to handle the merging of selected cells
   const handleMergeSelected = () => {
     // Case 1: Single merged cell selected - unmerge it
@@ -1074,170 +1039,220 @@ const AdCanvas = () => {
     }
   }
 
+  // Responsive Ad Canvas with Sidebar
+  useEffect(() => {
+    const updateDimensions = () => {
+      setRatio(window.innerHeight / window.innerWidth);
+    };
+    window.addEventListener("resize", updateDimensions);
+    updateDimensions();
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
+
+  const isVertical = ratio > 1;
+
   return (
-    <div className="ad-canvas flex h-screen w-full flex-col items-center justify-center pt-[10vh] text-center">
-      <div className="text-3xl font-bold text-black dark:text-white">
-        Current Aspect Ratio: {aspectRatio}
-      </div>
-
-      <div className="absolute right-4 top-[calc(6rem+1rem)] z-10 xl:top-[calc(6rem+3rem)]">
-        <CircleHelp
-          className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
-            showHelp ? "text-orange-500" : "text-gray-600"
-          }`}
-          fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
-          strokeWidth={2}
-          onClick={() => setShowHelp(!showHelp)}
-        />
-      </div>
-      <div className="flex w-full max-w-[75vw] flex-row items-stretch justify-center gap-2 pt-[-2]">
-        {/* Decrease Columns button */}
-        <div className="group flex flex-col justify-center">
-          <div
-            id="remCols"
-            data-tooltip-id="remCols-tooltip"
-            data-tooltip-content={tooltips.remCols}
-            onClick={decreaseColumns}
-            className="flex h-5/6 w-4 items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
-          >
-            <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-              -
-            </span>
-          </div>
-        </div>
-
-        {/* Grid Container with aspect ratio wrapper */}
-        <div className="flex w-80 flex-1 flex-col">
-          {/* Decrease Rows button */}
-          <div className="group py-2">
-            <div
-              id="remRows"
-              data-tooltip-id="remRows-tooltip"
-              data-tooltip-content={tooltips.remRows}
-              onClick={decreaseRows}
-              className="flex h-4 w-full items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
-            >
-              <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-                -
-              </span>
-            </div>
-          </div>
-
-          {/* Aspect ratio container */}
-          <div className="relative h-full w-full pb-[56.5%] md:pb-[30%] lg:pb-[45%] 2xl:pb-[50%]">
-            {/* Grid cells container */}
-            <div
-              className="absolute left-0 top-0 grid h-full w-full auto-rows-fr gap-2.5"
-              style={{
-                gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
-                gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
-                gridAutoFlow: "dense",
-                "--rows": rows,
-                "--columns": columns,
-              }}
-            >
-              {/*Loop through each grid item and render the grid cell*/}
-              {gridItems.map((item, index) => {
-                const rowIndex = Math.floor(index / columns);
-                const colIndex = index % columns;
-                // Render each grid cell
-                return (
-                  <GridCell
-                    key={index}
-                    index={index}
-                    rowIndex={rowIndex}
-                    colIndex={colIndex}
-                    item={item}
-                    onDrop={handleDrop}
-                    onRemove={handleRemove}
-                    onEdit={handleEdit}
-                    onMerge={handleMerge}
-                    onUnmerge={handleUnmerge}
-                    onSelect={handleSelectCell} // For individual cells
-                    onSelectMerged={handleSelectMerged} // For merged cells
-                    isSelectionMode={isSelectionMode}
-                    setIsSelectionMode={setIsSelectionMode}
-                    selectedCells={selectedCells}
-                    selectedMergedCells={selectedMergedCells} // Pass selectedMergedCells
-                    columns={columns}
-                    totalCells={totalCells}
-                    showHelp={showHelp}
-                    getMainCellIndex={getMainCellIndex}
-                  />
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Increase Rows button */}
-          <div className="group py-2">
-            <div
-              id="addRows"
-              data-tooltip-id="addRows-tooltip"
-              data-tooltip-content={tooltips.addRows}
-              onClick={increaseRows}
-              className="flex h-4 w-full items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
-            >
-              <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-                +
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Increase Columns button */}
-        <div className="group flex flex-col justify-center">
-          <div
-            id="addCols"
-            data-tooltip-id="addCols-tooltip"
-            data-tooltip-content={tooltips.addCols}
-            onClick={increaseColumns}
-            className="flex h-5/6 w-4 items-center justify-center rounded-lg bg-gray-300 text-center transition-all duration-200 hover:cursor-pointer hover:bg-gray-400 md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
-          >
-            <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
-              +
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Popup when in selection mode */}
-      <SelectionModePopup isVisible={isSelectionMode} />
-
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Navigation buttons */}
-      <div className="mx-auto flex w-4/5 flex-row justify-between py-4 lg:py-8">
-        <MoveLeft
-          onClick={handleMoveLeft}
-          className="h-8 w-16 rounded-lg bg-orange-500 py-1 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
-        />
-
+    <div className="flex h-full max-w-[100vw] flex-col overflow-y-auto overflow-x-hidden light-bg dark:dark-bg">
+      <div
+        className={`flex ${isVertical ? "flex-col" : "flex-row"} min-h-full w-full`}
+      >
         <div
-          id="merge"
-          data-tooltip-id="merge-tooltip"
-          data-tooltip-content={mergeButtonTooltip}
+          className={`flex flex-col ${
+            isVertical
+              ? `${sidebarOpen ? "h-[50vh]" : "h-[66.666667%]"} w-full transition-all duration-300`
+              : "h-full w-full"
+          }`}
         >
-          {/* Merge button */}
-          <Merge
-            onClick={handleMergeSelected}
-            disabled={!isMergeButtonActive}
-            className={`h-8 w-16 rounded-lg py-2 text-white transition-colors duration-300 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
-              !isMergeButtonActive
-                ? "cursor-not-allowed bg-gray-400"
-                : "bg-orange-500 hover:cursor-pointer hover:bg-orange-600"
-            }`}
-          />
+          <div
+            className={`transition-all duration-300 ${
+              isVertical
+                ? "mx-auto w-[90vw]"
+                : sidebarOpen
+                  ? "ml-[27vw] w-[65vw] px-4"
+                  : "ml-[5vw] w-[90vw]"
+            } flex min-h-full flex-col items-center overflow-hidden`}
+          >
+            {/* Aspect Ratio */}
+            <div className="mt-24 text-3xl font-bold primary-text dark:secondary-text md:mt-28">
+              Current Aspect Ratio: {aspectRatio}
+            </div>
+
+            {/* Help Icon */}
+            <div className="absolute right-4 top-[calc(9rem+1rem)] z-10 xl:top-[calc(9rem+3rem)]">
+              <CircleHelp
+                className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
+                  showHelp ? "accent-text" : "neutral-text"
+                }`}
+                fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
+                strokeWidth={2}
+                onClick={() => setShowHelp(!showHelp)}
+              />
+            </div>
+
+            {/* Grid cells */}
+            <div className="relative flex w-full max-w-[75vw] flex-col items-center">
+              <div className="flex w-full flex-row items-stretch justify-center gap-2">
+                {/* Decrease Columns button */}
+                <div className="group flex flex-col justify-center">
+                  <div
+                    id="remCols"
+                    data-tooltip-id="remCols-tooltip"
+                    data-tooltip-content={tooltips.remCols}
+                    onClick={decreaseColumns}
+                    className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+                  >
+                    <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                      -
+                    </span>
+                  </div>
+                </div>
+
+                {/* Grid Container */}
+                <div className="flex w-80 flex-1 flex-col">
+                  {/* Decrease Rows button */}
+                  <div className="group py-2">
+                    <div
+                      id="remRows"
+                      data-tooltip-id="remRows-tooltip"
+                      data-tooltip-content={tooltips.remRows}
+                      onClick={decreaseRows}
+                      className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                    >
+                      <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                        -
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Aspect ratio container */}
+                  <div className="relative h-full w-full pb-[56.5%] md:pb-[45%] lg:pb-[50%]">
+                    {/* Grid cells container */}
+                    <div
+                      className="absolute left-0 top-0 grid h-full w-full auto-rows-fr gap-2.5"
+                      style={{
+                        gridTemplateColumns: `repeat(${columns || 3}, minmax(0, 1fr))`,
+                        gridTemplateRows: `repeat(${rows || 3}, minmax(0, 1fr))`,
+                        gridAutoFlow: "dense",
+                        "--rows": rows,
+                        "--columns": columns,
+                      }}
+                    >
+                      {gridItems.map((item, index) => {
+                        const rowIndex = Math.floor(index / columns);
+                        const colIndex = index % columns;
+                        return (
+                          <GridCell
+                            key={index}
+                            index={index}
+                            rowIndex={rowIndex}
+                            colIndex={colIndex}
+                            item={item}
+                            onDrop={handleDrop}
+                            onRemove={handleRemove}
+                            onEdit={handleEdit}
+                            onMerge={handleMerge}
+                            onUnmerge={handleUnmerge}
+                            onSelect={handleSelectCell} // For individual cells
+                            onSelectMerged={handleSelectMerged} // For merged cells
+                            isSelectionMode={isSelectionMode}
+                            setIsSelectionMode={setIsSelectionMode}
+                            selectedCells={selectedCells}
+                            selectedMergedCells={selectedMergedCells} // Pass selectedMergedCells
+                            columns={columns}
+                            totalCells={totalCells}
+                            showHelp={showHelp}
+                            getMainCellIndex={getMainCellIndex}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Increase Rows button */}
+                  <div className="group py-2">
+                    <div
+                      id="addRows"
+                      data-tooltip-id="addRows-tooltip"
+                      data-tooltip-content={tooltips.addRows}
+                      onClick={increaseRows}
+                      className="flex h-4 w-full items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:h-2 md:overflow-hidden md:group-hover:h-8 lg:h-1"
+                    >
+                      <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                        +
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Increase Columns button */}
+                <div className="group flex flex-col justify-center">
+                  <div
+                    id="addCols"
+                    data-tooltip-id="addCols-tooltip"
+                    data-tooltip-content={tooltips.addCols}
+                    onClick={increaseColumns}
+                    className="flex h-5/6 w-4 items-center justify-center rounded-lg text-center transition-all duration-200 neutral-bg hover:cursor-pointer hover:neutralalt-bg md:w-2 md:overflow-hidden md:group-hover:w-8 lg:w-1"
+                  >
+                    <span className="font-bold md:opacity-0 md:transition-opacity md:duration-200 md:group-hover:opacity-100">
+                      +
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation buttons */}
+              <div className="mb-[5vh] mt-[5vh] flex w-11/12 flex-row justify-between">
+                <MoveLeft
+                  onClick={handleMoveLeft}
+                  className="h-8 w-16 rounded-lg py-1 primary-bg secondary-text hover:cursor-pointer hover:secondary-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+                />
+
+                <div
+                  id="merge"
+                  data-tooltip-id="merge-tooltip"
+                  data-tooltip-content={mergeButtonTooltip}
+                >
+                  <Merge
+                    onClick={handleMergeSelected}
+                    disabled={!isMergeButtonActive}
+                    className={`h-8 w-16 rounded-lg py-2 transition-colors duration-300 secondary-text sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
+                      !isMergeButtonActive
+                        ? "cursor-not-allowed neutralalt-bg"
+                        : "primary-bg hover:cursor-pointer hover:secondary-bg"
+                    }`}
+                  />
+                </div>
+
+                <Check
+                  onClick={handleOpenSelector}
+                  className="h-8 w-16 rounded-lg py-1.5 primary-bg secondary-text hover:cursor-pointer hover:secondary-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
+                />
+              </div>
+            </div>
+
+            {/* Selection mode popup */}
+            <SelectionModePopup isVisible={isSelectionMode} />
+          </div>
+
+          <div
+            className={`flex ${
+              isVertical
+                ? `${sidebarOpen ? "h-[50vh]" : "h-[33.333333%]"} w-full`
+                : "h-full"
+            } transition-all duration-300`}
+          >
+            <CollapsibleSidebar
+              layouts={layouts}
+              onSelectLayout={handleSelectLayout}
+              onDeleteLayoutClick={handleDeleteLayoutClick}
+              onStateChange={handleSidebarStateChange}
+              isVertical={isVertical}
+            />
+          </div>
         </div>
-        {/* Check render*/}
-        <Check
-          onClick={handleOpenSelector}
-          className="h-8 w-16 rounded-lg bg-orange-500 py-1.5 text-white hover:cursor-pointer hover:bg-orange-600 sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3"
-        />
       </div>
 
-      {/* Tooltip components */}
+      {/* Tooltips */}
       <Tooltip id="sidebar-tooltip" {...tooltipPropsRight} />
       <Tooltip id="merge-tooltip" {...tooltipPropsRight} />
       <Tooltip id="addRows-tooltip" {...tooltipPropsRight} />
@@ -1252,7 +1267,6 @@ const AdCanvas = () => {
           onClose={() => setIsNamingLayout(false)}
         />
       )}
-      {/* Edit Modal */}
       {isEditing && currentAd && currentAd.scheduledAd && (
         <EditModal
           ad={currentAd.scheduledAd.ad}
@@ -1264,11 +1278,10 @@ const AdCanvas = () => {
           }}
         />
       )}
-      {/* Schedule Modal */}
       {isScheduling && currentScheduleAd && (
         <ScheduleModal
           ad={currentScheduleAd.item}
-          scheduledTime={currentScheduleAd.scheduledTime} // Pass scheduledTime to modal
+          scheduledTime={currentScheduleAd.scheduledTime}
           onSave={(scheduledDateTime) =>
             handleScheduleSave(
               currentScheduleAd.item,
@@ -1294,13 +1307,6 @@ const AdCanvas = () => {
         title={alertConfig.title}
         message={alertConfig.message}
         type={alertConfig.type}
-      />
-
-      {/* LayoutSelector */}
-      <LayoutSelector
-        layouts={layouts}
-        onSelect={handleSelectLayout}
-        onDeleteLayoutClick={handleDeleteLayoutClick}
       />
 
       {/* Delete Confirmation Modal */}

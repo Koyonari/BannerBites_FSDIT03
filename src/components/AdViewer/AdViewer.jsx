@@ -112,14 +112,7 @@ const AdViewer = ({ layout }) => {
       {gridItems.map((item, index) => {
         if (!item) return null;
 
-        const {
-          rowSpan,
-          colSpan,
-          scheduledAds,
-          hidden,
-          isMerged,
-          selectedCells,
-        } = item;
+        const { rowSpan, colSpan, scheduledAds, hidden, isMerged } = item;
 
         // Skip rendering if the cell is hidden
         if (hidden) {
