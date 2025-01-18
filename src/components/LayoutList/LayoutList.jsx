@@ -1,42 +1,84 @@
 // src/components/LayoutList/LayoutList.jsx
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-
-// Import the singleton
 import WebGazerSingleton from "../../utils/WebGazerSingleton";
 
-// Import your other UI components
+// UI components
 import Navbar from "../Navbar";
 import LayoutViewer from "../AdViewer/LayoutViewer";
-
-// Import the additional analytics components
 import CalibrationComponent from "../AdAnalytics/CalibrationComponent";
 import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
 import GazeVisualizer from "../AdAnalytics/GazeVisualizer";
 
 const LayoutList = () => {
+  // Layout / Error / Loading states
   const [layouts, setLayouts] = useState([]);
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Mobile vs desktop
+  // UI toggles
   const [showAllLayouts, setShowAllLayouts] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Fullscreen logic
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const previewRef = useRef(null);
+
+  // Eye tracking & calibration states
+  const [isModelReady, setIsModelReady] = useState(false);
+  const [isTracking, setIsTracking] = useState(false);
+  const [isCalibrating, setIsCalibrating] = useState(false);
+  const [calibrationCompleted, setCalibrationCompleted] = useState(false);
+
+  // Consent + analytics
+  const [hasConsent, setHasConsent] = useState(false);
+  const [retentionTime, setRetentionTime] = useState(0);
+  const [isLookingAtAd, setIsLookingAtAd] = useState(false);
+  const [gazedAdId, setGazedAdId] = useState(null);
+  const [currentGazeData, setCurrentGazeData] = useState(null);
+
+  // WebSocket references
+  const websocketRef = useRef(null);
+  const pendingLayoutIdRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
+
+  // 1) Preload WebGazer once, NO forced .end() in cleanup
+  useEffect(() => {
+    let mounted = true;
+    WebGazerSingleton.preload()
+      .then(() => {
+        if (mounted) {
+          setIsModelReady(true);
+          console.log("[LayoutList] WebGazer model preloaded. isModelReady = true");
+        }
+      })
+      .catch((err) => {
+        console.error("[LayoutList] Preload error:", err);
+      });
+
+    // IMPORTANT: remove WebGazerSingleton.end() from here:
+    return () => {
+      mounted = false;
+      // do NOT call WebGazerSingleton.end() automatically
+    };
+  }, []);
+
+  // 2) Handle window resize
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
-  // Fullscreen
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const previewRef = useRef(null);
+  // 3) Handle fullscreen toggles
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -59,62 +101,9 @@ const LayoutList = () => {
     }
   };
 
-  // WebSocket refs
-  const websocketRef = useRef(null);
-  const pendingLayoutIdRef = useRef(null);
-  const reconnectAttemptsRef = useRef(0);
-
-  // Gaze tracking state
-  const [isTracking, setIsTracking] = useState(false);
-  const [retentionTime, setRetentionTime] = useState(0);
-  const [isLookingAtAd, setIsLookingAtAd] = useState(false);
-  const [gazedAdId, setGazedAdId] = useState(null);
-
-  // Consent state
-  const [hasConsent, setHasConsent] = useState(false);
-
-  // Gaze data for visualizer
-  const [currentGazeData, setCurrentGazeData] = useState(null);
-
-  // Calibration states
-  const [isCalibrating, setIsCalibrating] = useState(false);
-  const [calibrationCompleted, setCalibrationCompleted] = useState(false);
-  const [isCalibrated, setIsCalibrated] = useState(false);
-
-  // Fetch layouts on mount
+  // 4) Fetch layouts
   useEffect(() => {
     fetchLayouts();
-  }, []);
-
-  // Connect to WebGazer at mount for a "global" usage
-  useEffect(() => {
-    let mounted = true;
-
-    // Initialize WebGazer exactly once. Provide a global listener if you like:
-    WebGazerSingleton.initialize((data) => {
-      // This listener runs for every gaze data, but let's only log if isTracking is true
-      if (!isTracking) return;
-      if (mounted && data) {
-        console.log("[Global Listener]", data);
-      }
-    }).catch((err) => {
-      console.error("Failed to init WebGazer:", err);
-    });
-
-    return () => {
-      mounted = false;
-      // Clean up camera etc. when unmounting
-      WebGazerSingleton.end();
-    };
-  }, [isTracking]);
-
-  // Cleanup WebSocket if unmount
-  useEffect(() => {
-    return () => {
-      if (websocketRef.current) {
-        websocketRef.current.close();
-      }
-    };
   }, []);
 
   const fetchLayouts = async () => {
@@ -140,7 +129,7 @@ const LayoutList = () => {
       setError(null);
       setSelectedLayout(null);
 
-      // Close old WS if exists
+      // Close old WebSocket if any
       if (websocketRef.current) {
         websocketRef.current.onclose = null;
         websocketRef.current.close();
@@ -151,18 +140,16 @@ const LayoutList = () => {
       const response = await axios.get(`http://localhost:5000/api/layouts/${layoutId}`);
       const layoutData = response.data;
 
-      // Extract adIds
+      // Parse ad IDs
       const adIdsSet = new Set();
       layoutData.gridItems.forEach((item) => {
         item.scheduledAds.forEach((scheduledAd) => {
-          if (scheduledAd.adId) {
-            adIdsSet.add(scheduledAd.adId);
-          }
+          if (scheduledAd.adId) adIdsSet.add(scheduledAd.adId);
         });
       });
       const adIds = Array.from(adIdsSet);
 
-      // Fetch ads
+      // Fetch actual ads
       const adsResponse = await axios.post("http://localhost:5000/api/ads/batchGet", { adIds });
       const ads = adsResponse.data;
 
@@ -172,7 +159,7 @@ const LayoutList = () => {
         adsMap[ad.adId] = ad;
       });
 
-      // Attach ad data
+      // Attach ads to layout data
       layoutData.gridItems = layoutData.gridItems.map((item) => {
         const updatedScheduledAds = item.scheduledAds.map((scheduledAd) => ({
           ...scheduledAd,
@@ -206,7 +193,7 @@ const LayoutList = () => {
           setSelectedLayout(parsedData.data);
         }
       } catch (e) {
-        console.error("WS parse error:", e);
+        console.error("[LayoutList] WS parse error:", e);
       }
     };
     websocketRef.current.onclose = () => {
@@ -216,14 +203,13 @@ const LayoutList = () => {
       }
     };
     websocketRef.current.onerror = (error) => {
-      console.error("WebSocket error:", error);
+      console.error("[LayoutList] WebSocket error:", error);
     };
   };
 
-  // Called whenever gaze data changes in GazeTrackingComponent
+  // 5) Gaze logic
   const handleGazeAtAd = useCallback(
     ({ x, y }) => {
-      // Check if the user’s gaze is inside any .ad-item
       const adElements = document.querySelectorAll(".ad-item");
       let foundAdId = null;
 
@@ -235,9 +221,8 @@ const LayoutList = () => {
       });
 
       if (foundAdId !== gazedAdId) {
-        setRetentionTime(0); // reset if we switch ads
+        setRetentionTime(0);
       }
-
       if (foundAdId) {
         setIsLookingAtAd(true);
         setGazedAdId(foundAdId);
@@ -246,16 +231,13 @@ const LayoutList = () => {
         setGazedAdId(null);
       }
 
-      // For the visualizer
       setCurrentGazeData({ x, y });
     },
     [gazedAdId]
   );
 
-  // Consent handlers
-  const handleConsent = () => {
-    setHasConsent(true);
-  };
+  // 6) Consent handlers
+  const handleConsent = () => setHasConsent(true);
   const handleDeclineConsent = () => {
     setHasConsent(false);
     setIsTracking(false);
@@ -265,101 +247,100 @@ const LayoutList = () => {
     setCurrentGazeData(null);
   };
 
-  // Calibration flows
+  // 7) Calibration handlers
   const handleStartCalibration = () => {
+    if (!isModelReady) {
+      alert("Eye Tracking model still loading, please wait...");
+      return;
+    }
     if (isTracking) {
       handleEndTracking();
     }
     setIsCalibrating(true);
     setCalibrationCompleted(false);
   };
+
   const handleCalibrationComplete = () => {
     setIsCalibrating(false);
     setCalibrationCompleted(true);
-    setIsCalibrated(true);
-    // Optionally start tracking automatically
-    setIsTracking(true);
+    console.log("[LayoutList] Calibration completed!");
+    setIsTracking(true); // Start tracking after calibration
   };
 
+  const handleRecalibrate = () => {
+    setCalibrationCompleted(false);
+    setIsCalibrating(true);
+  };
+
+  // 8) End Tracking
   const handleEndTracking = () => {
     console.log("[WebGazer] Tracking ended from handleEndTracking.");
-
     try {
-      // If the singleton is active, hide the default overlays
-      const wg = WebGazerSingleton.instance;
-      if (wg) {
-        wg.clearGazeListener();
-        // We do NOT end() the entire library here if we only want to pause tracking.
-        // But if you want to completely end camera usage:
-        // WebGazerSingleton.end();
-
-        const videoFeed = document.getElementById("webgazerVideoFeed");
-        if (videoFeed) {
-          videoFeed.style.display = "none";
-        }
-        const faceOverlay = document.getElementById("webgazerFaceOverlay");
-        if (faceOverlay) {
-          faceOverlay.style.display = "none";
-        }
-        const predictionPoints = document.getElementById("webgazerPredictionPoints");
-        if (predictionPoints) {
-          predictionPoints.style.display = "none";
-        }
-      }
-
+      WebGazerSingleton.end();
       setIsTracking(false);
       setRetentionTime(0);
       setIsLookingAtAd(false);
       setGazedAdId(null);
       setCurrentGazeData(null);
-      setIsCalibrated(false);
-
-      console.log("[WebGazer] All resources and states have been reset (tracking ended).");
+      console.log("[WebGazer] All resources have been reset (tracking ended).");
     } catch (error) {
-      console.error("[WebGazer] Error during tracking cleanup:", error);
+      console.error("[WebGazer] Error during cleanup:", error);
     }
   };
 
-  // Limit mobile layouts
-  const MOBILE_DISPLAY_LIMIT = 3;
-  const visibleLayouts = isMobile && !showAllLayouts ? layouts.slice(0, MOBILE_DISPLAY_LIMIT) : layouts;
-  const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
+  // 9) Cleanup WebSocket on unmount
+  useEffect(() => {
+    return () => {
+      if (websocketRef.current) {
+        websocketRef.current.close();
+      }
+    };
+  }, []);
+
+  // 10) If model not ready, show a loading screen
+  if (!isModelReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Loading Eye Tracking Model...</p>
+      </div>
+    );
+  }
 
   // Framer Motion variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        duration: 0.4,
-        staggerChildren: 0.1,
-      },
+      transition: { duration: 0.4, staggerChildren: 0.1 },
     },
   };
   const itemVariants = {
     hidden: { opacity: 0, x: -20 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: { duration: 0.3 },
-    },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
   };
   const fadeVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.3 } },
   };
 
+  // Layout limit for mobile
+  const MOBILE_DISPLAY_LIMIT = 3;
+  const visibleLayouts = isMobile && !showAllLayouts ? layouts.slice(0, MOBILE_DISPLAY_LIMIT) : layouts;
+  const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
+
+  // 11) Render the UI
   return (
     <motion.div initial="hidden" animate="visible" variants={containerVariants} className="min-h-screen">
       <Navbar />
       <div className="container mx-auto w-full p-4 md:p-12">
         <div className="flex flex-col md:min-h-[600px] md:flex-row">
-          {/* Sidebar: Layout List */}
+          {/* Sidebar */}
           <motion.div variants={fadeVariants} className="w-full md:w-[300px] md:flex-shrink-0">
             <div className="mb-6 rounded-lg p-6 shadow md:mb-0">
               <motion.h2 variants={itemVariants} className="mb-4 text-xl font-bold">
                 Available Layouts
               </motion.h2>
+
               {loading && !selectedLayout && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -385,6 +366,7 @@ const LayoutList = () => {
                   Loading layouts...
                 </motion.div>
               )}
+
               <AnimatePresence>
                 {error && (
                   <motion.div
@@ -415,6 +397,7 @@ const LayoutList = () => {
                     {layout.name || `Layout ${layout.layoutId}`}
                   </motion.button>
                 ))}
+
                 {hasMoreLayouts && (
                   <motion.button
                     variants={itemVariants}
@@ -511,6 +494,7 @@ const LayoutList = () => {
 
         {/* Calibration & Tracking Controls */}
         <div className="mt-4 flex space-x-2">
+          {/* Start Calibration */}
           {!isCalibrating && !calibrationCompleted && (
             <button
               onClick={handleStartCalibration}
@@ -520,6 +504,16 @@ const LayoutList = () => {
               Start Calibration
             </button>
           )}
+          {/* Recalibrate */}
+          <button
+            onClick={handleRecalibrate}
+            className="rounded-lg bg-yellow-500 px-4 py-2 text-white"
+            disabled={!selectedLayout}
+          >
+            Recalibrate
+          </button>
+
+          {/* End Tracking */}
           {isTracking && (
             <button
               onClick={handleEndTracking}
@@ -528,6 +522,8 @@ const LayoutList = () => {
               End Tracking
             </button>
           )}
+
+          {/* Consent */}
           {!hasConsent && (
             <>
               <button
@@ -569,14 +565,16 @@ const LayoutList = () => {
       </div>
 
       {/* Calibration Overlay */}
-      {isCalibrating && <CalibrationComponent onCalibrationComplete={handleCalibrationComplete} />}
-
-      {/* Gaze Tracking (activates local listener) */}
-      {isTracking && selectedLayout && hasConsent && (
-        <GazeTrackingComponent onGazeAtAd={handleGazeAtAd} isActive={isTracking} />
+      {isCalibrating && (
+        <CalibrationComponent onCalibrationComplete={handleCalibrationComplete} />
       )}
 
-      {/* Gaze Visualizer (draws the red dot) */}
+      {/* Gaze Tracking */}
+      {isTracking && selectedLayout && hasConsent && (
+        <GazeTrackingComponent onGaze={handleGazeAtAd} isActive={isTracking} />
+      )}
+
+      {/* Gaze Visualizer */}
       {currentGazeData && <GazeVisualizer gazeData={currentGazeData} />}
     </motion.div>
   );

@@ -1,5 +1,5 @@
 // src/components/AdAnalytics/GazeVisualizer.jsx
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 const GazeVisualizer = ({ gazeData }) => {
   const canvasRef = useRef(null);
@@ -9,12 +9,9 @@ const GazeVisualizer = ({ gazeData }) => {
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-    // Set initial size
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Handle window resize
     const handleResize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -27,11 +24,8 @@ const GazeVisualizer = ({ gazeData }) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (gazeData) {
-        // Adjust for scrolling
         const adjustedX = gazeData.x - window.scrollX;
         const adjustedY = gazeData.y - window.scrollY;
-
-        // Draw a circle
         const radius = 10;
         ctx.beginPath();
         ctx.arc(adjustedX, adjustedY, radius, 0, 2 * Math.PI);
@@ -42,7 +36,7 @@ const GazeVisualizer = ({ gazeData }) => {
         ctx.stroke();
       }
 
-      // OPTIONAL: highlight .ad-item bounding boxes
+      // highlight .ad-item bounding boxes if needed
       const adElements = document.querySelectorAll(".ad-item");
       adElements.forEach((adElement) => {
         const rect = adElement.getBoundingClientRect();
