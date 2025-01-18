@@ -1,5 +1,4 @@
 // src/utils/WebGazerSingleton.js
-
 class WebGazerSingleton {
   static instance = null;
   static modelPreloaded = false;
@@ -7,30 +6,26 @@ class WebGazerSingleton {
 
   static async preload() {
     if (this.modelPreloaded) {
-      console.log("[WebGazerSingleton] Model already preloaded.");
+      console.log("Model already preloaded.");
       return;
     }
     try {
-      console.log("[WebGazerSingleton] Preloading model...");
       const { default: webgazer } = await import("webgazer");
-
+      // Experiment with these settings
       webgazer
-        .setRegression("weightedRidge") // or "threadedRidge"
-        .setTracker("TFFacemesh")
+        .setRegression("weightedRidge") // Or try "ridge" if needed
+        .setTracker("TFFacemesh")        // Some alternative trackers may work better depending on conditions
         .saveDataAcrossSessions(true);
-
       this.modelPreloaded = true;
-      console.log("[WebGazerSingleton] Model preloaded.");
+      console.log("Model preloaded.");
     } catch (error) {
-      console.error("[WebGazerSingleton] Preload error:", error);
+      console.error("Preload error:", error);
       throw new Error("Failed to preload WebGazer model.");
     }
   }
 
   static async initialize(onGazeListener = null) {
-    // If already tracking, just update the listener
     if (this.instance && this.trackingStarted) {
-      console.log("[WebGazerSingleton] Already tracking. Updating listener if provided.");
       if (onGazeListener) {
         this.instance.setGazeListener((data, elapsedTime) => {
           if (data) onGazeListener(data);
@@ -39,39 +34,28 @@ class WebGazerSingleton {
       return this.instance;
     }
 
-    if (!this.modelPreloaded) {
-      await this.preload();
-    }
+    if (!this.modelPreloaded) await this.preload();
 
     try {
       const { default: webgazer } = await import("webgazer");
-
       if (!this.instance) {
         this.instance = webgazer;
-        // Re-apply config
         this.instance
-          .setRegression("weightedRidge")
+          .setRegression("weightedRidge") // adjust as needed here
           .setTracker("TFFacemesh")
           .saveDataAcrossSessions(true);
       }
-
       if (onGazeListener) {
         this.instance.setGazeListener((data, elapsedTime) => {
           if (data) onGazeListener(data);
         });
       }
-
-      // Catch any errors from .begin()
-      await this.instance.begin().catch((err) => {
-        console.error("[WebGazerSingleton] webgazer.begin() error:", err);
-        throw err;
-      });
-
+      await this.instance.begin();
       this.trackingStarted = true;
-      console.log("[WebGazerSingleton] Tracking started successfully.");
+      console.log("Tracking started.");
       return this.instance;
     } catch (error) {
-      console.error("[WebGazerSingleton] Initialization error:", error);
+      console.error("Initialization error:", error);
       throw new Error("Failed to initialize WebGazer.");
     }
   }
@@ -82,9 +66,9 @@ class WebGazerSingleton {
       this.instance.end();
       this.instance = null;
       this.trackingStarted = false;
-      console.log("[WebGazerSingleton] Ended successfully.");
+      console.log("Ended successfully.");
     } else {
-      console.warn("[WebGazerSingleton] No active instance to end.");
+      console.warn("No active instance to end.");
     }
   }
 }

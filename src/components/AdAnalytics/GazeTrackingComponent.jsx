@@ -1,67 +1,81 @@
 // src/components/AdAnalytics/GazeTrackingComponent.jsx
 import { useEffect, useRef } from "react";
 import WebGazerSingleton from "../../utils/WebGazerSingleton";
+import KalmanFilter from "../../utils/KalmanFilter";
 
 const GazeTrackingComponent = ({
   isActive,
   onGaze,
+  smoothingMethod = "kalman", // or "movingAverage"
   smoothingWindow = 10,
   minMove = 0,
 }) => {
-  const smoothingBufferRef = useRef([]);
+  const kalmanFilterXRef = useRef(null);
+  const kalmanFilterYRef = useRef(null);
+  const movingBufferRef = useRef([]);
   const lastOutputRef = useRef({ x: null, y: null });
 
   useEffect(() => {
+    // Initialize Kalman filters when using the kalman method
+    if (smoothingMethod === "kalman") {
+      kalmanFilterXRef.current = new KalmanFilter({ R: 0.05, Q: 1 });
+      kalmanFilterYRef.current = new KalmanFilter({ R: 0.05, Q: 1 });
+    }
+
     let webgazerInstance = null;
 
     if (isActive) {
       WebGazerSingleton.initialize((data) => {
         if (!data) return;
 
-        const buffer = smoothingBufferRef.current;
-        buffer.push({ x: data.x, y: data.y });
-        if (buffer.length > smoothingWindow) {
-          buffer.shift();
+        let output;
+        if (smoothingMethod === "kalman") {
+          const filteredX = kalmanFilterXRef.current.filter(data.x);
+          const filteredY = kalmanFilterYRef.current.filter(data.y);
+          output = { x: filteredX, y: filteredY };
+        } else {
+          // Use moving average
+          const buffer = movingBufferRef.current;
+          buffer.push({ x: data.x, y: data.y });
+          if (buffer.length > smoothingWindow) buffer.shift();
+          let sumX = 0, sumY = 0;
+          buffer.forEach(pt => {
+            sumX += pt.x;
+            sumY += pt.y;
+          });
+          output = { x: sumX / buffer.length, y: sumY / buffer.length };
         }
 
-        let sumX = 0,
-          sumY = 0;
-        buffer.forEach((pt) => {
-          sumX += pt.x;
-          sumY += pt.y;
-        });
-        const avgX = sumX / buffer.length;
-        const avgY = sumY / buffer.length;
-
+        // Filter out minor changes if needed
         if (minMove > 0 && lastOutputRef.current.x !== null) {
-          const dx = avgX - lastOutputRef.current.x;
-          const dy = avgY - lastOutputRef.current.y;
+          const dx = output.x - lastOutputRef.current.x;
+          const dy = output.y - lastOutputRef.current.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < minMove) {
-            return;
-          }
+          if (dist < minMove) return;
         }
 
-        lastOutputRef.current = { x: avgX, y: avgY };
-        onGaze({ x: avgX, y: avgY });
+        lastOutputRef.current = output;
+        onGaze(output);
       })
-        .then((wg) => {
-          webgazerInstance = wg;
-          console.log("[SmoothedGazeTracking] started");
-        })
-        .catch((err) => {
-          console.error("[SmoothedGazeTracking] init error:", err);
-        });
+      .then((wg) => {
+        webgazerInstance = wg;
+        console.log("Gaze tracking started");
+      })
+      .catch((err) => {
+        console.error("Gaze tracking init error:", err);
+      });
     }
 
     return () => {
       if (webgazerInstance) {
         webgazerInstance.clearGazeListener();
       }
-      smoothingBufferRef.current = [];
+      movingBufferRef.current = [];
       lastOutputRef.current = { x: null, y: null };
+      if (kalmanFilterXRef.current) kalmanFilterXRef.current.reset();
+      if (kalmanFilterYRef.current) kalmanFilterYRef.current.reset();
     };
-  }, [isActive, onGaze, smoothingWindow, minMove]);
+  }, [isActive, onGaze, smoothingMethod, smoothingWindow, minMove]);
 
   return null;
 };
