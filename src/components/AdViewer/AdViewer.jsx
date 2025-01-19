@@ -1,9 +1,11 @@
 import React, { useEffect } from "react";
 import WebFont from "webfontloader";
-// AdViewer is a component that renders the layout of ads
+
+// A separate component that handles a single ad’s rendering:
 const AdComponent = ({ type, content = {}, styles = {} }) => {
   let mediaUrl = content.mediaUrl || content.src;
 
+  // If your content uses S3 keys, build the URL
   if (!mediaUrl && content.s3Bucket && content.s3Key) {
     const s3Region = content.s3Region || "ap-southeast-1";
     const encodeS3Key = (key) =>
@@ -15,7 +17,7 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
     mediaUrl = `https://${content.s3Bucket}.s3.${s3Region}.amazonaws.com/${encodedS3Key}`;
   }
 
-  // Load Google Font if fontFamily is specified
+  // Load Google Font if specified
   useEffect(() => {
     if (styles.font) {
       WebFont.load({
@@ -26,7 +28,7 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
     }
   }, [styles.font]);
 
-  // AdStyles is an object that contains the styles for the ad
+  // Ad-level styles
   const adStyles = {
     fontFamily: styles.font,
     fontSize: styles.fontSize,
@@ -36,11 +38,13 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
     borderWidth: styles.borderColor ? "2px" : "0px",
     padding: "10px",
     boxSizing: "border-box",
+    // ...anything else from styles you might want to directly apply
     ...styles,
   };
 
+  // Render based on ad type
   return (
-    <div className="ad-item" style={adStyles}>
+    <div style={adStyles}>
       {type === "Text" && (
         <div>
           <h3 style={{ fontFamily: styles.font, color: styles.textColor }}>
@@ -51,32 +55,33 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
           </p>
         </div>
       )}
+
       {type === "Image" && mediaUrl && (
         <div>
           <img
             src={mediaUrl}
             alt={content.title || "Ad Image"}
-            style={{ maxWidth: "100%", borderColor: styles.borderColor }}
+            style={{ maxWidth: "100%", maxHeight: "100%" }}
           />
         </div>
       )}
+
       {type === "Video" && mediaUrl && (
         <div>
           <video
-            key={mediaUrl} // Added key prop for real-time communication
+            key={mediaUrl}
             autoPlay
             loop
             muted
             playsInline
-            className="w-full"
-            style={{ borderColor: styles.borderColor }}
+            style={{ width: "100%" }}
           >
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>
       )}
-      {/* Handle unsupported types */}
+
       {type !== "Text" && type !== "Image" && type !== "Video" && (
         <div>Unsupported ad type: {type}</div>
       )}
@@ -84,7 +89,6 @@ const AdComponent = ({ type, content = {}, styles = {} }) => {
   );
 };
 
-// Main AdViewer component to render the layout
 const AdViewer = ({ layout }) => {
   if (!layout) {
     return <div>No layout provided</div>;
@@ -119,7 +123,7 @@ const AdViewer = ({ layout }) => {
           return null;
         }
 
-        // Determine if there's an ad to display in this cell
+        // Pick an ad by time logic:
         let adToDisplay = null;
         if (scheduledAds && scheduledAds.length > 0) {
           const currentTimeString = `${new Date()
@@ -128,28 +132,30 @@ const AdViewer = ({ layout }) => {
             .padStart(2, "0")}:${new Date()
             .getMinutes()
             .toString()
-            .padStart(2, "0")}`; // Format as "HH:mm"
+            .padStart(2, "0")}`;
 
           const availableAds = scheduledAds.filter(
-            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString,
+            (scheduledAd) => scheduledAd.scheduledTime <= currentTimeString
           );
 
           if (availableAds.length > 0) {
+            // Use the latest scheduledTime that is <= currentTime
             adToDisplay = availableAds.reduce((latestAd, currentAd) =>
               currentAd.scheduledTime > latestAd.scheduledTime
                 ? currentAd
-                : latestAd,
+                : latestAd
             );
           } else {
+            // Or if no ads are started yet, show the earliest upcoming ad
             adToDisplay = scheduledAds.reduce((nextAd, currentAd) =>
               currentAd.scheduledTime < nextAd.scheduledTime
                 ? currentAd
-                : nextAd,
+                : nextAd
             );
           }
         }
 
-        // If no ad is available and the cell is not merged, render an empty cell
+        // If no ad and not merged, render empty cell
         if (!adToDisplay && !isMerged) {
           return (
             <div
@@ -162,8 +168,7 @@ const AdViewer = ({ layout }) => {
           );
         }
 
-        // **Adjustments Start Here**
-        // Ensure adToDisplay.ad exists
+        // If no ad data, show placeholder
         if (!adToDisplay || !adToDisplay.ad) {
           return (
             <div
@@ -177,6 +182,7 @@ const AdViewer = ({ layout }) => {
                 justifyContent: "center",
                 overflow: "hidden",
                 position: "relative",
+                backgroundColor: "#fff",
               }}
             >
               <div>No ad scheduled</div>
@@ -184,14 +190,19 @@ const AdViewer = ({ layout }) => {
           );
         }
 
-        // Determine the correct ad to display
+        // We have a valid ad:
         const ad = adToDisplay.ad;
         const { type, content, styles } = ad;
+
+        // This is where we mark the cell as `.ad-item` with `data-ad-id`.
+        // If your scheduledAd has an `adId` property, use that. Otherwise, you can pick something from `ad`.
+        const adIdValue = adToDisplay.adId || ad._id || "";
 
         return (
           <div
             key={index}
-            className="grid-cell"
+            className="grid-cell ad-item"
+            data-ad-id={adIdValue}
             style={{
               gridRow: `span ${rowSpan || 1}`,
               gridColumn: `span ${colSpan || 1}`,
@@ -203,6 +214,7 @@ const AdViewer = ({ layout }) => {
               justifyContent: "center",
               overflow: "hidden",
               position: "relative",
+              backgroundColor: "#fff",
             }}
           >
             <AdComponent type={type} content={content} styles={styles} />
