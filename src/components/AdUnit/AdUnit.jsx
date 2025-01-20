@@ -1,9 +1,91 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import Navbar from "../Navbar";
+
+const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const AdUnit = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [ads, setAds] = useState([]);
+  const [filteredAds, setFilteredAds] = useState([]);
+  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaType, setMediaType] = useState("image");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  // Function to fetch ads from the backend
+  const fetchAds = async () => {
+    try {
+      const response = await axios.get(`${apiUrl}/api/ads/all`);
+      const allAds = response.data;
+
+      // Filter ads to include only images and videos
+      const mediaAds = allAds.filter(
+        (ad) =>
+          ad.type && (ad.type.toLowerCase() === "image" || ad.type.toLowerCase() === "video")
+      );
+
+      setAds(mediaAds);
+      setFilteredAds(mediaAds); // Initialize filtered ads
+    } catch (error) {
+      console.error("Error fetching ads:", error);
+    }
+  };
+
+  // Function to handle media upload
+  const handleUpload = async (e) => {
+    e.preventDefault();
+
+    if (!mediaFile || (mediaType !== "image" && mediaType !== "video")) {
+      alert("Please select a valid media file.");
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // Create FormData for the upload
+      const formData = new FormData();
+      formData.append("file", mediaFile);
+      formData.append("type", mediaType);
+      formData.append("title", title);
+      formData.append("description", description);
+
+      // Make the API call to the create endpoint
+      const response = await axios.post(`${apiUrl}/api/ads/create`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      alert("Media uploaded successfully!");
+      setMediaFile(null);
+      setTitle("");
+      setDescription("");
+      fetchAds(); // Refresh the ads list
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      alert("Failed to upload media.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Effect to fetch ads on component mount
+  useEffect(() => {
+    fetchAds();
+  }, []);
+
+  // Effect to filter ads based on the search term
+  useEffect(() => {
+    const results = ads.filter((ad) => {
+      const title = ad.content?.title || ""; // Handle undefined title
+      return title.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+    setFilteredAds(results);
+  }, [searchTerm, ads]);
 
   return (
     <div className="min-h-screen light-bg dark:dark-bg">
@@ -21,19 +103,102 @@ const AdUnit = () => {
             />
           </div>
         </div>
-
-        {/* Create New Button */}
-        <div className="w-full sm:w-1/5">
-          <Link to="/ad">
-            <button className="primary-bg hover:secondary-bg h-10 w-full rounded-lg text-sm font-bold transition-colors secondary-text lg:h-16 lg:text-lg xl:h-20 xl:text-2xl">
-              Create New
-            </button>
-          </Link>
-        </div>
       </div>
 
-      <div className="px-4">
-        <h2 className="text-white">Ad Unit</h2>
+      {/* Media Upload Form */}
+      <div className="px-4 py-6">
+        <form onSubmit={handleUpload} className="space-y-4">
+          <div>
+            <label className="block text-sm font-bold">Media Type:</label>
+            <select
+              value={mediaType}
+              onChange={(e) => setMediaType(e.target.value)}
+              className="w-full rounded-lg border px-3 py-2"
+            >
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold">Title:</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter title"
+              className="w-full rounded-lg border px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold">Description:</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter description"
+              className="w-full rounded-lg border px-3 py-2"
+            ></textarea>
+          </div>
+          <div>
+            <label className="block text-sm font-bold">Media File:</label>
+            <input
+              type="file"
+              accept={mediaType === "image" ? "image/*" : "video/*"}
+              onChange={(e) => setMediaFile(e.target.files[0])}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <button
+              type="submit"
+              disabled={uploading}
+              className="primary-bg hover:secondary-bg w-full rounded-lg py-2 text-white font-bold"
+            >
+              {uploading ? "Uploading..." : "Upload Media"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Display Ads */}
+      <div className="px-4 py-6">
+        {filteredAds.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredAds.map((ad) => {
+              const adTitle = ad.content?.title || "Untitled";
+              const mediaName = ad.content?.s3Key || "Unknown";
+              const mediaSrc = ad.content?.src || "";
+              const mediaType = ad.type.toLowerCase();
+
+              return (
+                <div
+                  key={ad.adId}
+                  className="rounded-lg shadow-lg dark:bg-dark-bg-light p-4"
+                >
+                  {mediaType === "image" ? (
+                    <img
+                      src={mediaSrc}
+                      alt={adTitle}
+                      className="h-48 w-full rounded-lg object-cover"
+                    />
+                  ) : (
+                    <video
+                      controls
+                      src={mediaSrc}
+                      className="h-48 w-full rounded-lg"
+                    />
+                  )}
+                  <div className="mt-4">
+                    <h3 className="text-lg font-bold text-primary">{adTitle}</h3>
+                    <p className="text-sm text-secondary">Media Name: {mediaName}</p>
+                    <p className="text-sm text-secondary">Ad ID: {ad.adId}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-center text-secondary">No media ads found.</p>
+        )}
       </div>
     </div>
   );
