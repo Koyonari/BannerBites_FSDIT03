@@ -1,5 +1,14 @@
 // models/AdModel.js
-const { PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, BatchGetCommand } = require("@aws-sdk/lib-dynamodb");
+const {
+  PutCommand,
+  GetCommand,
+  QueryCommand,
+  UpdateCommand,
+  DeleteCommand,
+  BatchGetCommand,
+  ScanCommand,
+} = require("@aws-sdk/lib-dynamodb");
+
 const { dynamoDb } = require("../middleware/awsClients");
 const tableName = process.env.DYNAMODB_TABLE_ADS;
 
@@ -7,27 +16,32 @@ const AdModel = {
   // Function to retrieve an ad by adId
   getAdById: async (adId) => {
     try {
-      console.log(`Fetching Ad with adId: ${adId}, type of adId: ${typeof adId}`);
+      console.log(
+        `Fetching Ad with adId: ${adId}, type of adId: ${typeof adId}`,
+      );
       // Define the key for the GetCommand
       const key = {
         adId: adId, // Ensure this matches your DynamoDB key schema exactly
       };
-  
-      console.log(`Using key for GetCommand in Ads table: ${JSON.stringify(key)}`);
+
+      console.log(
+        `Using key for GetCommand in Ads table: ${JSON.stringify(key)}`,
+      );
       // Use the GetCommand to fetch the Ad from DynamoDB
-      const adResult = await dynamoDb.send(new GetCommand({
-        TableName: process.env.DYNAMODB_TABLE_ADS,
-        Key: key,
-      }));
+      const adResult = await dynamoDb.send(
+        new GetCommand({
+          TableName: process.env.DYNAMODB_TABLE_ADS,
+          Key: key,
+        }),
+      );
       // Check if the Ad was found
       if (!adResult.Item) {
         console.error(`No Ad found with adId: ${adId}`);
         return null; // Ad not found
       }
-  
+
       console.log(`Fetched Ad details: ${JSON.stringify(adResult.Item)}`);
       return adResult.Item;
-  
     } catch (error) {
       console.error(`Error fetching Ad with adId: ${adId}`, error);
       throw error; // Rethrow the error to be handled by the caller
@@ -132,7 +146,7 @@ const AdModel = {
     console.log(`Ad ${ad.adId} explicitly updated successfully.`);
     return result;
   },
-  
+
   // Function to delete ad by adId
   deleteAdById: async (adId) => {
     // Define the parameters for the DeleteCommand
@@ -150,6 +164,37 @@ const AdModel = {
       throw error;
     }
   },
+
+  // Function to fetch all ads
+  getAllAds: async () => {
+    try {
+      console.log("Fetching all ads from the DynamoDB table.");
+      const tableName = process.env.DYNAMODB_TABLE_ADS;
+  
+      if (!tableName) {
+        throw new Error("DYNAMODB_TABLE_ADS environment variable is not set.");
+      }
+  
+      console.log("Using DynamoDB Table Name:", tableName);
+  
+      // Perform the scan
+      const command = new ScanCommand({
+        TableName: tableName,
+      });
+  
+      const response = await dynamoDb.send(command);
+      console.log("ScanCommand Response:", JSON.stringify(response, null, 2));
+  
+      // Return items directly since they are plain JavaScript objects
+      const ads = response.Items || [];
+      console.log(`Successfully fetched ${ads.length} ads.`);
+      return ads;
+    } catch (error) {
+      console.error("Error fetching all ads:", error.message);
+      throw error; // Propagate the error
+    }
+  },
 };
+  
 
 module.exports = AdModel;
