@@ -1,7 +1,28 @@
+import { jwtDecode } from "jwt-decode";
 import React, { useState, useEffect } from "react";
 import Navbar from "../Navbar";
+import Cookies from "js-cookie";
+
+const token = Cookies.get("authToken"); // Assuming the token is stored in cookies
+let userRole = null;
+
+if (token) {
+  try {
+    const decodedToken = jwtDecode(token);
+    userRole = decodedToken.role; // Ensure the token contains a "role" field
+  } catch (err) {
+    console.error("Error decoding token:", err);
+  }
+} else {
+  console.warn("No token found");
+}
+
+console.log("User Role:", userRole); // Should display the role, e.g., "Operator"
+
 
 const CustomRole = ({ user, onRoleChange }) => {
+  const [token, setToken] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [customRoles, setCustomRoles] = useState([]);
   const [defaultRoles, setDefaultRoles] = useState([]);
   const [newRole, setNewRole] = useState({
@@ -11,6 +32,41 @@ const CustomRole = ({ user, onRoleChange }) => {
 
   const [editMode, setEditMode] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
+
+  //Check if token exists in cookies
+  useEffect(() => {
+    const retrievedToken = Cookies.get("authToken");
+    console.log("Token from Cookies:", retrievedToken); // Log token
+    setToken(retrievedToken);
+
+    if (retrievedToken) {
+      try {
+        const decodedToken = jwtDecode(retrievedToken);
+        console.log("Decoded Token:", decodedToken); // Log the decoded token
+        setUserRole(decodedToken.role || "No role detected");
+      } catch (err) {
+        console.error("Error decoding token:", err);
+      }
+    } else {
+      console.warn("No token found");
+    }
+  }, []);
+
+  // Decode token and set user role
+  useEffect(() => {
+    const token = Cookies.get("authToken");
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token); // Decode the token
+        console.log("Decoded Token:", decodedToken); // Log the decoded token to verify its structure
+        setUserRole(decodedToken.role || "No role detected"); // Use 'roles' field from token
+      } catch (err) {
+        console.error("Error decoding token:", err);
+      }
+    } else {
+      console.warn("No token found");
+    }
+  }, []); // Empty dependency array ensures this runs once on mount
 
   // Fetch roles from the API
   useEffect(() => {
@@ -128,7 +184,9 @@ const CustomRole = ({ user, onRoleChange }) => {
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
             Role Management
           </h1>
-
+          <h1>
+          Your role: {userRole || "No role detected"} {/* Display user role */}
+          </h1>
           {/* Role List */}
           <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
             Role List

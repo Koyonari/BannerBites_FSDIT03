@@ -6,7 +6,7 @@ const login = async (req, res) => {
     try {
       const token = await authenticateUser(username, password, roles); // Pass role to the authenticateUser function
       res.cookie('authToken', token, {
-        httpOnly: true,
+        httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 1000 // 1 hour
       });

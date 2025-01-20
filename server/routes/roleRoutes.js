@@ -20,6 +20,8 @@ router.get("/", fetchAllRoles); // Fetch all roles
 router.post("/", createNewRole); // Create a new role
 router.put("/:role", updateRolePermissions); // Update a role's permissions
 router.delete("/:role", deleteRoleByName); // Delete a role
+router.get("/permissions/:role", fetchPermissions);// Fetch permissions for a specific role
+
 
 router.get(
   "/protected/edit",

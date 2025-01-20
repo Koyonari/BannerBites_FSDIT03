@@ -6,6 +6,18 @@ const {
   getAllRoles,
 } = require("../models/RolesModel");
 
+const fetchPermissions = async (req, res) => {
+  const { role } = req.params;
+
+  try {
+    const permissions = await getPermissionsByRole(role);
+    res.status(200).json(permissions);
+  } catch (error) {
+    console.error("Error fetching permissions:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 /**
  * Fetch role and its permissions
  */
@@ -77,4 +89,5 @@ module.exports = {
   createNewRole,
   updateRolePermissions,
   deleteRoleByName,
+  fetchPermissions,
 };
