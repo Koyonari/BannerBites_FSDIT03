@@ -204,7 +204,7 @@ const CustomRole = ({ user, onRoleChange }) => {
                 </div>
   
                 <div className="flex gap-2">
-                  {permissions?.edit && (
+                  {permissions?.roleManagement && (
                     <button
                       onClick={() => handleEditRole(roleObj)}
                       className="bg-yellow-500 text-white py-1 px-3 rounded hover:bg-yellow-600"
@@ -212,7 +212,7 @@ const CustomRole = ({ user, onRoleChange }) => {
                       Edit
                     </button>
                   )}
-                  {permissions?.delete && (
+                  {permissions?.roleManagement && (
                     <button
                       onClick={() => handleDeleteRole(roleObj.role)}
                       className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
