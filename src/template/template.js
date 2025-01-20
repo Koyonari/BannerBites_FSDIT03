@@ -50,25 +50,78 @@ const generateGridItems = (rows, columns, mergedCells = []) => {
 
 // Preset templates with predefined layouts
 const PRESET_TEMPLATES = {
-  ultrawide: {
+  // Ultra-wide formats
+  ultrawide32x9: {
     layoutId: uuidv4(),
-    name: "21:9 Template",
+    name: "Stadium Display (32:9)",
+    description:
+      "Perfect for sports arena displays and large outdoor billboards",
+    rows: 2,
+    columns: 6,
+    mergedCells: [
+      {
+        startIndex: 0,
+        rowSpan: 2,
+        colSpan: 2,
+        selectedCells: [0, 1, 6, 7],
+      },
+      {
+        startIndex: 4,
+        rowSpan: 2,
+        colSpan: 2,
+        selectedCells: [4, 5, 10, 11],
+      },
+    ],
+  },
+  ultrawide21x9: {
+    layoutId: uuidv4(),
+    name: "Cinema Display (21:9)",
+    description:
+      "Ideal for movie theater pre-show ads and ultra-wide digital signage",
     rows: 2,
     columns: 4,
     mergedCells: [
       {
         startIndex: 0,
         rowSpan: 2,
-        colSpan: 1,
-        selectedCells: [0, 4],
+        colSpan: 2,
+        selectedCells: [0, 1, 4, 5],
       },
     ],
   },
-  widescreen: {
+
+  // Standard widescreen formats
+  widescreen16x9: {
     layoutId: uuidv4(),
-    name: "16:9 Display",
+    name: "Digital Billboard (16:9)",
+    description:
+      "Standard HDTV format, perfect for digital outdoor advertising",
     rows: 2,
     columns: 3,
+    mergedCells: [
+      {
+        startIndex: 0,
+        rowSpan: 2,
+        colSpan: 2,
+        selectedCells: [0, 1, 3, 4],
+      },
+      {
+        startIndex: 8,
+        rowSpan: 1,
+        colSpan: 1,
+        selectedCells: [8],
+      },
+    ],
+  },
+
+  // Vertical formats
+  vertical9x16: {
+    layoutId: uuidv4(),
+    name: "Story Display (9:16)",
+    description:
+      "Optimized for social media stories and vertical digital signage",
+    rows: 3,
+    columns: 2,
     mergedCells: [
       {
         startIndex: 0,
@@ -78,17 +131,53 @@ const PRESET_TEMPLATES = {
       },
     ],
   },
-  square: {
+  dualScreen: {
     layoutId: uuidv4(),
-    name: "1:1 Square Grid",
+    name: "Split Display (32:9)",
+    description:
+      "Designed for dual-screen installations and stretched displays",
     rows: 2,
-    columns: 2,
+    columns: 6,
     mergedCells: [
       {
         startIndex: 0,
         rowSpan: 2,
-        colSpan: 1,
-        selectedCells: [0, 2],
+        colSpan: 3,
+        selectedCells: [0, 1, 2, 6, 7, 8],
+      },
+      {
+        startIndex: 3,
+        rowSpan: 2,
+        colSpan: 3,
+        selectedCells: [3, 4, 5, 9, 10, 11],
+      },
+    ],
+  },
+  tripleScreen: {
+    layoutId: uuidv4(),
+    name: "Triple Display (46:9)",
+    description:
+      "Designed for triple-screen installations and ultra-wide displays",
+    rows: 2,
+    columns: 9,
+    mergedCells: [
+      {
+        startIndex: 0,
+        rowSpan: 2,
+        colSpan: 3,
+        selectedCells: [0, 1, 2, 9, 10, 11],
+      },
+      {
+        startIndex: 3,
+        rowSpan: 2,
+        colSpan: 3,
+        selectedCells: [3, 4, 5, 12, 13, 14],
+      },
+      {
+        startIndex: 6,
+        rowSpan: 2,
+        colSpan: 3,
+        selectedCells: [6, 7, 8, 15, 16, 17],
       },
     ],
   },
@@ -112,6 +201,7 @@ const calculateSelectedCells = (startIndex, rowSpan, colSpan, columns) => {
 
 // Resize grid while maintaining merged cells
 const resizeGrid = (currentTemplate, newRows, newColumns) => {
+  // eslint-disable-next-line
   const { rows: oldRows, columns: oldColumns, mergedCells } = currentTemplate;
 
   // Adjust merged cells for new dimensions

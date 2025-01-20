@@ -279,8 +279,6 @@ const AdCanvas = () => {
 
   // Function to handle the creation of a new layout
   const resizeGrid = (newRows, newColumns) => {
-    const newTotalCells = newRows * newColumns;
-
     // Create a list of current merged cells before resizing
     const currentMergedCells = gridItems
       .map((item, index) => {
@@ -966,12 +964,20 @@ const AdCanvas = () => {
   if (difference === 0) {
     aspectRatio = "1:1";
   } else {
-    // Calculate the base aspect ratio and increment/decrement by 5 for each step away from 1:1
-    const widthRatio = 16 + (Math.abs(difference) - 1) * 5;
+    // Calculate the base aspect ratio based on the difference
+    let widthRatio;
     const heightRatio = 9;
 
+    if (difference === 4) {
+      // Special case for 32:9
+      widthRatio = 32;
+    } else {
+      // For other ratios, use the original calculation
+      widthRatio = 16 + (Math.abs(difference) - 1) * 5;
+    }
+
     if (difference > 0) {
-      // If columns > rows, we use width:height format (e.g., 16:9, 21:9)
+      // If columns > rows, we use width:height format (e.g., 16:9, 21:9, 32:9)
       aspectRatio = `${widthRatio}:${heightRatio}`;
     } else {
       // If rows > columns, we use height:width format (e.g., 9:16, 9:21)
