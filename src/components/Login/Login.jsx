@@ -8,7 +8,7 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [role, setRole] = useState("Operator");
+  const [roles, setRole] = useState("Operator");
   const navigate = useNavigate();
   const [alertConfig, setAlertConfig] = useState({
     isOpen: false,
@@ -37,7 +37,7 @@ const Login = () => {
     try {
       await axios.post(
         "http://localhost:5000/api/login",
-        { username, password, role },
+        { username, password, roles },
         {
           headers: {
             "Content-Type": "application/json",
@@ -93,7 +93,7 @@ const Login = () => {
                 key={roleType}
                 onClick={() => setRole(roleType)}
                 className={`relative px-6 py-2 font-semibold transition-all duration-300 ${
-                  role === roleType
+                  roles === roleType
                     ? "bg-bg-accent text-base-white"
                     : "bg-transparent text-text-light hover:bg-base-lightgrey dark:text-text-dark dark:hover:bg-base-grey"
                 }`}

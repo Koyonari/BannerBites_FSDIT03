@@ -7,6 +7,7 @@ import UserHome from "./components/UserHome/UserHome";
 import LayoutList from "./components/LayoutList/LayoutList";
 import AdUnit from "./components/AdUnit/AdUnit";
 import Login from "./components/Login/Login";
+import CustomRole from "./components/CustomRole/CustomRole";
 
 const App = () => {
   return (
@@ -17,6 +18,7 @@ const App = () => {
       <Route path="/layouts" element={<LayoutList />} />
       <Route path="/adunit" element={<AdUnit />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/customrole" element={<CustomRole />} />
     </Routes>
   );
 };
