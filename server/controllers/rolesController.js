@@ -4,6 +4,7 @@ const {
   updateRole,
   deleteRole,
   getAllRoles,
+  getPermissionsByRole,
 } = require("../models/RolesModel");
 
 const fetchPermissions = async (req, res) => {

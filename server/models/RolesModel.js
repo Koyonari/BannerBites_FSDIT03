@@ -117,10 +117,36 @@ const getAllRoles = async () => {
   return data.Items || [];
 };
 
+const getPermissionsByRole = async (role) => {
+  if (!role) {
+    throw new Error("Role is required");
+  }
+
+  const params = {
+    TableName: process.env.DYNAMODB_TABLE_ROLES,
+    Key: { role },
+  };
+
+  const data = await dynamoDb.send(new GetCommand(params));
+  console.log("DynamoDB Response:", data);
+
+  if (!data.Item) {
+    throw new Error(`Permissions for role ${role} not found`);
+  }
+
+  // Directly return the permissions object since it is already flat
+  const permissions = data.Item.permissions || {};
+
+  return {
+    permissions,
+  };
+};
+
 module.exports = {
   getRole,
   createRole,
   updateRole,
   deleteRole,
   getAllRoles,
+  getPermissionsByRole,
 };

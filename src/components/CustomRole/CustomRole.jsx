@@ -3,78 +3,68 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../Navbar";
 import Cookies from "js-cookie";
 
-const token = Cookies.get("authToken"); // Assuming the token is stored in cookies
-let userRole = null;
-
-if (token) {
-  try {
-    const decodedToken = jwtDecode(token);
-    userRole = decodedToken.role; // Ensure the token contains a "role" field
-  } catch (err) {
-    console.error("Error decoding token:", err);
-  }
-} else {
-  console.warn("No token found");
-}
-
-console.log("User Role:", userRole); // Should display the role, e.g., "Operator"
-
-
 const CustomRole = ({ user, onRoleChange }) => {
   const [token, setToken] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const [customRoles, setCustomRoles] = useState([]);
+  const [permissions, setPermissions] = useState({});
   const [defaultRoles, setDefaultRoles] = useState([]);
   const [newRole, setNewRole] = useState({
     role: "",
-    permissions: { delete: false, edit: false, upload: false, view: false },
+    permissions: { delete: false, edit: false, upload: false, view: false, roleManagement: false },
   });
-
   const [editMode, setEditMode] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
 
-  //Check if token exists in cookies
   useEffect(() => {
+    // Retrieve token on page load
     const retrievedToken = Cookies.get("authToken");
-    console.log("Token from Cookies:", retrievedToken); // Log token
-    setToken(retrievedToken);
-
-    if (retrievedToken) {
-      try {
-        const decodedToken = jwtDecode(retrievedToken);
-        console.log("Decoded Token:", decodedToken); // Log the decoded token
-        setUserRole(decodedToken.role || "No role detected");
-      } catch (err) {
-        console.error("Error decoding token:", err);
-      }
-    } else {
-      console.warn("No token found");
+    if (!retrievedToken) {
+      console.warn("No token found on initial load.");
+      return;
     }
+
+    console.log("Token retrieved:", retrievedToken);
+    setToken(retrievedToken);
   }, []);
 
-  // Decode token and set user role
   useEffect(() => {
-    const token = Cookies.get("authToken");
     if (token) {
+      console.log("Decoding token...");
       try {
-        const decodedToken = jwtDecode(token); // Decode the token
-        console.log("Decoded Token:", decodedToken); // Log the decoded token to verify its structure
-        setUserRole(decodedToken.role || "No role detected"); // Use 'roles' field from token
-      } catch (err) {
-        console.error("Error decoding token:", err);
-      }
-    } else {
-      console.warn("No token found");
-    }
-  }, []); // Empty dependency array ensures this runs once on mount
+        const decodedToken = jwtDecode(token);
+        const role = decodedToken.role || "No role detected";
+        setUserRole(role);
+        console.log("Role decoded:", role);
 
-  // Fetch roles from the API
+        // Fetch permissions for the decoded role
+        fetchPermissions(role);
+      } catch (err) {
+        console.error("Error decoding token:", err.message);
+      }
+    }
+  }, [token]);
+
+  const fetchPermissions = async (role) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/roles/permissions/${role}`);
+      if (!response.ok) {
+        throw new Error(`Fetch failed with status: ${response.status}`);
+      }
+      const data = await response.json();
+      setPermissions(data.permissions || {}); // Dynamically set permissions
+    } catch (error) {
+      console.error("Error fetching permissions:", error.message);
+    }
+  };
+
+
+  // Fetch roles from the API on component mount
   useEffect(() => {
     const fetchRoles = async () => {
       try {
         const response = await fetch("http://localhost:5000/api/roles");
         const data = await response.json();
-        setDefaultRoles(data); // Use API response
+        setDefaultRoles(data);
       } catch (error) {
         console.error("Error fetching roles:", error);
       }
@@ -82,13 +72,17 @@ const CustomRole = ({ user, onRoleChange }) => {
     fetchRoles();
   }, []);
 
+  // Log permission changes for debugging
+  useEffect(() => {
+    console.log("Permissions state updated:", permissions);
+  }, [permissions]);
+
   // Handle creating a new role
   const handleCreateRole = async () => {
     if (!newRole.role) {
       alert("Role name is required");
       return;
     }
-
     try {
       const response = await fetch("http://localhost:5000/api/roles", {
         method: "POST",
@@ -128,7 +122,7 @@ const CustomRole = ({ user, onRoleChange }) => {
     }
   };
 
-  // Handle starting the edit process
+  // Handle editing a role
   const handleEditRole = (role) => {
     setEditMode(true);
     setEditingRole(role);
@@ -167,13 +161,13 @@ const CustomRole = ({ user, onRoleChange }) => {
 
   // Handle permission change
   const handlePermissionChange = (perm) => {
-    setNewRole({
-      ...newRole,
+    setNewRole((prevRole) => ({
+      ...prevRole,
       permissions: {
-        ...newRole.permissions,
-        [perm]: !newRole.permissions[perm],
+        ...prevRole.permissions,
+        [perm]: !prevRole.permissions[perm],
       },
-    });
+    }));
   };
 
   return (
@@ -185,8 +179,9 @@ const CustomRole = ({ user, onRoleChange }) => {
             Role Management
           </h1>
           <h1>
-          Your role: {userRole || "No role detected"} {/* Display user role */}
+            Your role: {userRole || "No role detected"} {/* Display user role */}
           </h1>
+  
           {/* Role List */}
           <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
             Role List
@@ -203,71 +198,84 @@ const CustomRole = ({ user, onRoleChange }) => {
                   </h3>
                   <p className="text-gray-600 dark:text-gray-300">
                     {Object.entries(roleObj.permissions)
-                      .map(([perm, value]) => `${perm.toUpperCase()}: ${value ? "Yes" : "No"}`)
+                      .map(([perm, value]) => `${perm}: ${value ? "Yes" : "No"}`)
                       .join(", ")}
                   </p>
                 </div>
+  
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEditRole(roleObj)}
-                    className="bg-yellow-500 text-white py-1 px-3 rounded hover:bg-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteRole(roleObj.role)}
-                    className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
+                  {permissions?.edit && (
+                    <button
+                      onClick={() => handleEditRole(roleObj)}
+                      className="bg-yellow-500 text-white py-1 px-3 rounded hover:bg-yellow-600"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {permissions?.delete && (
+                    <button
+                      onClick={() => handleDeleteRole(roleObj.role)}
+                      className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
-
+  
           {/* Create or Edit Role */}
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mt-8">
-            {editMode ? "Edit Role" : "Create Custom Role"}
-          </h2>
-          <div className="mt-4">
+          
+          {permissions?.roleManagement && (
+  <>
+    <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mt-8">
+      {editMode ? "Edit Role" : "Create Custom Role"}
+    </h2>
+    <div className="mt-4">
+      <input
+        type="text"
+        placeholder="Role Name"
+        value={newRole.role}
+        onChange={(e) =>
+          setNewRole({ ...newRole, role: e.target.value })
+        }
+        className="p-2 border rounded w-full mb-4 dark:bg-gray-700 dark:text-white"
+        disabled={editMode}
+      />
+      <div className="flex gap-4">
+        {Object.keys(permissions).map((perm) => (
+          <label
+            key={perm}
+            className="flex items-center gap-2 text-gray-800 dark:text-white"
+          >
             <input
-              type="text"
-              placeholder="Role Name"
-              value={newRole.role}
-              onChange={(e) =>
-                setNewRole({ ...newRole, role: e.target.value })
-              }
-              className="p-2 border rounded w-full mb-4 dark:bg-gray-700 dark:text-white"
-              disabled={editMode}
+              type="checkbox"
+              checked={newRole.permissions[perm] || false}
+              onChange={() => handlePermissionChange(perm)}
             />
-            <div className="flex gap-4">
-              {Object.keys(newRole.permissions).map((perm) => (
-                <label
-                  key={perm}
-                  className="flex items-center gap-2 text-gray-800 dark:text-white"
-                >
-                  <input
-                    type="checkbox"
-                    checked={newRole.permissions[perm]}
-                    onChange={() => handlePermissionChange(perm)}
-                  />
-                  {perm}
-                </label>
-              ))}
-            </div>
-            <button
-              onClick={editMode ? handleUpdateRole : handleCreateRole}
-              className={`mt-4 py-2 px-4 rounded ${
-                editMode ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600"
-              } text-white`}
-            >
-              {editMode ? "Update Role" : "Create Role"}
-            </button>
-          </div>
+            {perm.charAt(0).toUpperCase() + perm.slice(1)}
+          </label>
+        ))}
+      </div>
+      <button
+        onClick={editMode ? handleUpdateRole : handleCreateRole}
+        className={`mt-4 py-2 px-4 rounded ${
+          editMode
+            ? "bg-green-500 hover:bg-green-600"
+            : "bg-blue-500 hover:bg-blue-600"
+        } text-white`}
+      >
+        {editMode ? "Update Role" : "Create Role"}
+      </button>
+    </div>
+  </>
+)}
+
         </div>
       </div>
     </div>
   );
-};
+};  
 
 export default CustomRole;

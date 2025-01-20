@@ -6,6 +6,7 @@ const {
   createNewRole,
   updateRolePermissions,
   deleteRoleByName,
+  fetchPermissions,
 } = require("../controllers/rolesController");
 const { verifyPermission } = require("../middleware/rolesMiddleware");
 
