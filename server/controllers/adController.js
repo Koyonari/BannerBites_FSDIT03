@@ -90,6 +90,25 @@ const AdController = {
       res.status(500).json({ message: "Internal server error." });
     }
   },
+
+  // delete Ad by AdId
+  deleteAd: async (req, res) => {
+    try {
+      const { adId } = req.params;
+  
+      if (!adId) {
+        return res.status(400).json({ message: "Ad ID is required." });
+      }
+  
+      await AdModel.deleteAdById(adId);
+      res.status(200).json({ message: `Ad with ID ${adId} deleted successfully.` });
+    } catch (error) {
+      console.error("Error deleting ad:", error);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
+  
 };
+
 
 module.exports = AdController;

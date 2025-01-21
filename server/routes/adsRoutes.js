@@ -11,4 +11,7 @@ router.get("/all", AdController.getAllAds);
 // Upload Ad (Media + Metadata)
 router.post("/upload", AdController.uploadAd);
 
+// Delete Ad by adId
+router.delete("/delete/:adId", AdController.deleteAd);
+
 module.exports = router;
