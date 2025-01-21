@@ -17,8 +17,28 @@ const AdUnit = () => {
   const [isUploadPopupVisible, setIsUploadPopupVisible] = useState(false);
   const [isDeletePopupVisible, setIsDeletePopupVisible] = useState(false);
   const [adToDelete, setAdToDelete] = useState(null);
+  const [notification, setNotification] = useState({
+    isVisible: false,
+    message: "",
+    isError: false,
+  });
 
-  // Existing fetch, upload, and delete functions remain unchanged
+  const showNotification = (message, isError = false) => {
+    setNotification({
+      isVisible: true,
+      message,
+      isError,
+    });
+  };
+
+  const hideNotification = () => {
+    setNotification({
+      isVisible: false,
+      message: "",
+      isError: false,
+    });
+  };
+
   const fetchAds = async () => {
     try {
       const response = await axios.get(`${apiUrl}/api/ads/all`);
@@ -32,13 +52,14 @@ const AdUnit = () => {
       setFilteredAds(mediaAds);
     } catch (error) {
       console.error("Error fetching ads:", error);
+      showNotification("Failed to fetch advertisements", true);
     }
   };
 
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!mediaFile) {
-      alert("Please select a valid media file.");
+      showNotification("Please select a valid media file.", true);
       return;
     }
     try {
@@ -59,10 +80,10 @@ const AdUnit = () => {
       setTitle("");
       setDescription("");
       fetchAds();
-      alert("Media uploaded successfully!");
+      showNotification("Media uploaded successfully!");
     } catch (error) {
       console.error("Error uploading media:", error);
-      alert("Failed to upload media.");
+      showNotification("Failed to upload media.", true);
     } finally {
       setUploading(false);
     }
@@ -73,10 +94,10 @@ const AdUnit = () => {
       await axios.delete(`${apiUrl}/api/ads/delete/${adToDelete}`);
       setIsDeletePopupVisible(false);
       fetchAds();
-      alert("Ad deleted successfully!");
+      showNotification("Ad deleted successfully!");
     } catch (error) {
       console.error("Error deleting ad:", error);
-      alert("Failed to delete ad.");
+      showNotification("Failed to delete ad.", true);
     }
   };
 
@@ -229,6 +250,26 @@ const AdUnit = () => {
                 className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Popup */}
+      {notification.isVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-96 rounded-lg p-6 shadow-xl light-bg dark:dark-bg">
+            <h2 className="mb-2 text-xl font-bold primary-text dark:secondary-text">
+              {notification.isError ? "Error" : "Success"}
+            </h2>
+            <p className="mb-6 neutral-text">{notification.message}</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={hideNotification}
+                className="rounded-lg px-4 py-2 text-sm font-medium primary-bg secondary-text hover:secondary-bg"
+              >
+                OK
               </button>
             </div>
           </div>
