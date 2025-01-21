@@ -71,7 +71,7 @@ function Navbar() {
   return (
     <>
       <nav className="fixed left-0 right-0 top-0 z-[999] border-b-2 border-b-black transition-colors duration-500 light-bg dark:border-b-white dark:dark-bg">
-        <div className="flex h-20 items-center justify-between px-6 xl:h-32">
+        <div className="flex h-20 items-center justify-between px-6 xl:h-24">
           <div>
             <h1 className="text-3xl font-bold primary-text dark:secondary-text xl:text-5xl">
               Banner
