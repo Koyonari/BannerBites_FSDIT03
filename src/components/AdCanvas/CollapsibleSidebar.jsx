@@ -11,6 +11,7 @@ import {
   Layout,
 } from "lucide-react";
 import Sidebar from "./Sidebar";
+import AdsSidebar from "./AdsSidebar";
 import { PRESET_TEMPLATES, loadPresetTemplate } from "../../template/template";
 
 const CollapsibleSidebar = ({
@@ -285,21 +286,7 @@ const CollapsibleSidebar = ({
                     <h2 className="mb-4 text-lg font-bold text-text-light dark:text-text-dark">
                       Media
                     </h2>
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          placeholder="Search advertisements"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full rounded-lg border px-4 py-2 pl-10 text-sm transition-all duration-300 focus:outline-none focus:ring-primary dark:secondary-border dark:neutralalt-bg dark:secondary-text"
-                        />
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 neutral-text" />
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-4">
-                      <div className="h-24 w-full transform rounded-lg bg-bg-light transition-all duration-300 hover:scale-[1.02] dark:bg-bg-dark"></div>
-                    </div>
+                    <AdsSidebar />
                   </div>
                 )}
               </div>
