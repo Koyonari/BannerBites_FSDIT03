@@ -73,6 +73,23 @@ const AdController = {
       res.status(500).json({ message: "Internal server error." });
     }
   },
+
+  // Batch get ads by IDs
+  batchGetAds: async (req, res) => {
+    try {
+      const { adIds } = req.body;
+
+      if (!adIds || !Array.isArray(adIds)) {
+        return res.status(400).json({ message: "Invalid adIds provided." });
+      }
+
+      const ads = await AdModel.getAdsByIds(adIds);
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching ads by adIds:", error);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
 };
 
 module.exports = AdController;
