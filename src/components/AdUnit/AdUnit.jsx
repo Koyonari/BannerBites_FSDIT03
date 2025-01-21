@@ -14,7 +14,7 @@ const AdUnit = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [isUploadPopupVisible, setIsUploadPopupVisible] = useState(false); // For upload popup
   const [isDeletePopupVisible, setIsDeletePopupVisible] = useState(false); // For delete confirmation popup
   const [adToDelete, setAdToDelete] = useState(null); // Store the ad to delete
 
@@ -63,7 +63,7 @@ const AdUnit = () => {
       });
 
       // Step 3: Refresh ads after upload
-      setIsFormVisible(false);
+      setIsUploadPopupVisible(false); // Close the upload popup
       setMediaFile(null);
       setTitle("");
       setDescription("");
@@ -125,76 +125,74 @@ const AdUnit = () => {
 
         {/* Upload Button */}
         <button
-          onClick={() => setIsFormVisible(!isFormVisible)}
+          onClick={() => setIsUploadPopupVisible(true)}
           className="h-10 w-full rounded-lg text-sm font-bold transition-all duration-300 ease-in-out primary-bg secondary-text hover:secondary-bg sm:w-1/4 lg:h-16 lg:text-lg xl:h-20 xl:text-2xl"
         >
-          {isFormVisible ? "Close Form" : "Upload Media"}
+          Upload Media
         </button>
       </div>
 
-      {/* Upload Form */}
-      {isFormVisible && (
-        <div className="mx-auto max-w-2xl px-4 py-6">
-          <form
-            onSubmit={handleUpload}
-            className="space-y-4 rounded-xl bg-white p-6 shadow-lg transition-all duration-300 ease-in-out dark:bg-gray-800"
-          >
-            <div>
-              <label className="block text-sm font-bold primary-text dark:secondary-text">
-                Media Type:
-              </label>
-              <select
-                value={mediaType}
-                onChange={(e) => setMediaType(e.target.value)}
-                className="w-full rounded-lg border bg-transparent px-3 py-2 secondary-border primary-text dark:secondary-text"
-              >
-                <option value="image">Image</option>
-                <option value="video">Video</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-bold primary-text dark:secondary-text">
-                Title:
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter title"
-                className="w-full rounded-lg border bg-transparent px-3 py-2 secondary-border primary-text dark:secondary-text"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold primary-text dark:secondary-text">
-                Description:
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter description"
-                className="w-full rounded-lg border bg-transparent px-3 py-2 secondary-border primary-text dark:secondary-text"
-              />
-            </div>
-            <div className="relative">
-              <label className="block text-sm font-bold primary-text dark:secondary-text">
-                Media File:
-              </label>
-              <input
-                type="file"
-                accept={mediaType === "image" ? "image/*" : "video/*"}
-                onChange={(e) => setMediaFile(e.target.files[0])}
-                className="w-full cursor-pointer rounded-lg border bg-transparent px-3 py-2 secondary-border primary-text dark:secondary-text"
-              />
-              <Upload className="absolute right-3 top-1/2 -translate-y-1/2 transform text-gray-400" />
-            </div>
-            <button
-              type="submit"
-              disabled={uploading}
-              className="w-full transform rounded-lg py-2 font-bold text-white transition-all duration-300 ease-in-out primary-bg hover:-translate-y-1 hover:secondary-bg"
-            >
-              {uploading ? "Uploading..." : "Upload Media"}
-            </button>
-          </form>
+      {/* Upload Media Popup */}
+      {isUploadPopupVisible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-xl font-bold mb-4">Upload Media</h2>
+            <form onSubmit={handleUpload} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold mb-1">Media Type:</label>
+                <select
+                  value={mediaType}
+                  onChange={(e) => setMediaType(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="image">Image</option>
+                  <option value="video">Video</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-1">Title:</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-1">Description:</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-1">Media File:</label>
+                <input
+                  type="file"
+                  accept={mediaType === "image" ? "image/*" : "video/*"}
+                  onChange={(e) => setMediaFile(e.target.files[0])}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div className="flex justify-end gap-4 mt-4">
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                >
+                  {uploading ? "Uploading..." : "Upload"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsUploadPopupVisible(false)}
+                  className="px-4 py-2 bg-gray-300 text-black rounded"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -261,9 +259,7 @@ const AdUnit = () => {
                   <h3 className="text-lg font-bold">
                     {ad.content?.title || "Untitled"}
                   </h3>
-                  <p className="text-sm text-gray-500">
-                    Media ID: {ad.adId}
-                  </p>
+                  <p className="text-sm text-gray-500">Media ID: {ad.adId}</p>
                 </div>
               </div>
             ))}
