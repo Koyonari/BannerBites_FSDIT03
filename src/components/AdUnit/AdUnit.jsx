@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Navbar from "../Navbar";
-import { Search, Trash2 } from "lucide-react";
+import { Search, Trash2, Upload, X } from "lucide-react";
 
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -14,11 +14,11 @@ const AdUnit = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [isUploadPopupVisible, setIsUploadPopupVisible] = useState(false); // For upload popup
-  const [isDeletePopupVisible, setIsDeletePopupVisible] = useState(false); // For delete confirmation popup
-  const [adToDelete, setAdToDelete] = useState(null); // Store the ad to delete
+  const [isUploadPopupVisible, setIsUploadPopupVisible] = useState(false);
+  const [isDeletePopupVisible, setIsDeletePopupVisible] = useState(false);
+  const [adToDelete, setAdToDelete] = useState(null);
 
-  // Fetch ads from the backend
+  // Existing fetch, upload, and delete functions remain unchanged
   const fetchAds = async () => {
     try {
       const response = await axios.get(`${apiUrl}/api/ads/all`);
@@ -35,19 +35,14 @@ const AdUnit = () => {
     }
   };
 
-  // Upload media file and metadata
   const handleUpload = async (e) => {
     e.preventDefault();
-
     if (!mediaFile) {
       alert("Please select a valid media file.");
       return;
     }
-
     try {
       setUploading(true);
-
-      // Step 1: Request pre-signed URL for S3 upload
       const presignedResponse = await axios.post(`${apiUrl}/api/ads/upload`, {
         fileName: mediaFile.name,
         contentType: mediaFile.type,
@@ -55,16 +50,11 @@ const AdUnit = () => {
         description,
         type: mediaType,
       });
-
       const { s3Url } = presignedResponse.data;
-
-      // Step 2: Upload file to S3
       await axios.put(s3Url, mediaFile, {
         headers: { "Content-Type": mediaFile.type },
       });
-
-      // Step 3: Refresh ads after upload
-      setIsUploadPopupVisible(false); // Close the upload popup
+      setIsUploadPopupVisible(false);
       setMediaFile(null);
       setTitle("");
       setDescription("");
@@ -78,12 +68,11 @@ const AdUnit = () => {
     }
   };
 
-  // Delete an ad
   const handleDeleteAd = async () => {
     try {
       await axios.delete(`${apiUrl}/api/ads/delete/${adToDelete}`);
-      setIsDeletePopupVisible(false); // Close the delete popup
-      fetchAds(); // Refresh ads
+      setIsDeletePopupVisible(false);
+      fetchAds();
       alert("Ad deleted successfully!");
     } catch (error) {
       console.error("Error deleting ad:", error);
@@ -91,12 +80,10 @@ const AdUnit = () => {
     }
   };
 
-  // Initialize ads on component mount
   useEffect(() => {
     fetchAds();
   }, []);
 
-  // Filter ads based on search term
   useEffect(() => {
     const results = ads.filter((ad) =>
       (ad.content?.title || "")
@@ -111,26 +98,27 @@ const AdUnit = () => {
       <Navbar />
 
       {/* Header Section */}
-      <div className="mx-auto flex w-full flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-8 md:px-12 lg:px-16 lg:text-lg xl:h-20 xl:px-24 2xl:px-32">
+      <div className="mx-auto flex w-full flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6 lg:p-8">
         {/* Search Bar */}
         <div className="w-full sm:w-3/4">
-          <div className="relative h-10 rounded-lg border secondary-border lg:h-16 xl:h-20">
+          <div className="relative">
             <input
               type="text"
               placeholder="Search advertisements"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-full w-full rounded-lg bg-transparent px-3 text-sm primary-text placeholder-primary focus:outline-none dark:secondary-text dark:placeholder-secondary sm:text-base lg:text-lg xl:text-2xl"
+              className="h-12 w-full rounded-lg border px-4 pl-10 text-sm transition-colors primary-border primary-text placeholder-primary ring-primary focus:outline-none focus:ring-2 dark:bg-bg-dark dark:secondary-border dark:secondary-text dark:placeholder-secondary lg:h-14 lg:text-base"
             />
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 transform text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform neutral-text" />
           </div>
         </div>
 
         {/* Upload Button */}
         <button
           onClick={() => setIsUploadPopupVisible(true)}
-          className="h-10 w-full rounded-lg text-sm font-bold transition-all duration-300 ease-in-out primary-bg secondary-text hover:secondary-bg sm:w-1/4 lg:h-16 lg:text-lg xl:h-20 xl:text-2xl"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all duration-300 primary-bg secondary-text hover:secondary-bg focus:ring-2 focus:ring-offset-2 sm:w-1/4 lg:h-14 lg:text-base"
         >
+          <Upload className="h-5 w-5" />
           Upload Media
         </button>
       </div>
@@ -138,66 +126,79 @@ const AdUnit = () => {
       {/* Upload Media Popup */}
       {isUploadPopupVisible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-96 rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-xl font-bold">Upload Media</h2>
+          <div className="w-96 rounded-lg p-6 shadow-xl light-bg dark:dark-bg">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold primary-text dark:secondary-text">
+                Upload Media
+              </h2>
+              <button
+                onClick={() => setIsUploadPopupVisible(false)}
+                className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <X className="h-5 w-5 neutral-text" />
+              </button>
+            </div>
             <form onSubmit={handleUpload} className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-bold">
-                  Media Type:
+                <label className="mb-1.5 block text-sm font-medium primary-text dark:secondary-text">
+                  Media Type
                 </label>
                 <select
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
+                  className="w-full rounded-lg border px-3 py-2 text-sm primary-border primary-text dark:bg-bg-dark dark:secondary-border dark:secondary-text"
                 >
                   <option value="image">Image</option>
                   <option value="video">Video</option>
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-bold">Title:</label>
+                <label className="mb-1.5 block text-sm font-medium primary-text dark:secondary-text">
+                  Title
+                </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
+                  className="w-full rounded-lg border px-3 py-2 text-sm primary-border primary-text dark:bg-bg-dark dark:secondary-border dark:secondary-text"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-bold">
-                  Description:
+                <label className="mb-1.5 block text-sm font-medium primary-text dark:secondary-text">
+                  Description
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
+                  className="w-full rounded-lg border px-3 py-2 text-sm primary-border primary-text dark:bg-bg-dark dark:secondary-border dark:secondary-text"
+                  rows={3}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-bold">
-                  Media File:
+                <label className="mb-1.5 block text-sm font-medium primary-text dark:secondary-text">
+                  Media File
                 </label>
                 <input
                   type="file"
                   accept={mediaType === "image" ? "image/*" : "video/*"}
                   onChange={(e) => setMediaFile(e.target.files[0])}
-                  className="w-full rounded border px-3 py-2"
+                  className="w-full rounded-lg border px-3 py-2 text-sm primary-border primary-text dark:bg-bg-dark dark:secondary-border dark:secondary-text"
                 />
               </div>
-              <div className="mt-4 flex justify-end gap-4">
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="rounded bg-blue-500 px-4 py-2 text-white"
-                >
-                  {uploading ? "Uploading..." : "Upload"}
-                </button>
+              <div className="mt-6 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsUploadPopupVisible(false)}
-                  className="rounded bg-gray-300 px-4 py-2 text-black"
+                  className="rounded-lg px-4 py-2 text-sm font-medium neutral-bg neutral-text hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                 >
                   Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="rounded-lg px-4 py-2 text-sm font-medium primary-bg secondary-text hover:secondary-bg disabled:opacity-50"
+                >
+                  {uploading ? "Uploading..." : "Upload"}
                 </button>
               </div>
             </form>
@@ -208,21 +209,26 @@ const AdUnit = () => {
       {/* Delete Confirmation Popup */}
       {isDeletePopupVisible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-xl font-bold">Confirm Delete</h2>
-            <p>Are you sure you want to delete this ad?</p>
-            <div className="mt-4 flex justify-end gap-4">
+          <div className="w-96 rounded-lg p-6 shadow-xl light-bg dark:dark-bg">
+            <h2 className="mb-2 text-xl font-bold primary-text dark:secondary-text">
+              Confirm Delete
+            </h2>
+            <p className="mb-6 neutral-text">
+              Are you sure you want to delete this ad? This action cannot be
+              undone.
+            </p>
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => setIsDeletePopupVisible(false)}
-                className="rounded bg-gray-300 px-4 py-2 text-black"
+                className="rounded-lg px-4 py-2 text-sm font-medium neutral-bg neutral-text hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAd}
-                className="rounded bg-red-500 px-4 py-2 text-white"
+                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600"
               >
-                Confirm
+                Delete
               </button>
             </div>
           </div>
@@ -230,26 +236,24 @@ const AdUnit = () => {
       )}
 
       {/* Display Ads Grid */}
-      <div className="px-8 py-8 lg:px-16 xl:px-24 2xl:px-32">
+      <div className="p-4 sm:p-6 lg:p-8">
         {filteredAds.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredAds.map((ad) => (
               <div
                 key={ad.adId}
-                className="group relative overflow-hidden rounded-xl border-2 bg-white p-4 shadow-lg transition-all duration-300 ease-in-out primary-border hover:-translate-y-2 hover:shadow-xl dark:bg-gray-800"
+                className="group relative overflow-hidden rounded-lg border shadow-sm transition-all duration-300 primary-border light-bg hover:-translate-y-1 hover:shadow-lg dark:secondary-border dark:dark-bg"
               >
-                {/* Trash Icon for Delete */}
                 <button
                   onClick={() => {
                     setAdToDelete(ad.adId);
                     setIsDeletePopupVisible(true);
                   }}
-                  className="absolute right-2 top-2 rounded-full bg-red-500 p-2 text-white"
+                  className="absolute right-3 top-3 rounded-full bg-red-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-red-600 group-hover:opacity-100"
                 >
-                  <Trash2 />
+                  <Trash2 className="h-4 w-4" />
                 </button>
-                {/* Media Display */}
-                <div className="aspect-video overflow-hidden rounded-lg">
+                <div className="aspect-video overflow-hidden">
                   {ad.type.toLowerCase() === "image" ? (
                     <img
                       src={ad.content?.src}
@@ -264,20 +268,22 @@ const AdUnit = () => {
                     />
                   )}
                 </div>
-                <div className="mt-4">
-                  <h3 className="text-lg font-bold">
+                <div className="p-4">
+                  <h3 className="mb-2 text-lg font-semibold primary-text dark:secondary-text">
                     {ad.content?.title || "Untitled"}
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="mb-2 text-sm neutral-text">
                     {ad.content?.description || "No description provided."}
                   </p>
-                  <p className="text-sm text-gray-500">Media ID: {ad.adId}</p>
+                  <p className="text-xs neutral-text">ID: {ad.adId}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-center">No ads found.</p>
+          <div className="flex h-40 items-center justify-center">
+            <p className="text-center neutral-text">No advertisements found</p>
+          </div>
         )}
       </div>
     </div>
