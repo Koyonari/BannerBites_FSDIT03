@@ -170,21 +170,21 @@ const AdModel = {
     try {
       console.log("Fetching all ads from the DynamoDB table.");
       const tableName = process.env.DYNAMODB_TABLE_ADS;
-  
+
       if (!tableName) {
         throw new Error("DYNAMODB_TABLE_ADS environment variable is not set.");
       }
-  
+
       console.log("Using DynamoDB Table Name:", tableName);
-  
+
       // Perform the scan
       const command = new ScanCommand({
         TableName: tableName,
       });
-  
+
       const response = await dynamoDb.send(command);
       console.log("ScanCommand Response:", JSON.stringify(response, null, 2));
-  
+
       // Return items directly since they are plain JavaScript objects
       const ads = response.Items || [];
       console.log(`Successfully fetched ${ads.length} ads.`);
@@ -194,7 +194,34 @@ const AdModel = {
       throw error; // Propagate the error
     }
   },
+
+  // Function to upload ad Media
+  saveAd: async (ad) => {
+    try {
+      console.log(`Saving Ad with adId: ${ad.adId}`);
+
+      const params = {
+        TableName: process.env.DYNAMODB_TABLE_ADS,
+        Item: {
+          adId: ad.adId,
+          type: ad.type,
+          content: ad.content,
+          styles: ad.styles || {},
+          createdAt: ad.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      };
+
+      const command = new PutCommand(params);
+      await dynamoDb.send(command);
+
+      console.log(`Ad ${ad.adId} saved successfully.`);
+      return { success: true, adId: ad.adId };
+    } catch (error) {
+      console.error(`Error saving ad with adId ${ad.adId}:`, error.message);
+      throw error;
+    }
+  },
 };
-  
 
 module.exports = AdModel;

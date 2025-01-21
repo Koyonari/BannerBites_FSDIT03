@@ -2,6 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const AdModel = require('../models/AdModel');
+const AdController = require("../controllers/adController");
+
 
 // Endpoint to batch get ads by adIds
 router.post('/batchGet', async (req, res) => {
@@ -20,15 +22,10 @@ router.post('/batchGet', async (req, res) => {
   }
 });
 
-// Endpoint to get all ads
-router.get('/all', async (req, res) => {
-  try {
-    const ads = await AdModel.getAllAds(); // Call the getAllAds function
-    res.json(ads); // Return all ads
-  } catch (error) {
-    console.error('Error fetching all ads:', error);
-    res.status(500).json({ message: 'Internal server error.' });
-  }
-});
+// Endpoint to get all ads (moved logic to AdController)
+router.get("/all", AdController.getAllAds);
+
+// Upload Ad (Media + Metadata)
+router.post("/upload", AdController.uploadAd);
 
 module.exports = router;

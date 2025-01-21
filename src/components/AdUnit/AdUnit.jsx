@@ -16,6 +16,7 @@ const AdUnit = () => {
   const [uploading, setUploading] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
 
+  // Fetch ads from the backend
   const fetchAds = async () => {
     try {
       const response = await axios.get(`${apiUrl}/api/ads/all`);
@@ -23,7 +24,7 @@ const AdUnit = () => {
         (ad) =>
           ad.type &&
           (ad.type.toLowerCase() === "image" ||
-            ad.type.toLowerCase() === "video"),
+            ad.type.toLowerCase() === "video")
       );
       setAds(mediaAds);
       setFilteredAds(mediaAds);
@@ -32,8 +33,10 @@ const AdUnit = () => {
     }
   };
 
+  // Upload media file and metadata
   const handleUpload = async (e) => {
     e.preventDefault();
+
     if (!mediaFile) {
       alert("Please select a valid media file.");
       return;
@@ -41,21 +44,32 @@ const AdUnit = () => {
 
     try {
       setUploading(true);
-      const formData = new FormData();
-      formData.append("file", mediaFile);
-      formData.append("type", mediaType);
-      formData.append("title", title);
-      formData.append("description", description);
 
-      await axios.post(`${apiUrl}/api/ads/create`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      // Step 1: Request pre-signed URL for S3 upload
+      const presignedResponse = await axios.post(`${apiUrl}/api/ads/upload`, {
+        fileName: mediaFile.name,
+        contentType: mediaFile.type,
+        title,
+        description,
+        type: mediaType,
       });
 
+      const { s3Url } = presignedResponse.data;
+
+      // Step 2: Upload file to S3
+      await axios.put(s3Url, mediaFile, {
+        headers: {
+          "Content-Type": mediaFile.type,
+        },
+      });
+
+      // Step 3: Refresh ads after upload
       setIsFormVisible(false);
       setMediaFile(null);
       setTitle("");
       setDescription("");
       fetchAds();
+      alert("Media uploaded successfully!");
     } catch (error) {
       console.error("Error uploading media:", error);
       alert("Failed to upload media.");
@@ -64,14 +78,16 @@ const AdUnit = () => {
     }
   };
 
+  // Initialize ads on component mount
   useEffect(() => {
     fetchAds();
   }, []);
 
+  // Filter ads based on search term
   useEffect(() => {
     const results = ads.filter((ad) => {
-      const title = ad.content?.title || "";
-      return title.toLowerCase().includes(searchTerm.toLowerCase());
+      const adTitle = ad.content?.title || "";
+      return adTitle.toLowerCase().includes(searchTerm.toLowerCase());
     });
     setFilteredAds(results);
   }, [searchTerm, ads]);
