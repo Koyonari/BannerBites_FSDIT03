@@ -6,7 +6,12 @@ import TVSelector from "../TVSelector";
 import AssignLayoutToTV from "../AssignLayoutToTV";
 import { MoveLeft } from "lucide-react";
 
+import { getPermissionsFromToken} from "../../utils/permissionsUtils";
+import Cookies from "js-cookie";
+
 const sortOptions = [{ value: "alpha", label: "Sort by Alphabetical" }];
+
+
 
 const Card = ({ title, date, onClick }) => {
   return (
@@ -31,6 +36,19 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
   const [showTVSelector, setShowTVSelector] = useState(false);
   const [selectedTVId, setSelectedTVId] = useState(null);
   const [showLayoutAssignment, setShowLayoutAssignment] = useState(false);
+
+  const [permissions, setPermissions] = useState({});
+
+  useEffect(() => {
+    // Fetch permissions whenever the token changes
+    const token = Cookies.get("authToken");
+    if (token) {
+      getPermissionsFromToken(token).then(setPermissions);
+    } else {
+      console.warn("No auth token found.");
+      setPermissions({});
+    }
+  }, []); // Runs only once when the component mounts
 
   useEffect(() => {
     axios
@@ -160,11 +178,15 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
 
         {/* Create New Button */}
         <div className="w-full sm:w-1/6">
-          <Link to="/ad">
-            <button className="primary-bg hover:secondary-bg h-10 w-full rounded-lg text-sm font-bold transition-colors secondary-text lg:h-16 lg:text-lg xl:h-20 xl:text-2xl">
-              Create New
-            </button>
-          </Link>
+          {permissions?.upload && (
+            <Link to="/ad">
+
+              <button className="primary-bg hover:secondary-bg h-10 w-full rounded-lg text-sm font-bold transition-colors secondary-text lg:h-16 lg:text-lg xl:h-20 xl:text-2xl">
+                Create New
+              </button>
+
+            </Link>
+          )}
         </div>
       </div>
 
