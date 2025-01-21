@@ -279,104 +279,42 @@ const AdCanvas = () => {
 
   // Function to handle the creation of a new layout
   const resizeGrid = (newRows, newColumns) => {
-    // Calculate the new total number of cells
-    const newTotalCells = newRows * newColumns;
-
-    // Create a new grid with the updated number of cells
-    const updatedGrid = Array.from({ length: newTotalCells }, (_, index) => ({
-      scheduledAds: [],
-      isMerged: false,
-      hidden: false,
-      rowSpan: 1,
-      colSpan: 1,
-      index, // Include the index property to keep track of each cell position
-    }));
-
-    // Loop through the existing grid and map each cell to the new grid
-    for (let i = 0; i < gridItems.length; i++) {
-      const currentItem = gridItems[i];
-      const currentRow = Math.floor(i / columns);
-      const currentCol = i % columns;
-
-      // Map the old position to the new grid layout if it fits
-      if (currentRow < newRows && currentCol < newColumns) {
-        const newIndex = currentRow * newColumns + currentCol;
-
-        // Copy over the properties from the existing item
-        updatedGrid[newIndex] = {
-          ...updatedGrid[newIndex], // Keep new properties if any (e.g., default scheduledAds)
-          ...currentItem, // Overwrite with current item properties
-          index: newIndex, // Update the index
-        };
-
-        // Handle merged cells
-        if (currentItem.isMerged && !currentItem.hidden) {
-          // Calculate the dimensions of the merged cell (rowSpan)
-          const newRowSpan = Math.min(
-            currentItem.rowSpan,
-            newRows - currentRow,
-          );
-          // Calculate the dimensions of the merged cell (colSpan)
-          const newColSpan = Math.min(
-            currentItem.colSpan,
-            newColumns - currentCol,
-          );
-          // Update the merged cell with new dimensions
-          updatedGrid[newIndex] = {
-            ...updatedGrid[newIndex],
-            rowSpan: newRowSpan,
-            colSpan: newColSpan,
-            isMerged: true,
-            hidden: false,
+    // Create a list of current merged cells before resizing
+    const currentMergedCells = gridItems
+      .map((item, index) => {
+        if (item.isMerged && !item.hidden) {
+          return {
+            startIndex: index,
+            rowSpan: item.rowSpan,
+            colSpan: item.colSpan,
+            selectedCells: item.selectedCells,
           };
-
-          // Update hidden cells that are part of the merged group
-          // 1st loop for rows
-          for (let r = 0; r < newRowSpan; r++) {
-            // 2nd loop for columns
-            for (let c = 0; c < newColSpan; c++) {
-              if (r !== 0 || c !== 0) {
-                // Skip the first cell (already updated)
-                const hiddenIndex =
-                  (currentRow + r) * newColumns + (currentCol + c);
-                // Check if the hidden cell is within the new grid bounds
-                if (hiddenIndex < newTotalCells) {
-                  updatedGrid[hiddenIndex] = {
-                    ...updatedGrid[hiddenIndex],
-                    isMerged: true,
-                    hidden: true,
-                    rowSpan: 1,
-                    colSpan: 1,
-                  };
-                }
-              }
-            }
-          }
         }
+        return null;
+      })
+      .filter(Boolean);
 
-        // Update the selectedCells for merged cells to reflect new indices
-        if (currentItem.selectedCells && currentItem.isMerged) {
-          // Update the selectedCells with new indices
-          updatedGrid[newIndex].selectedCells = currentItem.selectedCells
-            .map((idx) => {
-              // Calculate the old row and column of the cell
-              const oldRow = Math.floor(idx / columns);
-              const oldCol = idx % columns;
-              // Check if the old cell is within the new grid bounds
-              if (oldRow < newRows && oldCol < newColumns) {
-                return oldRow * newColumns + oldCol;
-              }
-              return null;
-            })
-            .filter((idx) => idx !== null);
-        }
-      }
-    }
+    // Generate new grid with merged cells preserved
+    const newGridItems = generateGridItems(
+      newRows,
+      newColumns,
+      currentMergedCells,
+    );
 
-    // Update the state with the newly calculated grid
+    // Update state
     setRows(newRows);
     setColumns(newColumns);
-    setGridItems(updatedGrid);
+    setGridItems(newGridItems);
+
+    // Update selected layout if it exists
+    if (selectedLayout) {
+      setSelectedLayout({
+        ...selectedLayout,
+        rows: newRows,
+        columns: newColumns,
+        gridItems: newGridItems,
+      });
+    }
   };
 
   // Function to handle the resizing of the grid
@@ -1026,12 +964,20 @@ const AdCanvas = () => {
   if (difference === 0) {
     aspectRatio = "1:1";
   } else {
-    // Calculate the base aspect ratio and increment/decrement by 5 for each step away from 1:1
-    const widthRatio = 16 + (Math.abs(difference) - 1) * 5;
+    // Calculate the base aspect ratio based on the difference
+    let widthRatio;
     const heightRatio = 9;
 
+    if (difference === 4) {
+      // Special case for 32:9
+      widthRatio = 32;
+    } else {
+      // For other ratios, use the original calculation
+      widthRatio = 16 + (Math.abs(difference) - 1) * 5;
+    }
+
     if (difference > 0) {
-      // If columns > rows, we use width:height format (e.g., 16:9, 21:9)
+      // If columns > rows, we use width:height format (e.g., 16:9, 21:9, 32:9)
       aspectRatio = `${widthRatio}:${heightRatio}`;
     } else {
       // If rows > columns, we use height:width format (e.g., 9:16, 9:21)
@@ -1050,6 +996,91 @@ const AdCanvas = () => {
   }, []);
 
   const isVertical = ratio > 1;
+
+  // Template Logic
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+
+  const handleTemplateSelect = (template) => {
+    if (!template) return;
+
+    // Update basic template properties
+    setRows(template.rows);
+    setColumns(template.columns);
+    setSelectedTemplateId(template.layoutId);
+
+    // Generate new grid items based on template configuration
+    const newGridItems = generateGridItems(
+      template.rows,
+      template.columns,
+      template.mergedCells,
+    );
+    setGridItems(newGridItems);
+
+    // If you're tracking layouts, add the new layout if it doesn't exist
+    if (!layouts.find((layout) => layout.layoutId === template.layoutId)) {
+      setLayouts((prevLayouts) => [...prevLayouts, template]);
+    }
+
+    // Reset selection states
+    setSelectedCells([]);
+    setSelectedMergedCells([]);
+    setIsSelectionMode(false);
+
+    // Set this as the selected layout
+    setSelectedLayout({
+      ...template,
+      gridItems: newGridItems,
+    });
+    setIsSavedLayout(false); // Mark as unsaved since it's a new template
+  };
+
+  // Add the generateGridItems function within the component
+  const generateGridItems = (rows, columns, mergedCells = []) => {
+    const totalCells = rows * columns;
+    const gridItems = Array.from({ length: totalCells }, (_, index) => ({
+      index,
+      scheduledAds: [],
+      isMerged: false,
+      rowSpan: 1,
+      colSpan: 1,
+      hidden: false,
+      mergeDirection: null,
+      selectedCells: [],
+    }));
+
+    // Apply merged cells configurations
+    mergedCells.forEach(({ startIndex, rowSpan, colSpan, selectedCells }) => {
+      if (startIndex >= totalCells) return;
+
+      // Configure the main merged cell
+      gridItems[startIndex] = {
+        ...gridItems[startIndex],
+        isMerged: true,
+        hidden: false,
+        rowSpan,
+        colSpan,
+        mergeDirection: "selection",
+        selectedCells: selectedCells || [],
+      };
+
+      // Hide cells that are part of the merge
+      if (selectedCells) {
+        selectedCells.forEach((cellIndex) => {
+          if (cellIndex !== startIndex && cellIndex < totalCells) {
+            gridItems[cellIndex] = {
+              ...gridItems[cellIndex],
+              isMerged: true,
+              hidden: true,
+              rowSpan: 1,
+              colSpan: 1,
+            };
+          }
+        });
+      }
+    });
+
+    return gridItems;
+  };
 
   return (
     <div className="flex h-full max-w-[100vw] flex-col overflow-y-auto overflow-x-hidden light-bg dark:dark-bg">
@@ -1244,7 +1275,18 @@ const AdCanvas = () => {
             <CollapsibleSidebar
               layouts={layouts}
               onSelectLayout={handleSelectLayout}
+              /*               onSelectLayout={(layoutId) => {
+                const template = layouts.find(
+                  (layout) => layout.layoutId === layoutId,
+                );
+                if (template) {
+                  handleTemplateSelect(template);
+                }
+              }}
+                */
               onDeleteLayoutClick={handleDeleteLayoutClick}
+              onTemplateSelect={handleTemplateSelect}
+              selectedTemplateId={selectedTemplateId}
               onStateChange={handleSidebarStateChange}
               isVertical={isVertical}
             />

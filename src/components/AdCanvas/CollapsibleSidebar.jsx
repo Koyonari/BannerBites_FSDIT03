@@ -8,20 +8,25 @@ import {
   ChevronLeft,
   LayoutGrid,
   ImagePlus,
+  Layout,
 } from "lucide-react";
 import Sidebar from "./Sidebar";
+import { PRESET_TEMPLATES, loadPresetTemplate } from "../../template/template";
 
 const CollapsibleSidebar = ({
   layouts,
   onSelectLayout,
   onDeleteLayoutClick,
   onStateChange,
+  onTemplateSelect,
+  selectedTemplateId,
   isVertical,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSection, setActiveSection] = useState("layouts");
-  const [showMore, setShowMore] = useState(false);
+  const [showMore] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   useEffect(() => {
     onStateChange?.(isOpen);
@@ -34,6 +39,71 @@ const CollapsibleSidebar = ({
   const initialLayouts = filteredLayouts.slice(0, 3);
   const remainingLayouts = filteredLayouts.slice(3);
   const hasMore = filteredLayouts.length > 3;
+
+  const handleTemplateSelect = (templateName) => {
+    const template = loadPresetTemplate(templateName);
+    if (template) {
+      onTemplateSelect?.(template);
+    }
+  };
+
+  const renderTemplateSection = () => (
+    <div className="mb-4">
+      <button
+        onClick={() => setShowTemplates(!showTemplates)}
+        className="mb-2 flex w-full items-center justify-between rounded-lg bg-bg-accent px-4 py-2 text-sm text-text-light hover:bg-bg-subaccent dark:text-text-dark"
+      >
+        <span className="flex items-center gap-2">
+          <Layout className="h-4 w-4" />
+          Preset Templates
+        </span>
+        {showTemplates ? (
+          <ChevronUp className="h-4 w-4" />
+        ) : (
+          <ChevronDown className="h-4 w-4" />
+        )}
+      </button>
+
+      <div
+        className={`flex flex-col gap-2 overflow-hidden transition-all duration-200 ${
+          showTemplates ? "max-h-96" : "max-h-0"
+        }`}
+      >
+        {Object.entries(PRESET_TEMPLATES).map(([key, template]) => (
+          <div
+            key={key}
+            className="group relative"
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData("template", key);
+              e.dataTransfer.effectAllowed = "copy";
+            }}
+          >
+            <button
+              onClick={() => handleTemplateSelect(key)}
+              className={`w-full rounded-lg px-4 py-2 text-left text-sm transition-colors ${
+                selectedTemplateId === key
+                  ? "bg-bg-accent text-text-light dark:text-text-dark"
+                  : "bg-bg-light text-text-light hover:bg-bg-accent dark:bg-bg-dark dark:text-text-dark"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span>{template.name}</span>
+                <span className="text-xs text-placeholder-light dark:text-placeholder-dark">
+                  {template.rows}x{template.columns}
+                </span>
+              </div>
+            </button>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="text-xs text-placeholder-light dark:text-placeholder-dark">
+                Click
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -133,6 +203,9 @@ const CollapsibleSidebar = ({
                   <h2 className="mb-4 text-lg font-bold text-text-light dark:text-text-dark">
                     Layouts
                   </h2>
+
+                  {renderTemplateSection()}
+
                   <div className="relative mb-4 w-full">
                     <input
                       type="text"
@@ -192,18 +265,6 @@ const CollapsibleSidebar = ({
                             </div>
                           ))}
                         </div>
-
-                        <button
-                          onClick={() => setShowMore(!showMore)}
-                          className="mt-2 flex w-full items-center justify-between rounded-lg bg-bg-accent px-4 py-2 text-left text-sm text-text-light hover:bg-bg-subaccent dark:text-text-dark"
-                        >
-                          <span>{showMore ? "Show Less" : "Show More"}</span>
-                          {showMore ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </button>
                       </>
                     )}
                   </div>
@@ -213,7 +274,7 @@ const CollapsibleSidebar = ({
               {activeSection === "ads" && (
                 <>
                   <h2 className="mb-4 text-lg font-bold text-text-light dark:text-text-dark">
-                    Ads
+                    Media
                   </h2>
                   <div className="mb-4 flex items-center gap-2">
                     <div className="relative flex-1">
