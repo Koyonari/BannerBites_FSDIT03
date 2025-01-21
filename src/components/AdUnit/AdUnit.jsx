@@ -259,6 +259,9 @@ const AdUnit = () => {
                   <h3 className="text-lg font-bold">
                     {ad.content?.title || "Untitled"}
                   </h3>
+                  <p className="text-sm text-gray-500">
+                    {ad.content?.description || "No description provided."}
+                  </p>
                   <p className="text-sm text-gray-500">Media ID: {ad.adId}</p>
                 </div>
               </div>
