@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Navbar from "../Navbar";
-import { Upload, Search, Trash2 } from "lucide-react"; // Import icons
+import { Search, Trash2 } from "lucide-react";
 
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -25,7 +25,8 @@ const AdUnit = () => {
       const mediaAds = response.data.filter(
         (ad) =>
           ad.type &&
-          (ad.type.toLowerCase() === "image" || ad.type.toLowerCase() === "video")
+          (ad.type.toLowerCase() === "image" ||
+            ad.type.toLowerCase() === "video"),
       );
       setAds(mediaAds);
       setFilteredAds(mediaAds);
@@ -98,7 +99,9 @@ const AdUnit = () => {
   // Filter ads based on search term
   useEffect(() => {
     const results = ads.filter((ad) =>
-      (ad.content?.title || "").toLowerCase().includes(searchTerm.toLowerCase())
+      (ad.content?.title || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()),
     );
     setFilteredAds(results);
   }, [searchTerm, ads]);
@@ -134,59 +137,65 @@ const AdUnit = () => {
 
       {/* Upload Media Popup */}
       {isUploadPopupVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h2 className="text-xl font-bold mb-4">Upload Media</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-96 rounded-lg bg-white p-6 shadow-lg">
+            <h2 className="mb-4 text-xl font-bold">Upload Media</h2>
             <form onSubmit={handleUpload} className="space-y-4">
               <div>
-                <label className="block text-sm font-bold mb-1">Media Type:</label>
+                <label className="mb-1 block text-sm font-bold">
+                  Media Type:
+                </label>
                 <select
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full rounded border px-3 py-2"
                 >
                   <option value="image">Image</option>
                   <option value="video">Video</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold mb-1">Title:</label>
+                <label className="mb-1 block text-sm font-bold">Title:</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full rounded border px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold mb-1">Description:</label>
+                <label className="mb-1 block text-sm font-bold">
+                  Description:
+                </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full rounded border px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold mb-1">Media File:</label>
+                <label className="mb-1 block text-sm font-bold">
+                  Media File:
+                </label>
                 <input
                   type="file"
                   accept={mediaType === "image" ? "image/*" : "video/*"}
                   onChange={(e) => setMediaFile(e.target.files[0])}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full rounded border px-3 py-2"
                 />
               </div>
-              <div className="flex justify-end gap-4 mt-4">
+              <div className="mt-4 flex justify-end gap-4">
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                  className="rounded bg-blue-500 px-4 py-2 text-white"
                 >
                   {uploading ? "Uploading..." : "Upload"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsUploadPopupVisible(false)}
-                  className="px-4 py-2 bg-gray-300 text-black rounded"
+                  className="rounded bg-gray-300 px-4 py-2 text-black"
                 >
                   Cancel
                 </button>
@@ -198,22 +207,22 @@ const AdUnit = () => {
 
       {/* Delete Confirmation Popup */}
       {isDeletePopupVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="rounded-lg bg-white p-6 shadow-lg">
+            <h2 className="mb-4 text-xl font-bold">Confirm Delete</h2>
             <p>Are you sure you want to delete this ad?</p>
-            <div className="flex justify-end gap-4 mt-4">
-              <button
-                onClick={handleDeleteAd}
-                className="px-4 py-2 bg-red-500 text-white rounded"
-              >
-                Yes, Delete
-              </button>
+            <div className="mt-4 flex justify-end gap-4">
               <button
                 onClick={() => setIsDeletePopupVisible(false)}
-                className="px-4 py-2 bg-gray-300 text-black rounded"
+                className="rounded bg-gray-300 px-4 py-2 text-black"
               >
                 Cancel
+              </button>
+              <button
+                onClick={handleDeleteAd}
+                className="rounded bg-red-500 px-4 py-2 text-white"
+              >
+                Confirm
               </button>
             </div>
           </div>
@@ -235,7 +244,7 @@ const AdUnit = () => {
                     setAdToDelete(ad.adId);
                     setIsDeletePopupVisible(true);
                   }}
-                  className="absolute top-2 right-2 bg-red-500 p-2 rounded-full text-white"
+                  className="absolute right-2 top-2 rounded-full bg-red-500 p-2 text-white"
                 >
                   <Trash2 />
                 </button>
