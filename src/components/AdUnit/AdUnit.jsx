@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../Navbar";
 
@@ -24,7 +23,9 @@ const AdUnit = () => {
       // Filter ads to include only images and videos
       const mediaAds = allAds.filter(
         (ad) =>
-          ad.type && (ad.type.toLowerCase() === "image" || ad.type.toLowerCase() === "video")
+          ad.type &&
+          (ad.type.toLowerCase() === "image" ||
+            ad.type.toLowerCase() === "video"),
       );
 
       setAds(mediaAds);
@@ -54,6 +55,7 @@ const AdUnit = () => {
       formData.append("description", description);
 
       // Make the API call to the create endpoint
+      // eslint-disable-next-line
       const response = await axios.post(`${apiUrl}/api/ads/create`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -151,7 +153,7 @@ const AdUnit = () => {
             <button
               type="submit"
               disabled={uploading}
-              className="primary-bg hover:secondary-bg w-full rounded-lg py-2 text-white font-bold"
+              className="w-full rounded-lg py-2 font-bold text-white primary-bg hover:secondary-bg"
             >
               {uploading ? "Uploading..." : "Upload Media"}
             </button>
@@ -172,7 +174,7 @@ const AdUnit = () => {
               return (
                 <div
                   key={ad.adId}
-                  className="rounded-lg shadow-lg dark:bg-dark-bg-light p-4"
+                  className="dark:bg-dark-bg-light rounded-lg p-4 shadow-lg"
                 >
                   {mediaType === "image" ? (
                     <img
@@ -188,16 +190,20 @@ const AdUnit = () => {
                     />
                   )}
                   <div className="mt-4">
-                    <h3 className="text-lg font-bold text-primary">{adTitle}</h3>
-                    <p className="text-sm text-secondary">Media Name: {mediaName}</p>
-                    <p className="text-sm text-secondary">Ad ID: {ad.adId}</p>
+                    <h3 className="text-primary text-lg font-bold">
+                      {adTitle}
+                    </h3>
+                    <p className="text-secondary text-sm">
+                      Media Name: {mediaName}
+                    </p>
+                    <p className="text-secondary text-sm">Ad ID: {ad.adId}</p>
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <p className="text-center text-secondary">No media ads found.</p>
+          <p className="text-secondary text-center">No media ads found.</p>
         )}
       </div>
     </div>

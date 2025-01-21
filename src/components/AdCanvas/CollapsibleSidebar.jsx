@@ -25,20 +25,20 @@ const CollapsibleSidebar = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSection, setActiveSection] = useState("layouts");
-  const [showMore] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [animatingElements, setAnimatingElements] = useState(false);
 
   useEffect(() => {
     onStateChange?.(isOpen);
+    if (isOpen) {
+      setAnimatingElements(true);
+      setTimeout(() => setAnimatingElements(false), 500);
+    }
   }, [isOpen, onStateChange]);
 
   const filteredLayouts = layouts.filter((layout) =>
     layout.name?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-
-  const initialLayouts = filteredLayouts.slice(0, 3);
-  const remainingLayouts = filteredLayouts.slice(3);
-  const hasMore = filteredLayouts.length > 3;
 
   const handleTemplateSelect = (templateName) => {
     const template = loadPresetTemplate(templateName);
@@ -48,31 +48,38 @@ const CollapsibleSidebar = ({
   };
 
   const renderTemplateSection = () => (
-    <div className="mb-4">
+    <div className="animate-fade-in mb-4">
       <button
         onClick={() => setShowTemplates(!showTemplates)}
-        className="mb-2 flex w-full items-center justify-between rounded-lg bg-bg-accent px-4 py-2 text-sm text-text-light hover:bg-bg-subaccent dark:text-text-dark"
+        className="mb-2 flex w-full items-center justify-between rounded-lg bg-bg-accent px-4 py-2 text-sm text-text-light transition-all duration-300 hover:scale-[1.02] hover:bg-bg-subaccent dark:text-text-dark"
       >
         <span className="flex items-center gap-2">
-          <Layout className="h-4 w-4" />
+          <Layout className="h-4 w-4 transition-transform duration-300 hover:rotate-12" />
           Preset Templates
         </span>
-        {showTemplates ? (
-          <ChevronUp className="h-4 w-4" />
-        ) : (
-          <ChevronDown className="h-4 w-4" />
-        )}
+        <div className="transition-transform duration-300">
+          {showTemplates ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </div>
       </button>
 
       <div
-        className={`flex flex-col gap-2 overflow-hidden transition-all duration-200 ${
-          showTemplates ? "max-h-96" : "max-h-0"
+        className={`flex flex-col gap-2 overflow-hidden transition-all duration-500 ease-in-out ${
+          showTemplates ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        {Object.entries(PRESET_TEMPLATES).map(([key, template]) => (
+        {Object.entries(PRESET_TEMPLATES).map(([key, template], index) => (
           <div
             key={key}
-            className="group relative"
+            className="group relative transform transition-all duration-300 hover:scale-[1.02]"
+            style={{
+              animation: animatingElements
+                ? `slideIn 0.5s ${index * 0.1}s both`
+                : "none",
+            }}
             draggable
             onDragStart={(e) => {
               e.dataTransfer.setData("template", key);
@@ -81,11 +88,7 @@ const CollapsibleSidebar = ({
           >
             <button
               onClick={() => handleTemplateSelect(key)}
-              className={`w-full rounded-lg px-4 py-2 text-left text-sm transition-colors ${
-                selectedTemplateId === key
-                  ? "bg-bg-accent text-text-light dark:text-text-dark"
-                  : "bg-bg-light text-text-light hover:bg-bg-accent dark:bg-bg-dark dark:text-text-dark"
-              }`}
+              className="w-full rounded-lg bg-bg-light px-4 py-2 text-left text-sm text-text-light transition-all duration-300 hover:bg-bg-accent dark:bg-bg-dark dark:text-text-dark"
             >
               <div className="flex items-center gap-2">
                 <span>{template.name}</span>
@@ -94,7 +97,7 @@ const CollapsibleSidebar = ({
                 </span>
               </div>
             </button>
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
               <span className="text-xs text-placeholder-light dark:text-placeholder-dark">
                 Click
               </span>
@@ -106,198 +109,205 @@ const CollapsibleSidebar = ({
   );
 
   return (
-    <div
-      className={`fixed ${
-        isVertical
-          ? "bottom-0 left-0 w-full"
-          : "left-0 top-[5rem] w-[25vw] xl:top-[8rem]"
-      } z-50 flex transition-all duration-300 ease-in-out`}
-    >
+    <>
+      <style jsx global>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .hover-scale {
+          transition: transform 0.3s ease;
+        }
+
+        .hover-scale:hover {
+          transform: scale(1.02);
+        }
+      `}</style>
       <div
-        className={`${
+        className={`fixed ${
           isVertical
-            ? `fixed bottom-0 left-0 w-full ${
-                isOpen ? "h-[40vh]" : "h-12"
-              } rounded-t-3xl border-t`
-            : `h-[calc(100vh-5rem)] xl:h-[calc(100vh-8rem)] ${
-                isOpen ? "w-[30vw]" : "w-12"
-              } rounded-r-3xl border-r`
-        } border-border-light bg-bg-light transition-all duration-300 ease-in-out dark:border-border-dark dark:bg-bg-dark`}
+            ? "bottom-0 left-0 w-full"
+            : "left-0 top-[5rem] w-[25vw] xl:top-[8rem]"
+        } z-50 flex transition-all duration-500 ease-in-out`}
       >
-        <div className="relative flex h-full w-full flex-col shadow-lg">
-          {/* Toggle Button */}
-          <button
-            data-tooltip-id="sidebar-tooltip"
-            data-tooltip-content="Open to drag & drop element to add to grid"
-            onClick={() => setIsOpen(!isOpen)}
-            className={`${
-              isVertical
-                ? "absolute -top-3 left-1/2 h-6 w-12 -translate-x-1/2 rounded-t-lg"
-                : "absolute -right-3 top-1/2 h-12 w-6 -translate-y-1/2 rounded-r-lg"
-            } flex items-center justify-center bg-bg-accent text-text-light hover:bg-bg-subaccent`}
-            aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
-          >
-            {isVertical ? (
-              isOpen ? (
-                <ChevronDown className="h-6 w-6" />
+        <div
+          className={`${
+            isVertical
+              ? `fixed bottom-0 left-0 w-full ${
+                  isOpen ? "h-[40vh]" : "h-12"
+                } rounded-t-3xl border-t`
+              : `h-[calc(100vh-5rem)] xl:h-[calc(100vh-8rem)] ${
+                  isOpen ? "w-[30vw]" : "w-12"
+                } rounded-r-3xl border-r`
+          } border-border-light bg-bg-light transition-all duration-500 ease-in-out dark:border-border-dark dark:bg-bg-dark`}
+        >
+          <div className="relative flex h-full w-full flex-col shadow-lg">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className={`${
+                isVertical
+                  ? "absolute -top-3 left-1/2 h-6 w-12 -translate-x-1/2 rounded-t-lg"
+                  : "absolute -right-3 top-1/2 h-12 w-6 -translate-y-1/2 rounded-r-lg"
+              } flex items-center justify-center bg-bg-accent text-text-light transition-all duration-300 hover:scale-[1.05] hover:bg-bg-subaccent`}
+              aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              {isVertical ? (
+                isOpen ? (
+                  <ChevronDown className="h-6 w-6 transition-transform duration-300 dark:text-text-dark" />
+                ) : (
+                  <ChevronUp className="h-6 w-6 transition-transform duration-300 dark:text-text-dark" />
+                )
+              ) : isOpen ? (
+                <ChevronLeft className="h-6 w-6 transition-transform duration-300 dark:text-text-dark" />
               ) : (
-                <ChevronUp className="h-6 w-6" />
-              )
-            ) : isOpen ? (
-              <ChevronLeft className="h-6 w-6" />
-            ) : (
-              <ChevronRight className="h-6 w-6" />
-            )}
-          </button>
-
-          {/* Sidebar Content */}
-          <div
-            className={`h-full overflow-hidden transition-all duration-300 ${
-              isOpen ? "opacity-100" : "pointer-events-none opacity-0"
-            }`}
-          >
-            {/* Elements Section */}
-            <div className="h-4/12 overflow-y-auto p-4">
-              <h2 className="mb-4 text-center text-xl font-bold text-text-light dark:text-text-dark">
-                Elements
-              </h2>
-              <div className={isVertical ? "flex justify-center" : ""}>
-                <Sidebar />
-              </div>
-            </div>
-
-            {/* Navigation Icons */}
-            <div className="mb-3 flex h-12 w-full items-center justify-center gap-4 border-t border-border-light pt-6 dark:border-border-dark">
-              <button
-                onClick={() =>
-                  setActiveSection(
-                    activeSection === "layouts" ? null : "layouts",
-                  )
-                }
-                className={`rounded-lg p-2 transition-colors ${
-                  activeSection === "layouts"
-                    ? "bg-bg-accent text-text-light"
-                    : "text-placeholder-light hover:bg-bg-accent hover:text-text-light dark:text-placeholder-dark"
-                }`}
-              >
-                <LayoutGrid className="h-6 w-6" />
-              </button>
-              <button
-                onClick={() =>
-                  setActiveSection(activeSection === "ads" ? null : "ads")
-                }
-                className={`rounded-lg p-2 transition-colors ${
-                  activeSection === "ads"
-                    ? "bg-bg-accent text-text-light"
-                    : "text-placeholder-light hover:bg-bg-accent hover:text-text-light dark:text-placeholder-dark"
-                }`}
-              >
-                <ImagePlus className="h-6 w-6" />
-              </button>
-            </div>
-
-            {/* Content Section */}
-            <div className="h-[calc(66.333%-3rem)] overflow-y-auto p-4">
-              {activeSection === "layouts" && (
-                <>
-                  <h2 className="mb-4 text-lg font-bold text-text-light dark:text-text-dark">
-                    Layouts
-                  </h2>
-
-                  {renderTemplateSection()}
-
-                  <div className="relative mb-4 w-full">
-                    <input
-                      type="text"
-                      placeholder="Search layouts"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full rounded-lg border border-border-light bg-bg-light px-4 py-2 pl-10 text-sm text-placeholder-light focus:outline-none focus:ring-2 focus:ring-ring-primary dark:border-border-dark dark:bg-bg-dark dark:text-placeholder-dark"
-                    />
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-placeholder-light dark:text-placeholder-dark" />
-                  </div>
-
-                  <div className="w-full border-l border-border-light dark:border-border-dark">
-                    <div className="flex w-full flex-col gap-2">
-                      {initialLayouts.map((layout) => (
-                        <div
-                          key={layout.layoutId}
-                          className="flex items-center justify-between"
-                        >
-                          <button
-                            onClick={() => onSelectLayout(layout.layoutId)}
-                            className="w-full rounded-lg bg-bg-accent px-4 py-2 text-left text-sm text-text-light hover:bg-bg-subaccent dark:text-text-dark"
-                          >
-                            {layout.name || "Unnamed Layout"}
-                          </button>
-                          <Trash
-                            className="text-alert hover:text-alert-dark h-5 w-5 cursor-pointer"
-                            onClick={() => onDeleteLayoutClick(layout.layoutId)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    {hasMore && (
-                      <>
-                        <div
-                          className={`flex flex-col gap-2 overflow-hidden transition-all duration-200 ${
-                            showMore ? "max-h-48" : "max-h-0"
-                          }`}
-                        >
-                          {remainingLayouts.map((layout) => (
-                            <div
-                              key={layout.layoutId}
-                              className="flex items-center justify-between"
-                            >
-                              <button
-                                onClick={() => onSelectLayout(layout.layoutId)}
-                                className="w-full rounded-lg bg-bg-accent px-4 py-2 text-left text-sm text-text-light hover:bg-bg-subaccent dark:text-text-dark"
-                              >
-                                {layout.name || "Unnamed Layout"}
-                              </button>
-                              <Trash
-                                className="text-alert hover:text-alert-dark h-5 w-5 cursor-pointer"
-                                onClick={() =>
-                                  onDeleteLayoutClick(layout.layoutId)
-                                }
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </>
+                <ChevronRight className="h-6 w-6 transition-transform duration-300 dark:text-text-dark" />
               )}
+            </button>
 
-              {activeSection === "ads" && (
-                <>
-                  <h2 className="mb-4 text-lg font-bold text-text-light dark:text-text-dark">
-                    Media
-                  </h2>
-                  <div className="mb-4 flex items-center gap-2">
-                    <div className="relative flex-1">
+            <div
+              className={`h-full overflow-y-auto transition-all duration-500 ease-in-out ${
+                isOpen ? "opacity-100" : "pointer-events-none opacity-0"
+              }`}
+            >
+              <div className={`p-4 ${isVertical ? "" : "h-4/12"}`}>
+                <h2 className="mb-4 text-center text-xl font-bold text-text-light dark:text-text-dark">
+                  Elements
+                </h2>
+                <div className={isVertical ? "flex justify-center" : ""}>
+                  <Sidebar />
+                </div>
+              </div>
+
+              <div className="mb-3 flex h-12 w-full items-center justify-center gap-4 border-t border-border-light pt-6 dark:border-border-dark">
+                <button
+                  onClick={() =>
+                    setActiveSection(
+                      activeSection === "layouts" ? null : "layouts",
+                    )
+                  }
+                  className={`rounded-lg p-2 transition-all duration-300 hover:scale-[1.05] ${
+                    activeSection === "layouts"
+                      ? "bg-bg-accent text-text-light"
+                      : "text-placeholder-light hover:bg-bg-accent hover:text-text-light dark:text-placeholder-dark"
+                  }`}
+                >
+                  <LayoutGrid className="h-6 w-6 dark:text-text-dark" />
+                </button>
+                <button
+                  onClick={() =>
+                    setActiveSection(activeSection === "ads" ? null : "ads")
+                  }
+                  className={`rounded-lg p-2 transition-all duration-300 hover:scale-[1.05] ${
+                    activeSection === "ads"
+                      ? "bg-bg-accent text-text-light"
+                      : "text-placeholder-light hover:bg-bg-accent hover:text-text-light dark:text-placeholder-dark"
+                  }`}
+                >
+                  <ImagePlus className="h-6 w-6 dark:text-text-dark" />
+                </button>
+              </div>
+
+              <div
+                className={`p-4 ${isVertical ? "" : "h-[calc(66.333%-3rem)]"}`}
+              >
+                {activeSection === "layouts" && (
+                  <div className="animate-fade-in">
+                    <h2 className="mb-4 text-lg font-bold text-text-light dark:text-text-dark">
+                      Layouts
+                    </h2>
+
+                    {renderTemplateSection()}
+
+                    <div className="relative mb-4 w-full">
                       <input
                         type="text"
-                        placeholder="Search advertisements"
+                        placeholder="Search layouts"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full rounded-lg border px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-primary dark:secondary-border dark:neutralalt-bg dark:secondary-text"
+                        className="w-full rounded-lg border border-border-light bg-bg-light px-4 py-2 pl-10 text-sm text-placeholder-light transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring-primary dark:border-border-dark dark:bg-bg-dark dark:text-placeholder-dark"
                       />
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 neutral-text" />
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-placeholder-light dark:text-placeholder-dark" />
+                    </div>
+
+                    <div className="w-full border-l border-border-light dark:border-border-dark">
+                      <div className="flex w-full flex-col gap-2">
+                        {filteredLayouts.map((layout, index) => (
+                          <div
+                            key={layout.layoutId}
+                            className="flex transform items-center justify-between transition-all duration-300 hover:scale-[1.02]"
+                            style={{
+                              animation: animatingElements
+                                ? `slideIn 0.5s ${index * 0.1}s both`
+                                : "none",
+                            }}
+                          >
+                            <button
+                              onClick={() => onSelectLayout(layout.layoutId)}
+                              className="w-full rounded-lg bg-bg-light px-4 py-2 text-left text-sm text-text-light transition-all duration-300 hover:bg-bg-accent dark:bg-bg-dark dark:text-text-dark"
+                            >
+                              {layout.name || "Unnamed Layout"}
+                            </button>
+                            <Trash
+                              className="text-alert hover:text-alert-dark h-5 w-5 cursor-pointer transition-all duration-300 hover:scale-110 dark:text-text-dark"
+                              onClick={() =>
+                                onDeleteLayoutClick(layout.layoutId)
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-4">
-                    <div className="h-24 w-full rounded-lg bg-bg-light dark:bg-bg-dark"></div>
+                )}
+
+                {activeSection === "ads" && (
+                  <div className="animate-fade-in">
+                    <h2 className="mb-4 text-lg font-bold text-text-light dark:text-text-dark">
+                      Media
+                    </h2>
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          placeholder="Search advertisements"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full rounded-lg border px-4 py-2 pl-10 text-sm transition-all duration-300 focus:outline-none focus:ring-primary dark:secondary-border dark:neutralalt-bg dark:secondary-text"
+                        />
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 neutral-text" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                      <div className="h-24 w-full transform rounded-lg bg-bg-light transition-all duration-300 hover:scale-[1.02] dark:bg-bg-dark"></div>
+                    </div>
                   </div>
-                </>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
