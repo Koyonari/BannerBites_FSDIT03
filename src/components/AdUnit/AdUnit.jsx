@@ -22,7 +22,6 @@ const AdUnit = () => {
     message: "",
     isError: false,
   });
-
   const showNotification = (message, isError = false) => {
     setNotification({
       isVisible: true,
@@ -103,6 +102,7 @@ const AdUnit = () => {
 
   useEffect(() => {
     fetchAds();
+    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
@@ -146,7 +146,7 @@ const AdUnit = () => {
 
       {/* Upload Media Popup */}
       {isUploadPopupVisible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-96 rounded-lg p-6 shadow-xl light-bg dark:dark-bg">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-xl font-bold primary-text dark:secondary-text">
@@ -229,7 +229,7 @@ const AdUnit = () => {
 
       {/* Delete Confirmation Popup */}
       {isDeletePopupVisible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-96 rounded-lg p-6 shadow-xl light-bg dark:dark-bg">
             <h2 className="mb-2 text-xl font-bold primary-text dark:secondary-text">
               Confirm Delete
@@ -258,7 +258,7 @@ const AdUnit = () => {
 
       {/* Notification Popup */}
       {notification.isVisible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-96 rounded-lg p-6 shadow-xl light-bg dark:dark-bg">
             <h2 className="mb-2 text-xl font-bold primary-text dark:secondary-text">
               {notification.isError ? "Error" : "Success"}
