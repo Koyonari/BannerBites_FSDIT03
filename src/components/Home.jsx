@@ -9,9 +9,9 @@ const icons = {
   navbar: [
     { href: "/userhome", icon: HomeIcon, label: "Home" },
     { href: "/layouts", icon: LayoutList, label: "LayoutList" },
+    { href: "/adunit", icon: ImagePlus, label: "AdUnit" },
     { href: "/login", icon: CircleUserRound, label: "Profile" },
     { href: "/customrole", icon: UserRoundPen, label: "CustomRole" },
-    { href: "/adunit", icon: ImagePlus, label: "AdUnit" },
   ],
 };
 

@@ -50,6 +50,17 @@ const generateGridItems = (rows, columns, mergedCells = []) => {
 
 // Preset templates with predefined layouts
 const PRESET_TEMPLATES = {
+  // Default
+  default16x9: {
+    layoutId: uuidv4(),
+    name: "Default (16:9)",
+    description:
+      "Perfect for sports arena displays and large outdoor billboards",
+    rows: 2,
+    columns: 3,
+    mergedCells: [],
+  },
+
   // Ultra-wide formats
   ultrawide32x9: {
     layoutId: uuidv4(),

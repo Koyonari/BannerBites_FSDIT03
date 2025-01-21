@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
-import { HomeIcon, LayoutList, CircleUserRound, ImagePlus, UserRoundPen } from "lucide-react";
+import {
+  HomeIcon,
+  LayoutList,
+  CircleUserRound,
+  ImagePlus,
+  UserRoundPen,
+} from "lucide-react";
 import Hamburger from "hamburger-react";
 import { useNavigate } from "react-router-dom";
 import React from "react";
@@ -69,7 +75,7 @@ function Navbar() {
           <div>
             <h1 className="text-3xl font-bold primary-text dark:secondary-text xl:text-5xl">
               Banner
-              <span className="xl:outline-5 outline-1 accent-text">Bites</span>
+              <span className="outline-1 accent-text xl:outline-5">Bites</span>
             </h1>
           </div>
 
@@ -125,6 +131,7 @@ function Navbar() {
               { Icon: LayoutList, path: "/layouts" },
               { Icon: ImagePlus, path: "/adunit" },
               { Icon: CircleUserRound, path: "/login" },
+              { Icon: UserRoundPen, path: "/customrole" },
             ].map(({ Icon, path }) => (
               <div
                 key={path}
