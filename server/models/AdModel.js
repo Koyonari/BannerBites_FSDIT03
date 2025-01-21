@@ -84,13 +84,13 @@ const AdModel = {
       TableName: process.env.DYNAMODB_TABLE_ADS,
       Key: { adId: ad.adId }, // Use 'adId' instead of 'id'
       UpdateExpression: `
-        SET 
-          #type = :type, 
-          #content = :content, 
-          #styles = :styles, 
-          #updatedAt = :updatedAt, 
-          #createdAt = if_not_exists(#createdAt, :createdAt)
-      `,
+      SET 
+        #type = :type, 
+        #content = :content, 
+        #styles = :styles, 
+        #updatedAt = :updatedAt, 
+        #createdAt = if_not_exists(#createdAt, :createdAt)
+    `,
       ExpressionAttributeNames: {
         "#type": "type",
         "#content": "content",
@@ -101,16 +101,22 @@ const AdModel = {
       ExpressionAttributeValues: {
         ":type": ad.type,
         ":content": ad.content,
-        ":styles": ad.styles,
+        ":styles": ad.styles || {}, // Default to an empty object if styles are not provided
         ":updatedAt": new Date().toISOString(),
         ":createdAt": ad.createdAt || new Date().toISOString(),
       },
     };
-    // Use the UpdateCommand to save or update the Ad in DynamoDB
-    const command = new PutCommand(params);
-    const result = await dynamoDb.send(command);
-    console.log(`Ad ${ad.adId} saved/updated successfully.`);
-    return result;
+
+    try {
+      // Use the UpdateCommand to save or update the Ad in DynamoDB
+      const command = new UpdateCommand(params);
+      const result = await dynamoDb.send(command);
+      console.log(`Ad ${ad.adId} saved/updated successfully.`);
+      return result;
+    } catch (error) {
+      console.error(`Error saving/updating Ad with adId: ${ad.adId}`, error);
+      throw error;
+    }
   },
 
   // Function to update an ad explicitly
@@ -192,34 +198,6 @@ const AdModel = {
     } catch (error) {
       console.error("Error fetching all ads:", error.message);
       throw error; // Propagate the error
-    }
-  },
-
-  // Function to upload ad Media
-  saveAd: async (ad) => {
-    try {
-      console.log(`Saving Ad with adId: ${ad.adId}`);
-
-      const params = {
-        TableName: process.env.DYNAMODB_TABLE_ADS,
-        Item: {
-          adId: ad.adId,
-          type: ad.type,
-          content: ad.content,
-          styles: ad.styles || {},
-          createdAt: ad.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      };
-
-      const command = new PutCommand(params);
-      await dynamoDb.send(command);
-
-      console.log(`Ad ${ad.adId} saved successfully.`);
-      return { success: true, adId: ad.adId };
-    } catch (error) {
-      console.error(`Error saving ad with adId ${ad.adId}:`, error.message);
-      throw error;
     }
   },
 };
