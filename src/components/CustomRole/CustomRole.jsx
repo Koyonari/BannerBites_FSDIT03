@@ -187,22 +187,11 @@ const CustomRole = () => {
           {token && (
             <button
               onClick={handleLogout}
-              className="mt-4 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg"
+              className="mt-4 py-1 px-2 bg-red-500 hover:bg-red-600 text-white rounded-lg"
             >
               Logout
             </button>
           )}
-
-          {/* Permission-specific "Create New Ad" Button */}
-          {permissions?.roleManagement && (
-            <button
-              onClick={() => (window.location.href = "/ad")}
-              className="mt-4 ml-4 py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg"
-            >
-              Create New Ad
-            </button>
-          )}
-
           {/* Role List */}
           <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
             Role List
