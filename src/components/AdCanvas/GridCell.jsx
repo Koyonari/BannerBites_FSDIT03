@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useDrop } from "react-dnd";
 import { Tooltip } from "react-tooltip";
-import AdListPopup from "./AdListPopup";
 import { CircleMinus, View, Pencil } from "lucide-react";
 import StyledAlert from "../StyledAlert";
+import AdListPopup from "./AdListPopup";
 
 const Checkbox = ({ checked, onChange, className, showHelp }) => (
   <div
@@ -54,15 +54,18 @@ const GridCell = ({
   selectedMergedCells = [],
   getMainCellIndex,
 }) => {
+  // Integrating the drop functionality for draggable ads
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: "AD_ITEM",
-      drop: (draggedItem) => onDrop(draggedItem, index, rowIndex, colIndex),
+      drop: (draggedItem) => {
+        onDrop(draggedItem.ad, index, rowIndex, colIndex); // Pass dropped ad details to `onDrop`
+      },
       collect: (monitor) => ({
         isOver: monitor.isOver(),
       }),
     }),
-    [onDrop, index, rowIndex, colIndex],
+    [onDrop, index, rowIndex, colIndex]
   );
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -182,7 +185,6 @@ const GridCell = ({
     }
   }
 
-  // Define renderAdContent function
   const renderAdContent = () => {
     if (!adToDisplay || !adToDisplay.ad) {
       return (
