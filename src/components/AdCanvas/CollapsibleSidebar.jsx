@@ -37,10 +37,19 @@ const CollapsibleSidebar = ({
     }
   }, [isOpen, onStateChange]);
 
-  const filteredLayouts = layouts.filter((layout) =>
-    layout.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+  // Filter out templates and only include user-created layouts
+  const filteredLayouts = layouts.filter(
+    (layout) =>
+      // Ensure it's not a template by checking for layoutId and making sure it's not in PRESET_TEMPLATES
+      layout.layoutId &&
+      !Object.values(PRESET_TEMPLATES).some(
+        (template) => template.layoutId === layout.layoutId,
+      ) &&
+      // Apply search filter
+      layout.name?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  // Template handling
   const handleTemplateSelect = (templateName) => {
     const template = loadPresetTemplate(templateName);
     if (template) {
@@ -156,10 +165,10 @@ const CollapsibleSidebar = ({
             isVertical
               ? `fixed bottom-0 left-0 w-full ${
                   isOpen ? "h-[40vh]" : "h-12"
-                } rounded-t-3xl border-t`
+                } rounded-t-3xl border-t-2`
               : `h-[calc(100vh-5rem)] xl:h-[calc(100vh-8rem)] ${
                   isOpen ? "w-[30vw]" : "w-12"
-                } rounded-r-3xl border-r`
+                } rounded-r-3xl border-r-2`
           } border-border-light bg-bg-light transition-all duration-500 ease-in-out dark:border-border-dark dark:bg-bg-dark`}
         >
           <div className="relative flex h-full w-full flex-col shadow-lg">
@@ -199,7 +208,7 @@ const CollapsibleSidebar = ({
                 </div>
               </div>
 
-              <div className="mb-3 flex h-12 w-full items-center justify-center gap-4 border-t border-border-light pt-6 dark:border-border-dark">
+              <div className="mb-3 flex h-12 w-full items-center justify-center gap-4 border-t-2 border-border-light pt-6 dark:border-border-dark">
                 <button
                   onClick={() =>
                     setActiveSection(
@@ -245,12 +254,12 @@ const CollapsibleSidebar = ({
                         placeholder="Search layouts"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full rounded-lg border border-border-light bg-bg-light px-4 py-2 pl-10 text-sm text-placeholder-light transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring-primary dark:border-border-dark dark:bg-bg-dark dark:text-placeholder-dark"
+                        className="w-full rounded-lg border-2 border-border-light bg-bg-light px-4 py-2 pl-10 text-sm text-placeholder-light transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring-primary dark:border-border-dark dark:bg-bg-dark dark:text-placeholder-dark"
                       />
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-placeholder-light dark:text-placeholder-dark" />
                     </div>
 
-                    <div className="w-full border-l border-border-light dark:border-border-dark">
+                    <div className="w-full border-l-2 border-border-light dark:border-border-dark">
                       <div className="flex w-full flex-col gap-2">
                         {filteredLayouts.map((layout, index) => (
                           <div
