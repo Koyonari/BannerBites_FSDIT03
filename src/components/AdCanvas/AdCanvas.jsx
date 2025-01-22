@@ -279,42 +279,104 @@ const AdCanvas = () => {
 
   // Function to handle the creation of a new layout
   const resizeGrid = (newRows, newColumns) => {
-    // Create a list of current merged cells before resizing
-    const currentMergedCells = gridItems
-      .map((item, index) => {
-        if (item.isMerged && !item.hidden) {
-          return {
-            startIndex: index,
-            rowSpan: item.rowSpan,
-            colSpan: item.colSpan,
-            selectedCells: item.selectedCells,
+    // Calculate the new total number of cells
+    const newTotalCells = newRows * newColumns;
+
+    // Create a new grid with the updated number of cells
+    const updatedGrid = Array.from({ length: newTotalCells }, (_, index) => ({
+      scheduledAds: [],
+      isMerged: false,
+      hidden: false,
+      rowSpan: 1,
+      colSpan: 1,
+      index, // Include the index property to keep track of each cell position
+    }));
+
+    // Loop through the existing grid and map each cell to the new grid
+    for (let i = 0; i < gridItems.length; i++) {
+      const currentItem = gridItems[i];
+      const currentRow = Math.floor(i / columns);
+      const currentCol = i % columns;
+
+      // Map the old position to the new grid layout if it fits
+      if (currentRow < newRows && currentCol < newColumns) {
+        const newIndex = currentRow * newColumns + currentCol;
+
+        // Copy over the properties from the existing item
+        updatedGrid[newIndex] = {
+          ...updatedGrid[newIndex], // Keep new properties if any (e.g., default scheduledAds)
+          ...currentItem, // Overwrite with current item properties
+          index: newIndex, // Update the index
+        };
+
+        // Handle merged cells
+        if (currentItem.isMerged && !currentItem.hidden) {
+          // Calculate the dimensions of the merged cell (rowSpan)
+          const newRowSpan = Math.min(
+            currentItem.rowSpan,
+            newRows - currentRow,
+          );
+          // Calculate the dimensions of the merged cell (colSpan)
+          const newColSpan = Math.min(
+            currentItem.colSpan,
+            newColumns - currentCol,
+          );
+          // Update the merged cell with new dimensions
+          updatedGrid[newIndex] = {
+            ...updatedGrid[newIndex],
+            rowSpan: newRowSpan,
+            colSpan: newColSpan,
+            isMerged: true,
+            hidden: false,
           };
+
+          // Update hidden cells that are part of the merged group
+          // 1st loop for rows
+          for (let r = 0; r < newRowSpan; r++) {
+            // 2nd loop for columns
+            for (let c = 0; c < newColSpan; c++) {
+              if (r !== 0 || c !== 0) {
+                // Skip the first cell (already updated)
+                const hiddenIndex =
+                  (currentRow + r) * newColumns + (currentCol + c);
+                // Check if the hidden cell is within the new grid bounds
+                if (hiddenIndex < newTotalCells) {
+                  updatedGrid[hiddenIndex] = {
+                    ...updatedGrid[hiddenIndex],
+                    isMerged: true,
+                    hidden: true,
+                    rowSpan: 1,
+                    colSpan: 1,
+                  };
+                }
+              }
+            }
+          }
         }
-        return null;
-      })
-      .filter(Boolean);
 
-    // Generate new grid with merged cells preserved
-    const newGridItems = generateGridItems(
-      newRows,
-      newColumns,
-      currentMergedCells,
-    );
+        // Update the selectedCells for merged cells to reflect new indices
+        if (currentItem.selectedCells && currentItem.isMerged) {
+          // Update the selectedCells with new indices
+          updatedGrid[newIndex].selectedCells = currentItem.selectedCells
+            .map((idx) => {
+              // Calculate the old row and column of the cell
+              const oldRow = Math.floor(idx / columns);
+              const oldCol = idx % columns;
+              // Check if the old cell is within the new grid bounds
+              if (oldRow < newRows && oldCol < newColumns) {
+                return oldRow * newColumns + oldCol;
+              }
+              return null;
+            })
+            .filter((idx) => idx !== null);
+        }
+      }
+    }
 
-    // Update state
+    // Update the state with the newly calculated grid
     setRows(newRows);
     setColumns(newColumns);
-    setGridItems(newGridItems);
-
-    // Update selected layout if it exists
-    if (selectedLayout) {
-      setSelectedLayout({
-        ...selectedLayout,
-        rows: newRows,
-        columns: newColumns,
-        gridItems: newGridItems,
-      });
-    }
+    setGridItems(updatedGrid);
   };
 
   // Function to handle the resizing of the grid
