@@ -121,8 +121,8 @@ const CollapsibleSidebar = ({
         className={`fixed ${
           isVertical
             ? "bottom-0 left-0 w-full"
-            : "left-0 top-[5rem] w-[25vw] xl:top-[8rem]"
-        } z-50 flex`}
+            : `left-0 top-[5rem] ${isOpen ? "w-[30vw]" : "w-12"} xl:top-[8rem]`
+        } z-10 flex`}
       >
         <div
           className={`${
@@ -130,9 +130,7 @@ const CollapsibleSidebar = ({
               ? `fixed bottom-0 left-0 w-full ${
                   isOpen ? "h-[40vh]" : "h-12"
                 } rounded-t-3xl border-t-2`
-              : `h-[calc(100vh-5rem)] xl:h-[calc(100vh-8rem)] ${
-                  isOpen ? "w-[30vw]" : "w-12"
-                } rounded-r-3xl border-r-2`
+              : `h-[calc(100vh-5rem)] w-full rounded-r-3xl border-r-2 xl:h-[calc(100vh-8rem)]`
           } border-border-light bg-bg-light dark:border-border-dark dark:bg-bg-dark`}
         >
           <div className="relative flex h-full w-full flex-col shadow-lg">
@@ -142,7 +140,7 @@ const CollapsibleSidebar = ({
                 isVertical
                   ? "absolute -top-3 left-1/2 h-6 w-12 -translate-x-1/2 rounded-t-lg"
                   : "absolute -right-3 top-1/2 h-12 w-6 -translate-y-1/2 rounded-r-lg"
-              } flex items-center justify-center bg-bg-accent text-text-light hover:scale-[1.05] hover:bg-bg-subaccent`}
+              } z-20 flex items-center justify-center bg-bg-accent text-text-light hover:scale-[1.05] hover:bg-bg-subaccent`}
               aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
             >
               {isVertical ? (
