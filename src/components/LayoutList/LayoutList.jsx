@@ -20,7 +20,8 @@ const LayoutList = () => {
   // UI toggles
   const [showAllLayouts, setShowAllLayouts] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [setIsHovering] = useState(false);
+  // eslint-disable-next-line
+  const [isHovering, setIsHovering] = useState(false);
 
   // Fullscreen logic
   const [isFullscreen, setIsFullscreen] = useState(false);
