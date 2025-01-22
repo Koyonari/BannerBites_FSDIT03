@@ -382,9 +382,7 @@ const LayoutList = () => {
               {selectedLayout && !loading && (
                 <button
                   onClick={toggleFullscreen}
-                  className={`absolute right-6 top-6 z-10 rounded-full p-2 transition-opacity duration-200 neutral-bg secondary-text hover:neutralalt-bg ${
-                    isHovering || isFullscreen ? "opacity-100" : "opacity-0"
-                  }`}
+                  className="absolute right-6 top-6 z-10 rounded-full bg-gray-600 p-2 text-white hover:bg-gray-800"
                   aria-label={
                     isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
                   }
