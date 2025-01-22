@@ -20,7 +20,7 @@ const LayoutList = () => {
   // UI toggles
   const [showAllLayouts, setShowAllLayouts] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
+  const [setIsHovering] = useState(false);
 
   // Fullscreen logic
   const [isFullscreen, setIsFullscreen] = useState(false);
