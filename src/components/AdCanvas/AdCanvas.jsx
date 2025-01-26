@@ -1382,10 +1382,12 @@ const AdCanvas = () => {
 
       {/* Modals */}
       {isNamingLayout && (
+        permissions?.edit && (        
         <SaveLayoutModal
           onSave={handleLayoutNameSave}
           onClose={() => setIsNamingLayout(false)}
         />
+        )
       )}
 
       {isEditing && currentAd && currentAd.scheduledAd && (
