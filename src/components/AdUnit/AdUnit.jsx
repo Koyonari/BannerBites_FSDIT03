@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../Navbar";
 
+import { getPermissionsFromToken} from "../../utils/permissionsUtils";
+import Cookies from "js-cookie";
+
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const AdUnit = () => {
@@ -14,6 +17,20 @@ const AdUnit = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
+
+  const [permissions, setPermissions] = useState({});
+  
+    useEffect(() => {
+      // Fetch permissions whenever the token changes
+      const token = Cookies.get("authToken");
+      if (token) {
+        getPermissionsFromToken(token).then(setPermissions);
+      } else {
+        console.warn("No auth token found.");
+        setPermissions({});
+      }
+    }, []); // Runs only once when the component mounts
+  
 
   // Function to fetch ads from the backend
   const fetchAds = async () => {
@@ -107,6 +124,7 @@ const AdUnit = () => {
 
       {/* Media Upload Form */}
       <div className="px-4 py-6">
+      {permissions?.createAds && (
         <form onSubmit={handleUpload} className="space-y-4">
           <div>
             <label className="block text-sm font-bold">Media Type:</label>
@@ -157,6 +175,7 @@ const AdUnit = () => {
             </button>
           </div>
         </form>
+      )}
       </div>
 
       {/* Display Ads */}

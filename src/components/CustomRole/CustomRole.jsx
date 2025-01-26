@@ -10,7 +10,7 @@ const CustomRole = () => {
   const [defaultRoles, setDefaultRoles] = useState([]);
   const [newRole, setNewRole] = useState({
     role: "",
-    permissions: { delete: false, edit: false, upload: false, view: false, roleManagement: false },
+    permissions: { delete: false, edit: false, createAds: false, view: false, roleManagement: false, uploadAds: false, scheduleAds: false },
   });
   const [editMode, setEditMode] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
@@ -147,7 +147,7 @@ const CustomRole = () => {
         setEditingRole(null);
         setNewRole({
           role: "",
-          permissions: { delete: false, edit: false, upload: false, view: false },
+          permissions: { delete: false, edit: false, createAds: false, view: false, roleManagement: false, uploadAds: false, scheduleAds: false },
         });
 
         // Reload the page to apply changes
@@ -192,6 +192,44 @@ const CustomRole = () => {
               Logout
             </button>
           )}
+
+          {/* Permission-specific buttons */}
+          {permissions?.view && permissions?.view !== "No" && (
+            <button
+              onClick={() => (window.location.href = "/layouts")}
+              className="mt-4 ml-4 py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+            >
+              View Ads
+            </button>
+          )}
+
+          {permissions?.roleManagement && permissions?.roleManagement !== "No" && (
+            <button
+              onClick={() => (window.location.href = "/ad")}
+              className="mt-4 ml-4 py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg"
+            >
+              Create Ad
+            </button>
+          )}
+
+          {permissions?.edit && permissions?.edit !== "No" && (
+            <button
+              onClick={() => (window.location.href = "/ad")}
+              className="mt-4 ml-4 py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg"
+            >
+              Edit Ad
+            </button>
+          )}
+
+          {permissions?.delete && permissions?.delete !== "No" && (
+            <button
+              onClick={() => (window.location.href = "/ad")}
+              className="mt-4 ml-4 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg"
+            >
+              Delete Ad
+            </button>
+          )}
+
           {/* Role List */}
           <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
             Role List
