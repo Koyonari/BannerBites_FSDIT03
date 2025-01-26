@@ -12,7 +12,13 @@ import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
 import DeleteConfirmationModal from "../Modal/DeleteConfirmationModal";
+
+import { getPermissionsFromToken} from "../../utils/permissionsUtils";
+import Cookies from "js-cookie";
+
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+
 
 // Main AdCanvas component, responsible for facilitating CRUD operations on ad layouts
 const AdCanvas = () => {
@@ -45,6 +51,19 @@ const AdCanvas = () => {
       colSpan: 1,
     })),
   );
+
+  const [permissions, setPermissions] = useState({});
+  
+    useEffect(() => {
+      // Fetch permissions whenever the token changes
+      const token = Cookies.get("authToken");
+      if (token) {
+        getPermissionsFromToken(token).then(setPermissions);
+      } else {
+        console.warn("No auth token found.");
+        setPermissions({});
+      }
+    }, []); // Runs only once when the component mounts
 
   // Sidebar
   const handleSidebarStateChange = (isOpen) => {
@@ -1309,7 +1328,9 @@ const AdCanvas = () => {
           onClose={() => setIsNamingLayout(false)}
         />
       )}
+      
       {isEditing && currentAd && currentAd.scheduledAd && (
+        permissions?.edit && ( // edit modal permissions
         <EditModal
           ad={currentAd.scheduledAd.ad}
           scheduledTime={currentAd.scheduledAd.scheduledTime}
@@ -1318,9 +1339,12 @@ const AdCanvas = () => {
             setIsEditing(false);
             setCurrentAd(null);
           }}
+        
         />
+        )
       )}
       {isScheduling && currentScheduleAd && (
+        permissions?.scheduleAds && ( // schedule modal permissions
         <ScheduleModal
           ad={currentScheduleAd.item}
           scheduledTime={currentScheduleAd.scheduledTime}
@@ -1341,6 +1365,7 @@ const AdCanvas = () => {
             ) || []
           }
         />
+        )
       )}
       {/* Alert component */}
       <StyledAlert
@@ -1353,11 +1378,13 @@ const AdCanvas = () => {
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
+        permissions?.delete && ( // delete modal permissions
         <DeleteConfirmationModal
           isOpen={isDeleteModalOpen}
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
         />
+        )
       )}
     </div>
   );
