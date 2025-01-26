@@ -10,7 +10,15 @@ const CustomRole = () => {
   const [defaultRoles, setDefaultRoles] = useState([]);
   const [newRole, setNewRole] = useState({
     role: "",
-    permissions: { delete: false, edit: false, createAds: false, view: false, roleManagement: false, uploadAds: false, scheduleAds: false },
+    permissions: {
+      delete: false,
+      edit: false,
+      createAds: false,
+      view: false,
+      roleManagement: false,
+      uploadAds: false,
+      scheduleAds: false,
+    },
   });
   const [editMode, setEditMode] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
@@ -45,7 +53,9 @@ const CustomRole = () => {
 
   const fetchPermissions = async (role) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/roles/permissions/${role}`);
+      const response = await fetch(
+        `http://localhost:5000/api/roles/permissions/${role}`,
+      );
       if (!response.ok) {
         throw new Error(`Fetch failed with status: ${response.status}`);
       }
@@ -93,7 +103,12 @@ const CustomRole = () => {
         setDefaultRoles([...defaultRoles, createdRole]);
         setNewRole({
           role: "",
-          permissions: { delete: false, edit: false, upload: false, view: false },
+          permissions: {
+            delete: false,
+            edit: false,
+            upload: false,
+            view: false,
+          },
         });
       } else {
         console.error("Failed to create role:", await response.text());
@@ -106,9 +121,12 @@ const CustomRole = () => {
   // Handle deleting a role
   const handleDeleteRole = async (roleName) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/roles/${roleName}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `http://localhost:5000/api/roles/${roleName}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (response.ok) {
         setDefaultRoles(defaultRoles.filter((role) => role.role !== roleName));
@@ -130,24 +148,35 @@ const CustomRole = () => {
   // Handle updating a role
   const handleUpdateRole = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/roles/${editingRole.role}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newRole),
-      });
+      const response = await fetch(
+        `http://localhost:5000/api/roles/${editingRole.role}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newRole),
+        },
+      );
 
       if (response.ok) {
         const updatedRole = await response.json();
         setDefaultRoles(
           defaultRoles.map((role) =>
-            role.role === editingRole.role ? updatedRole : role
-          )
+            role.role === editingRole.role ? updatedRole : role,
+          ),
         );
         setEditMode(false);
         setEditingRole(null);
         setNewRole({
           role: "",
-          permissions: { delete: false, edit: false, createAds: false, view: false, roleManagement: false, uploadAds: false, scheduleAds: false },
+          permissions: {
+            delete: false,
+            edit: false,
+            createAds: false,
+            view: false,
+            roleManagement: false,
+            uploadAds: false,
+            scheduleAds: false,
+          },
         });
 
         // Reload the page to apply changes
@@ -172,97 +201,101 @@ const CustomRole = () => {
   };
 
   return (
-    <div>
+    <div className="text-primary-text dark:text-secondary-text min-h-screen bg-bg-light dark:bg-bg-dark">
       <Navbar />
-      <div className="pt-24 xl:pt-1 px-8 dark:dark-bg">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
+      <div className="px-8 pt-24 xl:pt-1">
+        <div className="rounded-lg border bg-base-white p-6 shadow-md primary-border dark:bg-bg-dark">
+          <h1 className="mb-6 text-2xl font-bold accent-text">
             Role Management
           </h1>
-          <h1>
-            Your role: {userRole || "No role detected"} {/* Display user role */}
+          <h1 className="mb-4 neutral-text">
+            Your role: {userRole || "No role detected"}
           </h1>
 
           {/* Conditional Logout Button */}
           {token && (
             <button
               onClick={handleLogout}
-              className="mt-4 py-1 px-2 bg-red-500 hover:bg-red-600 text-white rounded-lg"
+              className="mt-4 rounded-lg px-4 py-2 text-base-white transition-all alert-bg hover:opacity-90"
             >
               Logout
             </button>
           )}
 
-          {/* Permission-specific buttons */}
-          {permissions?.view && permissions?.view !== "No" && (
-            <button
-              onClick={() => (window.location.href = "/layouts")}
-              className="mt-4 ml-4 py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
-            >
-              View Ads
-            </button>
-          )}
+          {/* Permission-specific buttons with improved styling */}
+          <div className="mt-4 flex flex-wrap gap-4">
+            {permissions?.view && permissions?.view !== "No" && (
+              <button
+                onClick={() => (window.location.href = "/layouts")}
+                className="rounded-lg px-4 py-2 text-base-white transition-all primary-bg hover:opacity-90"
+              >
+                View Ads
+              </button>
+            )}
 
-          {permissions?.roleManagement && permissions?.roleManagement !== "No" && (
-            <button
-              onClick={() => (window.location.href = "/ad")}
-              className="mt-4 ml-4 py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg"
-            >
-              Create Ad
-            </button>
-          )}
+            {permissions?.roleManagement &&
+              permissions?.roleManagement !== "No" && (
+                <button
+                  onClick={() => (window.location.href = "/ad")}
+                  className="rounded-lg px-4 py-2 text-base-white transition-all primary-bg hover:opacity-90"
+                >
+                  Create Ad
+                </button>
+              )}
 
-          {permissions?.edit && permissions?.edit !== "No" && (
-            <button
-              onClick={() => (window.location.href = "/ad")}
-              className="mt-4 ml-4 py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg"
-            >
-              Edit Ad
-            </button>
-          )}
+            {permissions?.edit && permissions?.edit !== "No" && (
+              <button
+                onClick={() => (window.location.href = "/ad")}
+                className="rounded-lg px-4 py-2 text-base-white transition-all primary-bg hover:opacity-90"
+              >
+                Edit Ad
+              </button>
+            )}
 
-          {permissions?.delete && permissions?.delete !== "No" && (
-            <button
-              onClick={() => (window.location.href = "/ad")}
-              className="mt-4 ml-4 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg"
-            >
-              Delete Ad
-            </button>
-          )}
+            {permissions?.delete && permissions?.delete !== "No" && (
+              <button
+                onClick={() => (window.location.href = "/ad")}
+                className="rounded-lg px-4 py-2 text-base-white transition-all alert-bg hover:opacity-90"
+              >
+                Delete Ad
+              </button>
+            )}
+          </div>
 
           {/* Role List */}
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
+          <h2 className="mb-4 mt-8 text-xl font-semibold neutral-text">
             Role List
           </h2>
           <div className="space-y-4">
             {defaultRoles.map((roleObj, index) => (
               <div
                 key={index}
-                className="border p-4 rounded-md bg-gray-100 dark:bg-gray-700 flex justify-between items-center"
+                className="bg-neutral-bg flex items-center justify-between rounded-md border p-4 primary-border dark:bg-bg-dark"
               >
                 <div>
-                  <h3 className="font-bold text-lg text-gray-800 dark:text-white">
+                  <h3 className="text-lg font-bold accent-text">
                     {roleObj.role}
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="neutral-text">
                     {Object.entries(roleObj.permissions)
-                      .map(([perm, value]) => `${perm}: ${value ? "Yes" : "No"}`)
+                      .map(
+                        ([perm, value]) => `${perm}: ${value ? "Yes" : "No"}`,
+                      )
                       .join(", ")}
                   </p>
                 </div>
 
-                {/* Edit/Delete buttons visible only if user has roleManagement permission */}
                 {permissions?.roleManagement && (
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditRole(roleObj)}
-                      className="bg-yellow-500 text-white py-1 px-3 rounded hover:bg-yellow-600"
+                      className="bg-secondary-bg rounded px-3 py-1 text-base-white transition-all hover:opacity-90"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDeleteRole(roleObj.role)}
-                      className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
+                      className="rounded px-3 py-1 text-base-white transition-all alert-bg hover:opacity-90"
                     >
                       Delete
                     </button>
@@ -275,7 +308,7 @@ const CustomRole = () => {
           {/* Create or Edit Role */}
           {permissions?.roleManagement && (
             <>
-              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mt-8">
+              <h2 className="mb-4 mt-8 text-xl font-semibold neutral-text">
                 {editMode ? "Edit Role" : "Create Custom Role"}
               </h2>
               <div className="mt-4">
@@ -286,19 +319,20 @@ const CustomRole = () => {
                   onChange={(e) =>
                     setNewRole({ ...newRole, role: e.target.value })
                   }
-                  className="p-2 border rounded w-full mb-4 dark:bg-gray-700 dark:text-white"
+                  className="mb-4 w-full rounded border bg-base-white p-2 primary-border placeholder-primary ring-primary focus:outline-none focus:ring-2 dark:bg-bg-dark"
                   disabled={editMode}
                 />
-                <div className="flex gap-4">
+                <div className="mb-4 flex flex-wrap gap-4">
                   {Object.keys(permissions).map((perm) => (
                     <label
                       key={perm}
-                      className="flex items-center gap-2 text-gray-800 dark:text-white"
+                      className="flex items-center gap-2 neutral-text"
                     >
                       <input
                         type="checkbox"
                         checked={newRole.permissions[perm] || false}
                         onChange={() => handlePermissionChange(perm)}
+                        className="accent-primary"
                       />
                       {perm.charAt(0).toUpperCase() + perm.slice(1)}
                     </label>
@@ -306,11 +340,7 @@ const CustomRole = () => {
                 </div>
                 <button
                   onClick={editMode ? handleUpdateRole : handleCreateRole}
-                  className={`mt-4 py-2 px-4 rounded ${
-                    editMode
-                      ? "bg-green-500 hover:bg-green-600"
-                      : "bg-blue-500 hover:bg-blue-600"
-                  } text-white`}
+                  className={`rounded px-4 py-2 text-base-white transition-all hover:opacity-90 ${editMode ? "primary-bg" : "secondary-bg"} `}
                 >
                   {editMode ? "Update Role" : "Create Role"}
                 </button>
