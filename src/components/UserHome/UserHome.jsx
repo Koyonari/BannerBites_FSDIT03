@@ -6,18 +6,16 @@ import TVSelector from "../TVSelector";
 import AssignLayoutToTV from "../AssignLayoutToTV";
 import { MoveLeft } from "lucide-react";
 
-import { getPermissionsFromToken} from "../../utils/permissionsUtils";
+import { getPermissionsFromToken } from "../../utils/permissionsUtils";
 import Cookies from "js-cookie";
 
 const sortOptions = [{ value: "alpha", label: "Sort by Alphabetical" }];
-
-
 
 const Card = ({ title, date, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="card primary-bg hover:primary-bg dark:hover:primary-bg relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 text-center transition-all duration-300 ease-in-out primary-border primary-text hover:-translate-y-2 hover:shadow-xl hover:secondary-text dark:dark-bg dark:secondary-text dark:hover:secondary-text sm:h-full lg:h-[35vh] lg:w-[28vw] xl:border-4"
+      className="card relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 text-center transition-all duration-300 ease-in-out primary-border primary-bg primary-text hover:-translate-y-2 hover:shadow-xl hover:primary-bg hover:secondary-text dark:dark-bg dark:secondary-text dark:hover:primary-bg dark:hover:secondary-text sm:h-full lg:h-[35vh] lg:w-[28vw] xl:border-4"
     >
       <div>
         <h1 className="text-md px-6 py-4 font-bold sm:text-xl md:px-2 lg:text-2xl 2xl:text-4xl">
@@ -36,7 +34,7 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
   const [showTVSelector, setShowTVSelector] = useState(false);
   const [selectedTVId, setSelectedTVId] = useState(null);
   const [showLayoutAssignment, setShowLayoutAssignment] = useState(false);
-
+  // eslint-disable-next-line
   const [permissions, setPermissions] = useState({});
 
   useEffect(() => {
@@ -109,7 +107,7 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
         <div className="p-4">
           <MoveLeft
             onClick={handleBack}
-            className="hover:primary-bg tertiary-bg h-8 w-16 rounded-lg py-1 transition-all duration-300 ease-in-out secondary-text hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+            className="h-8 w-16 rounded-lg py-1 transition-all duration-300 ease-in-out tertiary-bg secondary-text hover:cursor-pointer hover:primary-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
           />
           <AssignLayoutToTV
             tvId={selectedTVId}
@@ -127,7 +125,7 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
         <div className="p-4">
           <MoveLeft
             onClick={handleBack}
-            className="hover:primary-bg tertiary-bg h-8 w-16 rounded-lg py-1 transition-all duration-300 ease-in-out secondary-text hover:cursor-pointer sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
+            className="h-8 w-16 rounded-lg py-1 transition-all duration-300 ease-in-out tertiary-bg secondary-text hover:cursor-pointer hover:primary-bg sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-2"
           />
           <TVSelector
             locationId={selectedLocationId}
@@ -178,14 +176,11 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
 
         {/* Create New Button */}
         <div className="w-full sm:w-1/6">
-          
-            <Link to="/ad">
-
-              <button className="primary-bg hover:secondary-bg h-10 w-full rounded-lg text-sm font-bold transition-colors secondary-text lg:h-16 lg:text-lg xl:h-20 xl:text-2xl">
-                Create New
-              </button>
-
-            </Link>
+          <Link to="/ad">
+            <button className="h-10 w-full rounded-lg text-sm font-bold transition-colors primary-bg secondary-text hover:secondary-bg lg:h-16 lg:text-lg xl:h-20 xl:text-2xl">
+              Create New
+            </button>
+          </Link>
         </div>
       </div>
 

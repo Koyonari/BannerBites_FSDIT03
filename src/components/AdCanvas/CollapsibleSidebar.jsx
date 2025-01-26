@@ -54,7 +54,7 @@ const CollapsibleSidebar = ({
     <div className="mb-4">
       <button
         onClick={() => setShowTemplates(!showTemplates)}
-        className="mb-2 flex w-full items-center justify-between rounded-lg bg-bg-accent px-4 py-2 text-sm text-text-light hover:scale-[1.02] hover:bg-bg-subaccent dark:text-text-dark"
+        className="mb-2 flex w-full items-center justify-between rounded-lg bg-bg-accent px-4 py-2 text-sm text-text-dark hover:scale-[1.02] hover:bg-bg-subaccent"
       >
         <span className="flex items-center gap-2">
           <Layout className="h-4 w-4 hover:rotate-12" />
@@ -86,16 +86,16 @@ const CollapsibleSidebar = ({
           >
             <button
               onClick={() => handleTemplateSelect(key)}
-              className="w-full rounded-lg bg-bg-light px-4 py-2 text-left text-sm text-text-light hover:bg-bg-accent dark:bg-bg-dark dark:text-text-dark"
+              className="w-full bg-bg-light px-4 py-2 text-left text-sm text-text-light dark:bg-bg-dark dark:text-text-dark"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 rounded-lg">
                 <span>{template.name}</span>
-                <span className="text-xs text-placeholder-light dark:text-placeholder-dark">
+                <span className="text-xs">
                   {template.rows}x{template.columns}
                 </span>
               </div>
             </button>
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100">
+            <div className="absolute right-2 top-1/2 mr-1 -translate-y-1/2 opacity-0 group-hover:opacity-100">
               <span className="text-xs text-placeholder-light dark:text-placeholder-dark">
                 Click
               </span>
@@ -145,9 +145,9 @@ const CollapsibleSidebar = ({
             >
               {isVertical ? (
                 isOpen ? (
-                  <ChevronDown className="h-6 w-6 dark:text-text-dark" />
+                  <ChevronDown className="h-6 w-6 text-text-dark" />
                 ) : (
-                  <ChevronUp className="h-6 w-6 dark:text-text-dark" />
+                  <ChevronUp className="h-6 w-6 text-text-dark" />
                 )
               ) : isOpen ? (
                 <ChevronLeft className="h-6 w-6 dark:text-text-dark" />
@@ -183,7 +183,7 @@ const CollapsibleSidebar = ({
                       : "text-placeholder-light hover:bg-bg-accent hover:text-text-light dark:text-placeholder-dark"
                   }`}
                 >
-                  <LayoutGrid className="h-6 w-6 dark:text-text-dark" />
+                  <LayoutGrid className="h-6 w-6 text-text-dark" />
                 </button>
                 <button
                   onClick={() =>
@@ -195,7 +195,7 @@ const CollapsibleSidebar = ({
                       : "text-placeholder-light hover:bg-bg-accent hover:text-text-light dark:text-placeholder-dark"
                   }`}
                 >
-                  <ImagePlus className="h-6 w-6 dark:text-text-dark" />
+                  <ImagePlus className="h-6 w-6 text-text-dark" />
                 </button>
               </div>
 
@@ -226,16 +226,16 @@ const CollapsibleSidebar = ({
                         {filteredLayouts.map((layout) => (
                           <div
                             key={layout.layoutId}
-                            className="flex transform items-center justify-between hover:scale-[1.02]"
+                            className="flex transform items-center justify-between rounded-lg hover:scale-[1.02] hover:bg-bg-accent hover:text-text-dark"
                           >
                             <button
                               onClick={() => onSelectLayout(layout.layoutId)}
-                              className="w-full rounded-lg bg-bg-light px-4 py-2 text-left text-sm text-text-light hover:bg-bg-accent dark:bg-bg-dark dark:text-text-dark"
+                              className="w-full rounded-lg bg-bg-light px-4 py-2 text-left text-sm text-text-light hover:bg-bg-accent hover:text-text-dark dark:bg-bg-dark dark:text-text-dark dark:hover:bg-bg-accent"
                             >
                               {layout.name || "Unnamed Layout"}
                             </button>
                             <Trash
-                              className="text-alert hover:text-alert-dark h-5 w-5 cursor-pointer hover:scale-110 dark:text-text-dark"
+                              className="text-alert hover:text-alert-dark mr-1 h-5 w-5 cursor-pointer hover:scale-110 dark:text-text-dark"
                               onClick={() =>
                                 onDeleteLayoutClick(layout.layoutId)
                               }

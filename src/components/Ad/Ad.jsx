@@ -11,29 +11,26 @@ import AssignLayoutTab from "../AssignLayoutTab";
 import ErrorBoundary from "../ErrorBoundary";
 import Navbar from "../Navbar";
 
-import { getPermissionsFromToken} from "../../utils/permissionsUtils";
+import { getPermissionsFromToken } from "../../utils/permissionsUtils";
 import Cookies from "js-cookie";
 
 const Ad = () => {
   const [selectedLayoutId] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [selectedTVId, setSelectedTVId] = useState(null);
-
+  // eslint-disable-next-line
   const [permissions, setPermissions] = useState({});
-    
-      useEffect(() => {
-        // Fetch permissions whenever the token changes
-        const token = Cookies.get("authToken");
-        if (token) {
-          getPermissionsFromToken(token).then(setPermissions);
-        } else {
-          console.warn("No auth token found.");
-          setPermissions({});
-        }
-      }, []); // Runs only once when the component mounts
-    
 
-  
+  useEffect(() => {
+    // Fetch permissions whenever the token changes
+    const token = Cookies.get("authToken");
+    if (token) {
+      getPermissionsFromToken(token).then(setPermissions);
+    } else {
+      console.warn("No auth token found.");
+      setPermissions({});
+    }
+  }, []); // Runs only once when the component mounts
 
   // Handle selecting a location
   const handleSelectLocation = (locationId) => {
