@@ -10,6 +10,9 @@ import CalibrationComponent from "../AdAnalytics/CalibrationComponent";
 import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
 import GazeVisualizer from "../AdAnalytics/GazeVisualizer";
 
+import { getPermissionsFromToken} from "../../utils/permissionsUtils";
+import Cookies from "js-cookie";
+
 const LayoutList = () => {
   // Layout / Error / Loading states
   const [layouts, setLayouts] = useState([]);
@@ -47,6 +50,21 @@ const LayoutList = () => {
 
   // Constants
   const MOBILE_DISPLAY_LIMIT = 3;
+
+
+  const [permissions, setPermissions] = useState({});
+    
+  useEffect(() => {
+    // Fetch permissions whenever the token changes
+    const token = Cookies.get("authToken");
+    if (token) {
+      getPermissionsFromToken(token).then(setPermissions);
+    } else {
+      console.warn("No auth token found.");
+      setPermissions({});
+    }
+  }, []); // Runs only once when the component mounts
+
 
   // 1) Preload WebGazer once
   useEffect(() => {
@@ -347,8 +365,11 @@ const LayoutList = () => {
                   Error: {error}
                 </div>
               )}
+            {permissions?.createAds ? (
+
               <div className="space-y-2">
                 {visibleLayouts.map((layout) => (
+                  
                   <button
                     key={layout.layoutId}
                     className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
@@ -360,6 +381,7 @@ const LayoutList = () => {
                   >
                     {layout.name || `Layout ${layout.layoutId}`}
                   </button>
+                  
                 ))}
                 {hasMoreLayouts && (
                   <button
@@ -370,7 +392,13 @@ const LayoutList = () => {
                   </button>
                 )}
               </div>
+            ): (
+              <div className="text-red-500 font-medium">
+                You don't have the permissions to view this content.
+              </div>
+            )}
             </div>
+            
           </div>
 
           {/* Main layout preview */}

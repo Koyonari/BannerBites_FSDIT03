@@ -12,7 +12,15 @@ import { MoveLeft, Merge, Check, CircleHelp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
 import DeleteConfirmationModal from "../Modal/DeleteConfirmationModal";
+
+import { getPermissionsFromToken } from "../../utils/permissionsUtils";
+import Cookies from "js-cookie";
+import { toast } from 'react-toastify'; // Example: Using react-toastify
+
+
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+
 
 // Main AdCanvas component, responsible for facilitating CRUD operations on ad layouts
 const AdCanvas = () => {
@@ -45,6 +53,19 @@ const AdCanvas = () => {
       colSpan: 1,
     })),
   );
+
+  const [permissions, setPermissions] = useState({});
+
+  useEffect(() => {
+    // Fetch permissions whenever the token changes
+    const token = Cookies.get("authToken");
+    if (token) {
+      getPermissionsFromToken(token).then(setPermissions);
+    } else {
+      console.warn("No auth token found.");
+      setPermissions({});
+    }
+  }, []); // Runs only once when the component mounts
 
   // Sidebar
   const handleSidebarStateChange = (isOpen) => {
@@ -894,13 +915,13 @@ const AdCanvas = () => {
       const scheduledAds = cellToUpdate.scheduledAds.map((ad) =>
         ad.id === currentAd.scheduledAd.id
           ? {
-              ...ad,
-              scheduledTime: updatedScheduledTime,
-              ad: {
-                ...ad.ad,
-                ...updatedAdData,
-              },
-            }
+            ...ad,
+            scheduledTime: updatedScheduledTime,
+            ad: {
+              ...ad.ad,
+              ...updatedAdData,
+            },
+          }
           : ad,
       );
       cellToUpdate.scheduledAds = scheduledAds;
@@ -1150,20 +1171,18 @@ const AdCanvas = () => {
         className={`flex ${isVertical ? "flex-col" : "flex-row"} min-h-full w-full`}
       >
         <div
-          className={`flex flex-col ${
-            isVertical
+          className={`flex flex-col ${isVertical
               ? `${sidebarOpen ? "h-[50vh]" : "h-[66.666667%]"} w-full transition-all duration-300`
               : "h-full w-full"
-          }`}
+            }`}
         >
           <div
-            className={`transition-all duration-300 ${
-              isVertical
+            className={`transition-all duration-300 ${isVertical
                 ? "mx-auto w-[90vw]"
                 : sidebarOpen
                   ? "ml-[27vw] w-[65vw] px-4"
                   : "ml-[5vw] w-[90vw]"
-            } flex min-h-full flex-col items-center overflow-hidden`}
+              } flex min-h-full flex-col items-center overflow-hidden`}
           >
             {/* Aspect Ratio */}
             <div className="mt-24 text-3xl font-bold primary-text dark:secondary-text md:mt-28">
@@ -1173,9 +1192,8 @@ const AdCanvas = () => {
             {/* Help Icon */}
             <div className="absolute right-4 top-[calc(9rem+1rem)] z-10 xl:top-[calc(9rem+3rem)]">
               <CircleHelp
-                className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${
-                  showHelp ? "accent-text" : "neutral-text"
-                }`}
+                className={`z-0 h-6 w-6 cursor-pointer transition-colors duration-200 xl:h-12 xl:w-12 ${showHelp ? "accent-text" : "neutral-text"
+                  }`}
                 fill={showHelp ? "#FFFFFF" : "#D9D9D9"}
                 strokeWidth={2}
                 onClick={() => setShowHelp(!showHelp)}
@@ -1308,11 +1326,10 @@ const AdCanvas = () => {
                   <Merge
                     onClick={handleMergeSelected}
                     disabled={!isMergeButtonActive}
-                    className={`h-8 w-16 rounded-lg py-2 transition-colors duration-300 secondary-text sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${
-                      !isMergeButtonActive
+                    className={`h-8 w-16 rounded-lg py-2 transition-colors duration-300 secondary-text sm:w-20 md:w-24 xl:h-10 xl:w-28 2xl:h-16 2xl:w-40 2xl:py-3.5 ${!isMergeButtonActive
                         ? "cursor-not-allowed neutralalt-bg"
                         : "primary-bg hover:cursor-pointer hover:secondary-bg"
-                    }`}
+                      }`}
                   />
                 </div>
 
@@ -1328,11 +1345,10 @@ const AdCanvas = () => {
           </div>
 
           <div
-            className={`flex ${
-              isVertical
+            className={`flex ${isVertical
                 ? `${sidebarOpen ? "h-[50vh]" : "h-[33.333333%]"} w-full`
                 : "h-full"
-            } transition-all duration-300`}
+              } transition-all duration-300`}
           >
             <CollapsibleSidebar
               layouts={layouts}
@@ -1366,43 +1382,57 @@ const AdCanvas = () => {
 
       {/* Modals */}
       {isNamingLayout && (
+        permissions?.edit && (        
         <SaveLayoutModal
           onSave={handleLayoutNameSave}
           onClose={() => setIsNamingLayout(false)}
         />
+        )
       )}
+
       {isEditing && currentAd && currentAd.scheduledAd && (
-        <EditModal
-          ad={currentAd.scheduledAd.ad}
-          scheduledTime={currentAd.scheduledAd.scheduledTime}
-          onSave={handleSave}
-          onClose={() => {
+        permissions?.edit ? (
+          <EditModal
+            ad={currentAd.scheduledAd.ad}
+            scheduledTime={currentAd.scheduledAd.scheduledTime}
+            onSave={handleSave}
+            onClose={() => {
+              setIsEditing(false);
+              setCurrentAd(null);
+            }}
+          />
+        ) : (
+          (() => {
+            toast.error("You do not have the necessary permissions to edit this advertisement.");
             setIsEditing(false);
             setCurrentAd(null);
-          }}
-        />
+          })()
+        )
       )}
+
       {isScheduling && currentScheduleAd && (
-        <ScheduleModal
-          ad={currentScheduleAd.item}
-          scheduledTime={currentScheduleAd.scheduledTime}
-          onSave={(scheduledDateTime) =>
-            handleScheduleSave(
-              currentScheduleAd.item,
-              scheduledDateTime,
-              currentScheduleAd.index,
-            )
-          }
-          onClose={() => {
-            setIsScheduling(false);
-            setCurrentScheduleAd(null);
-          }}
-          existingScheduledTimes={
-            gridItems[currentScheduleAd.index]?.scheduledAds.map(
-              (ad) => ad.scheduledTime,
-            ) || []
-          }
-        />
+        permissions?.scheduleAds && ( // schedule modal permissions
+          <ScheduleModal
+            ad={currentScheduleAd.item}
+            scheduledTime={currentScheduleAd.scheduledTime}
+            onSave={(scheduledDateTime) =>
+              handleScheduleSave(
+                currentScheduleAd.item,
+                scheduledDateTime,
+                currentScheduleAd.index,
+              )
+            }
+            onClose={() => {
+              setIsScheduling(false);
+              setCurrentScheduleAd(null);
+            }}
+            existingScheduledTimes={
+              gridItems[currentScheduleAd.index]?.scheduledAds.map(
+                (ad) => ad.scheduledTime,
+              ) || []
+            }
+          />
+        )
       )}
       {/* Alert component */}
       <StyledAlert
@@ -1415,11 +1445,13 @@ const AdCanvas = () => {
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
-        <DeleteConfirmationModal
-          isOpen={isDeleteModalOpen}
-          onConfirm={handleConfirmDelete}
-          onCancel={handleCancelDelete}
-        />
+        permissions?.delete && ( // delete modal permissions
+          <DeleteConfirmationModal
+            isOpen={isDeleteModalOpen}
+            onConfirm={handleConfirmDelete}
+            onCancel={handleCancelDelete}
+          />
+        )
       )}
     </div>
   );
