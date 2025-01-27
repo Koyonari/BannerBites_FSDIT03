@@ -12,7 +12,7 @@ const ExpandableCard = ({ role, permissions, onEdit, onDelete }) => {
   };
 
   return (
-    <div className="mb-4 rounded-lg border-2 p-6 transition-all duration-200 primary-border light-bg hover:border-blue-500 dark:dark-bg">
+    <div className="mb-4 rounded-lg border-2 p-6 transition-all duration-200 primary-border light-bg hover:border-blue-500 dark:secondary-border dark:dark-bg dark:hover:border-blue-500">
       <div className="mb-4 flex items-start justify-between">
         <h3 className="text-xl font-semibold accent-text">{role}</h3>
         <div className="flex gap-2">

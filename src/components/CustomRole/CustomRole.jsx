@@ -292,45 +292,93 @@ const CustomRole = () => {
         </section>
 
         {permissions?.roleManagement && (
-          <section className="mt-8">
-            <h2 className="mb-4 text-2xl font-semibold primary-text dark:neutral-text">
-              {editMode ? "Edit Role" : "Create Custom Role"}
-            </h2>
-            <div className="rounded-lg border-2 bg-bg-light p-6 primary-border dark:bg-bg-dark dark:secondary-border">
-              <input
-                type="text"
-                placeholder="Role Name"
-                value={newRole.role}
-                onChange={(e) =>
-                  setNewRole({ ...newRole, role: e.target.value })
-                }
-                className="mb-6 w-full rounded border-2 bg-bg-light px-4 py-2 text-text-light primary-border placeholder-primary focus:border-bg-accent focus:outline-none dark:bg-bg-dark dark:text-text-dark dark:secondary-border"
-                disabled={editMode}
-              />
+          <section className="mt-12 rounded-xl border-2 bg-white p-8 primary-border dark:bg-bg-dark dark:secondary-border">
+            <div className="mb-8 border-b border-gray-200 pb-4 dark:border-gray-700">
+              <h2 className="text-2xl font-semibold tracking-tight primary-text dark:neutral-text">
+                {editMode ? "Edit Role Settings" : "Create New Role"}
+              </h2>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                {editMode
+                  ? "Modify the permissions for this role. Changes will affect all users with this role."
+                  : "Configure a new role with custom permissions for your team members."}
+              </p>
+            </div>
 
-              <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
-                {Object.keys(permissions).map((perm) => (
-                  <label
-                    key={perm}
-                    className="flex cursor-pointer items-center space-x-2 text-text-light transition-colors hover:text-text-accent dark:text-text-dark"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={newRole.permissions[perm] || false}
-                      onChange={() => handlePermissionChange(perm)}
-                      className="form-checkbox border-primary dark:border-secondary h-4 w-4 rounded accent-bg"
-                    />
-                    <span>{formatPermissionName(perm)}</span>
-                  </label>
-                ))}
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <label
+                  htmlFor="roleName"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Role Name
+                </label>
+                <input
+                  id="roleName"
+                  type="text"
+                  placeholder="Enter role name"
+                  value={newRole.role}
+                  onChange={(e) =>
+                    setNewRole({ ...newRole, role: e.target.value })
+                  }
+                  disabled={editMode}
+                  className="w-full rounded-lg border-2 bg-white px-4 py-3 text-gray-700 placeholder-gray-400 shadow-sm primary-border focus:border-bg-accent focus:outline-none focus:ring-1 focus:ring-bg-accent disabled:bg-gray-50 disabled:text-gray-500 dark:bg-bg-dark dark:text-gray-200 dark:placeholder-gray-500 dark:secondary-border"
+                />
               </div>
 
-              <button
-                onClick={editMode ? handleUpdateRole : handleCreateRole}
-                className="rounded px-6 py-2 text-text-dark transition-colors duration-200 primary-bg hover:bg-bg-subaccent"
-              >
-                {editMode ? "Update Role" : "Create Role"}
-              </button>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                    Permissions
+                  </h3>
+                  <span className="text-sm text-gray-500">
+                    Select the permissions for this role
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {Object.keys(permissions).map((perm) => (
+                    <div
+                      key={perm}
+                      className="relative flex items-center rounded-lg border border-gray-200 p-4 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <label
+                          htmlFor={`permission-${perm}`}
+                          className="select-none font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          {formatPermissionName(perm)}
+                        </label>
+                      </div>
+                      <div className="ml-3 flex h-5 items-center">
+                        <input
+                          id={`permission-${perm}`}
+                          type="checkbox"
+                          checked={newRole.permissions[perm] || false}
+                          onChange={() => handlePermissionChange(perm)}
+                          className="h-5 w-5 rounded border-2 border-gray-300 text-blue-600 accent-bg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-offset-gray-800"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-6">
+                <button
+                  onClick={editMode ? handleUpdateRole : handleCreateRole}
+                  className="inline-flex items-center rounded-lg px-6 py-3 text-base font-medium text-white shadow-sm transition-all duration-200 primary-bg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  {editMode ? (
+                    <>
+                      <span>Update Role Settings</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Create New Role</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </section>
         )}
