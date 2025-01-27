@@ -3,6 +3,9 @@ import axios from "axios";
 import Navbar from "../Navbar";
 import { Search, Trash2, Upload, X } from "lucide-react";
 
+import { getPermissionsFromToken} from "../../utils/permissionsUtils";
+import Cookies from "js-cookie";
+
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const AdUnit = () => {
@@ -38,6 +41,22 @@ const AdUnit = () => {
     });
   };
 
+
+  const [permissions, setPermissions] = useState({});
+  
+    useEffect(() => {
+      // Fetch permissions whenever the token changes
+      const token = Cookies.get("authToken");
+      if (token) {
+        getPermissionsFromToken(token).then(setPermissions);
+      } else {
+        console.warn("No auth token found.");
+        setPermissions({});
+      }
+    }, []); // Runs only once when the component mounts
+  
+
+  // Function to fetch ads from the backend
   const fetchAds = async () => {
     try {
       const response = await axios.get(`${apiUrl}/api/ads/all`);
@@ -278,6 +297,64 @@ const AdUnit = () => {
 
       {/* Display Ads Grid */}
       <div className="p-4 sm:p-6 lg:p-8">
+      {/* Media Upload Form */}
+      <div className="px-4 py-6">
+      {permissions?.createAds && (
+        <form onSubmit={handleUpload} className="space-y-4">
+          <div>
+            <label className="block text-sm font-bold">Media Type:</label>
+            <select
+              value={mediaType}
+              onChange={(e) => setMediaType(e.target.value)}
+              className="w-full rounded-lg border px-3 py-2"
+            >
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold">Title:</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter title"
+              className="w-full rounded-lg border px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold">Description:</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter description"
+              className="w-full rounded-lg border px-3 py-2"
+            ></textarea>
+          </div>
+          <div>
+            <label className="block text-sm font-bold">Media File:</label>
+            <input
+              type="file"
+              accept={mediaType === "image" ? "image/*" : "video/*"}
+              onChange={(e) => setMediaFile(e.target.files[0])}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <button
+              type="submit"
+              disabled={uploading}
+              className="primary-bg hover:secondary-bg w-full rounded-lg py-2 text-white font-bold"
+            >
+              {uploading ? "Uploading..." : "Upload Media"}
+            </button>
+          </div>
+        </form>
+      )}
+      </div>
+
+      {/* Display Ads */}
+      <div className="px-4 py-6">
         {filteredAds.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredAds.map((ad) => (
@@ -327,6 +404,7 @@ const AdUnit = () => {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };
