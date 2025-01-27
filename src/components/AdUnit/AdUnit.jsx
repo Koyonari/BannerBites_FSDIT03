@@ -25,6 +25,8 @@ const AdUnit = () => {
     message: "",
     isError: false,
   });
+  const [permissions, setPermissions] = useState({});
+
   const showNotification = (message, isError = false) => {
     setNotification({
       isVisible: true,
@@ -41,8 +43,6 @@ const AdUnit = () => {
     });
   };
 
-  const [permissions, setPermissions] = useState({});
-
   useEffect(() => {
     // Fetch permissions whenever the token changes
     const token = Cookies.get("authToken");
@@ -53,7 +53,6 @@ const AdUnit = () => {
       setPermissions({});
     }
   }, []); // Runs only once when the component mounts
-
   // Function to fetch ads from the backend
   const fetchAds = async () => {
     try {
@@ -136,29 +135,37 @@ const AdUnit = () => {
       <Navbar />
 
       {/* Header Section */}
-      <div className="mx-auto flex w-full flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6 lg:p-8">
-        {/* Search Bar */}
-        <div className="w-full sm:w-3/4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search advertisements"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="dark:bg-dark-bg h-12 w-full rounded-lg border px-4 pl-10 text-sm transition-colors primary-border primary-text placeholder-primary focus:outline-none focus:ring-2 focus:ring-primary dark:secondary-border dark:secondary-text dark:placeholder-secondary lg:h-14 lg:text-base"
-            />
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform neutral-text" />{" "}
-          </div>
-        </div>
-
-        {/* Upload Button */}
-        <button
-          onClick={() => setIsUploadPopupVisible(true)}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all duration-300 primary-bg secondary-text hover:secondary-bg focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-1/4 lg:h-14 lg:text-base"
+      <div className="mx-auto flex w-full flex-col gap-4 p-4 sm:p-6 lg:p-8">
+        <div
+          className={`mx-auto flex w-full flex-col gap-4 sm:flex-row sm:items-center ${permissions?.createAds ? "sm:justify-between" : "sm:justify-center"}`}
         >
-          <Upload className="h-5 w-5" />
-          Upload Media
-        </button>
+          {/* Search Bar */}
+          <div
+            className={`w-full ${permissions?.createAds ? "sm:w-3/4" : "sm:w-2/3 md:w-1/2"}`}
+          >
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search advertisements"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="dark:bg-dark-bg h-12 w-full rounded-lg border px-4 pl-10 text-sm transition-colors primary-border primary-text placeholder-primary focus:outline-none focus:ring-2 focus:ring-primary dark:secondary-border dark:secondary-text dark:placeholder-secondary lg:h-14 lg:text-base"
+              />
+              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform neutral-text" />
+            </div>
+          </div>
+
+          {/* Upload Button - Only shown if user has createAds permission */}
+          {permissions?.createAds && (
+            <button
+              onClick={() => setIsUploadPopupVisible(true)}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all duration-300 primary-bg secondary-text hover:secondary-bg focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-1/4 lg:h-14 lg:text-base"
+            >
+              <Upload className="h-5 w-5" />
+              Upload Media
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Upload Media Popup */}
@@ -184,7 +191,7 @@ const AdUnit = () => {
                 <select
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value)}
-                  className="dark:bg-dark-bg w-full rounded-lg border px-3 py-2 text-sm primary-border primary-text dark:secondary-border dark:secondary-text"
+                  className="dark:bg-dark-bg w-full rounded-lg border px-3 py-2 text-sm primary-border primary-text dark:secondary-border dark:primary-text"
                 >
                   <option value="image">Image</option>
                   <option value="video">Video</option>
@@ -295,62 +302,6 @@ const AdUnit = () => {
 
       {/* Display Ads Grid */}
       <div className="p-4 sm:p-6 lg:p-8">
-        {/* Media Upload Form */}
-        <div className="px-4 py-6">
-          {permissions?.createAds && (
-            <form onSubmit={handleUpload} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold">Media Type:</label>
-                <select
-                  value={mediaType}
-                  onChange={(e) => setMediaType(e.target.value)}
-                  className="w-full rounded-lg border px-3 py-2"
-                >
-                  <option value="image">Image</option>
-                  <option value="video">Video</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-bold">Title:</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Enter title"
-                  className="w-full rounded-lg border px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold">Description:</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Enter description"
-                  className="w-full rounded-lg border px-3 py-2"
-                ></textarea>
-              </div>
-              <div>
-                <label className="block text-sm font-bold">Media File:</label>
-                <input
-                  type="file"
-                  accept={mediaType === "image" ? "image/*" : "video/*"}
-                  onChange={(e) => setMediaFile(e.target.files[0])}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="w-full rounded-lg py-2 font-bold text-white primary-bg hover:secondary-bg"
-                >
-                  {uploading ? "Uploading..." : "Upload Media"}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-
         {/* Display Ads */}
         <div className="px-4 py-6">
           {filteredAds.length > 0 ? (
