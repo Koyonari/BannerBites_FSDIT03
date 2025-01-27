@@ -1,6 +1,7 @@
 // src/components/AdAnalytics/LayoutList.jsx
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { v4 as uuidv4 } from "uuid"; // For unique adSessionId
 import { Maximize2, Minimize2 } from "lucide-react";
 import Cookies from "js-cookie";
 import axios from "axios";
@@ -25,7 +26,7 @@ const LayoutList = () => {
   // ===== UI Toggles =====
   const [showAllLayouts, setShowAllLayouts] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isHovering, setIsHovering] = useState(false); // Used to show/hide fullscreen button
+  const [isHovering, setIsHovering] = useState(false); // show fullscreen button
 
   // ===== Fullscreen Logic =====
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -37,21 +38,26 @@ const LayoutList = () => {
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [calibrationCompleted, setCalibrationCompleted] = useState(false);
 
-  // ===== Analytics =====
+  // ===== Analytics (basic) =====
   const [retentionTime, setRetentionTime] = useState(0);
   const [isLookingAtAd, setIsLookingAtAd] = useState(false);
   const [gazedAdId, setGazedAdId] = useState(null);
   const [currentGazeData, setCurrentGazeData] = useState(null);
 
+  // ===== More Advanced Session Tracking =====
+  const activeAdSessionRef = useRef(null); // holds the current ad session object
+  const gazeSamplingIntervalRef = useRef(null); // interval ID for sampling
+  const lastGazeRef = useRef({ x: 0, y: 0 }); // store the most recent gaze
+
   // ===== Bounding Box Overlays =====
   const [adBoundingBoxes, setAdBoundingBoxes] = useState([]);
   const [showBorders, setShowBorders] = useState(false);
 
-  // ===== Additional Toggles =====
-  const [showCamera, setShowCamera] = useState(true); // Toggle camera feed
-  const [showVisualizer, setShowVisualizer] = useState(true); // Toggle gaze dot
+  // ===== Toggles =====
+  const [showCamera, setShowCamera] = useState(true); // toggle camera feed
+  const [showVisualizer, setShowVisualizer] = useState(true); // toggle gaze dot
 
-  // ===== WebSocket References =====
+  // ===== WebSocket =====
   const websocketRef = useRef(null);
   const pendingLayoutIdRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
@@ -62,7 +68,9 @@ const LayoutList = () => {
   // ===== Permissions =====
   const [permissions, setPermissions] = useState({});
 
-  // ===== Fetch User Permissions =====
+  // ---------------------------------------------
+  // 1) Fetch User Permissions
+  // ---------------------------------------------
   useEffect(() => {
     const token = Cookies.get("authToken");
     if (token) {
@@ -73,7 +81,9 @@ const LayoutList = () => {
     }
   }, []);
 
-  // ===== Preload WebGazer =====
+  // ---------------------------------------------
+  // 2) Preload WebGazer Model
+  // ---------------------------------------------
   useEffect(() => {
     let mounted = true;
     WebGazerSingleton.preload()
@@ -82,9 +92,9 @@ const LayoutList = () => {
         setIsModelReady(true);
         console.log("[LayoutList] WebGazer model preloaded");
 
-        // Check if we have saved calibration data; if yes, skip calibration
+        // If we have saved calibration data, skip calibration
         if (WebGazerSingleton.hasSavedCalibration()) {
-          console.log("Existing WebGazer calibration detected. Skipping calibration step.");
+          console.log("Existing calibration found; skipping calibration step.");
           setCalibrationCompleted(true);
         }
       })
@@ -97,10 +107,13 @@ const LayoutList = () => {
     };
   }, []);
 
-  // ===== Handle Window Resize & Fullscreen Changes =====
+  // ---------------------------------------------
+  // 3) Handle Window Resize & Fullscreen
+  // ---------------------------------------------
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
-    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const handleFullscreenChange = () =>
+      setIsFullscreen(!!document.fullscreenElement);
 
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -112,13 +125,15 @@ const LayoutList = () => {
     };
   }, []);
 
-  // ===== Fetch Layouts Initially =====
+  // ---------------------------------------------
+  // 4) Fetch Layouts on Mount
+  // ---------------------------------------------
   useEffect(() => {
     fetchLayouts();
   }, []);
 
-  // ===== Cleanup WebSocket on Unmount =====
   useEffect(() => {
+    // Cleanup on unmount
     return () => {
       if (websocketRef.current) {
         websocketRef.current.close();
@@ -126,7 +141,9 @@ const LayoutList = () => {
     };
   }, []);
 
-  // ===== Fetch Layouts & Establish WebSocket Connection =====
+  // ---------------------------------------------
+  // 5) Fetch Layouts & Establish WebSocket
+  // ---------------------------------------------
   const fetchLayouts = async () => {
     try {
       setLoading(true);
@@ -144,7 +161,9 @@ const LayoutList = () => {
     websocketRef.current = new WebSocket("ws://localhost:5000");
 
     websocketRef.current.onopen = () => {
-      websocketRef.current.send(JSON.stringify({ type: "subscribe", layoutId }));
+      websocketRef.current.send(
+        JSON.stringify({ type: "subscribe", layoutId }),
+      );
     };
 
     websocketRef.current.onmessage = (event) => {
@@ -163,7 +182,11 @@ const LayoutList = () => {
     };
 
     websocketRef.current.onclose = () => {
-      if (pendingLayoutIdRef.current === layoutId && reconnectAttemptsRef.current < 5) {
+      // Attempt to reconnect a few times
+      if (
+        pendingLayoutIdRef.current === layoutId &&
+        reconnectAttemptsRef.current < 5
+      ) {
         reconnectAttemptsRef.current += 1;
         setTimeout(() => establishWebSocketConnection(layoutId), 5000);
       }
@@ -190,7 +213,9 @@ const LayoutList = () => {
         websocketRef.current = null;
       }
 
-      const response = await axios.get(`http://localhost:5000/api/layouts/${layoutId}`);
+      const response = await axios.get(
+        `http://localhost:5000/api/layouts/${layoutId}`,
+      );
       const layoutData = response.data;
 
       // Gather all adIds
@@ -203,7 +228,10 @@ const LayoutList = () => {
       const adIds = Array.from(adIdsSet);
 
       // Fetch full Ad objects
-      const adsResponse = await axios.post("http://localhost:5000/api/ads/batchGet", { adIds });
+      const adsResponse = await axios.post(
+        "http://localhost:5000/api/ads/batchGet",
+        { adIds },
+      );
       const ads = adsResponse.data;
       const adsMap = {};
       ads.forEach((ad) => {
@@ -229,7 +257,9 @@ const LayoutList = () => {
     }
   };
 
-  // ===== Bounding Box Logic =====
+  // ---------------------------------------------
+  // 6) Bounding Box Logic
+  // ---------------------------------------------
   const updateAdBoundingBoxes = useCallback(() => {
     const boxes = [];
     document.querySelectorAll(".ad-item").forEach((el) => {
@@ -254,18 +284,112 @@ const LayoutList = () => {
 
   const toggleBorders = () => setShowBorders((prev) => !prev);
 
-  // ===== Gaze Event Handling =====
+  // ---------------------------------------------
+  // 7) Ad Session Handling (Enter/Exit, Gaze Samples)
+  // ---------------------------------------------
+  const startAdSession = (adId) => {
+    const now = Date.now();
+    const newSession = {
+      adSessionId: uuidv4(),
+      adId,
+      enterTime: now,
+      exitTime: null,
+      dwellTime: null,
+      gazeSamples: [],
+    };
+    activeAdSessionRef.current = newSession;
+
+    // Start sampling every 200ms
+    gazeSamplingIntervalRef.current = setInterval(() => {
+      if (!activeAdSessionRef.current) return;
+      const { x, y } = lastGazeRef.current;
+      const t = Date.now();
+      // Append a sample
+      activeAdSessionRef.current.gazeSamples.push({ x, y, timestamp: t });
+    }, 200);
+  };
+
+  const endAdSession = () => {
+    if (!activeAdSessionRef.current) return;
+    const now = Date.now();
+    const session = activeAdSessionRef.current;
+    session.exitTime = now;
+    session.dwellTime = session.exitTime - session.enterTime;
+
+    // Clear the interval
+    if (gazeSamplingIntervalRef.current) {
+      clearInterval(gazeSamplingIntervalRef.current);
+      gazeSamplingIntervalRef.current = null;
+    }
+
+    // Send this session data once, via WebSocket
+    sendAdSessionToServer(session);
+
+    // Clear ref
+    activeAdSessionRef.current = null;
+  };
+
+  const sendAdSessionToServer = (session) => {
+    if (
+      websocketRef.current &&
+      websocketRef.current.readyState === WebSocket.OPEN
+    ) {
+      const payload = {
+        type: "adSessionComplete",
+        data: {
+          ...session,
+          // Convert times to ISO if desired
+          enterTime: new Date(session.enterTime).toISOString(),
+          exitTime: new Date(session.exitTime).toISOString(),
+        },
+      };
+      websocketRef.current.send(JSON.stringify(payload));
+      console.log("[LayoutList] Sent adSessionComplete:", payload);
+    } else {
+      console.warn("WebSocket not open; cannot send session data.");
+    }
+  };
+
+  // ---------------------------------------------
+  // 8) Gaze Event Handling
+  // ---------------------------------------------
   const handleGazeAtAd = useCallback(
     ({ x, y }) => {
+      // Always store last gaze
+      lastGazeRef.current = { x, y };
+
+      // Basic bounding box check
       const adElements = document.querySelectorAll(".ad-item");
       let foundAdId = null;
       adElements.forEach((adElement) => {
         const rect = adElement.getBoundingClientRect();
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        if (
+          x >= rect.left &&
+          x <= rect.right &&
+          y >= rect.top &&
+          y <= rect.bottom
+        ) {
           foundAdId = adElement.getAttribute("data-ad-id");
         }
       });
 
+      // If we've changed ads (or left ads altogether)
+      const currentSession = activeAdSessionRef.current;
+      const currentAdId = currentSession?.adId || null;
+
+      if (foundAdId !== currentAdId) {
+        // 1) End the old session if there was one
+        if (currentSession) {
+          endAdSession();
+        }
+
+        // 2) Start a new session if we're now in a new ad
+        if (foundAdId) {
+          startAdSession(foundAdId);
+        }
+      }
+
+      // Also maintain your simpler “Looking at Ad” states
       if (foundAdId !== gazedAdId) {
         setRetentionTime(0);
       }
@@ -281,7 +405,9 @@ const LayoutList = () => {
     [gazedAdId],
   );
 
-  // ===== Calibration / Tracking Handlers =====
+  // ---------------------------------------------
+  // 9) Calibration / Tracking Handlers
+  // ---------------------------------------------
   const handleStartCalibration = () => {
     if (!isModelReady) {
       alert("Eye Tracking model still loading, please wait...");
@@ -297,7 +423,7 @@ const LayoutList = () => {
     setCalibrationCompleted(true);
     setIsTracking(true);
 
-    // Save calibration data to cookie
+    // Save calibration data
     WebGazerSingleton.saveCalibrationDataToCookie();
   };
 
@@ -307,31 +433,29 @@ const LayoutList = () => {
     setIsCalibrating(true);
   };
 
-  // ===== Start Tracking Handler =====
+  // ---------------------------------------------
+  // 10) Start / Resume / End Eye Tracking
+  // ---------------------------------------------
   const handleStartTracking = async () => {
-    console.log("Start Eye Tracking button clicked");
-    
+    console.log("[LayoutList] Start Eye Tracking clicked.");
     if (!isModelReady) {
       alert("Eye Tracking model still loading, please wait...");
-      console.log("WebGazer model not ready");
       return;
     }
-  
-    // Ensure calibration data exists
+    // Must have calibration
     if (!WebGazerSingleton.hasSavedCalibration() && !calibrationCompleted) {
       alert("You must calibrate before starting eye tracking.");
-      console.log("Calibration data missing");
       return;
     }
-  
+
     try {
       await WebGazerSingleton.initialize((data) => {
         if (data) handleGazeAtAd(data);
       });
       setIsTracking(true);
-      console.log("Eye Tracking started with existing calibration data.");
-  
-      // Apply camera visibility based on current toggle state
+      console.log("[LayoutList] Eye Tracking started with calibration data.");
+
+      // Toggle camera feed if desired
       WebGazerSingleton.setCameraVisibility(showCamera);
     } catch (err) {
       console.error("Failed to start tracking:", err);
@@ -353,9 +477,7 @@ const LayoutList = () => {
         if (data) handleGazeAtAd(data);
       });
       setIsTracking(true);
-      console.log("WebGazer tracking resumed.");
-
-      // Apply camera visibility based on current toggle state
+      console.log("[LayoutList] Eye Tracking resumed.");
       WebGazerSingleton.setCameraVisibility(showCamera);
     } catch (err) {
       console.error("Failed to resume tracking:", err);
@@ -363,19 +485,28 @@ const LayoutList = () => {
   };
 
   const handleEndTracking = () => {
+    // End any active ad session first
+    if (activeAdSessionRef.current) {
+      endAdSession();
+    }
+
+    // Then stop WebGazer
     WebGazerSingleton.end();
     setIsTracking(false);
+
+    // Reset simple states
     setRetentionTime(0);
     setIsLookingAtAd(false);
     setGazedAdId(null);
     setCurrentGazeData(null);
   };
 
-  // ===== Toggle Handlers =====
+  // ---------------------------------------------
+  // 11) UI Toggles
+  // ---------------------------------------------
   const handleToggleCamera = () => {
     const newVal = !showCamera;
     setShowCamera(newVal);
-    // If tracking is active, toggle camera immediately
     if (isTracking && WebGazerSingleton.instance) {
       WebGazerSingleton.setCameraVisibility(newVal);
     }
@@ -383,7 +514,6 @@ const LayoutList = () => {
 
   const handleToggleVisualizer = () => setShowVisualizer((prev) => !prev);
 
-  // ===== Fullscreen Handler =====
   const toggleFullscreen = async () => {
     try {
       if (!isFullscreen) {
@@ -396,25 +526,35 @@ const LayoutList = () => {
     }
   };
 
-  // ===== Layouts Display Logic =====
+  // ---------------------------------------------
+  // 12) Layouts Display Logic
+  // ---------------------------------------------
   const visibleLayouts =
-    isMobile && !showAllLayouts ? layouts.slice(0, MOBILE_DISPLAY_LIMIT) : layouts;
+    isMobile && !showAllLayouts
+      ? layouts.slice(0, MOBILE_DISPLAY_LIMIT)
+      : layouts;
   const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
 
+  // ---------------------------------------------
+  // RENDER
+  // ---------------------------------------------
   return (
     <div className="min-h-screen dark:dark-bg">
       <Navbar />
 
       <div className="container mx-auto w-full p-4 md:p-12">
-        {/* Layout Selection and Preview */}
+        {/* Layout Selection + Preview */}
         <div className="flex flex-col md:min-h-[600px] md:flex-row">
-          {/* Sidebar: Available Layouts */}
+          {/* Sidebar: Layouts */}
           <div className="w-full md:w-[300px] md:flex-shrink-0">
             <div className="mb-6 rounded-lg p-6 shadow light-bg dark:dark-bg dark:secondary-text md:mb-0">
               <h2 className="mb-4 text-xl font-bold">Available Layouts</h2>
               {loading && !selectedLayout && (
                 <div className="flex items-center justify-center p-4 neutral-text">
-                  <svg className="mr-2 h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                  <svg
+                    className="mr-2 h-5 w-5 animate-spin"
+                    viewBox="0 0 24 24"
+                  >
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -478,12 +618,14 @@ const LayoutList = () => {
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
             >
-              {/* Fullscreen Toggle Button - Visible on Hover */}
+              {/* Fullscreen Button */}
               {selectedLayout && !loading && isHovering && (
                 <button
                   onClick={toggleFullscreen}
                   className="absolute right-6 top-6 z-10 rounded-full bg-gray-600 p-2 text-white hover:bg-gray-800"
-                  aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                  aria-label={
+                    isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                  }
                 >
                   {isFullscreen ? (
                     <Minimize2 className="h-5 w-5" />
@@ -500,7 +642,10 @@ const LayoutList = () => {
               >
                 {loading && selectedLayout && (
                   <div className="flex h-full items-center justify-center p-4 neutral-bg">
-                    <svg className="mr-2 h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                    <svg
+                      className="mr-2 h-5 w-5 animate-spin"
+                      viewBox="0 0 24 24"
+                    >
                       <circle
                         className="opacity-25"
                         cx="12"
@@ -519,7 +664,9 @@ const LayoutList = () => {
                     Loading layout preview...
                   </div>
                 )}
-                {selectedLayout && !loading && <LayoutViewer layout={selectedLayout} />}
+                {selectedLayout && !loading && (
+                  <LayoutViewer layout={selectedLayout} />
+                )}
                 {!selectedLayout && !loading && (
                   <div className="flex h-full items-center justify-center p-4 neutral-text">
                     Select a layout to preview
@@ -530,7 +677,7 @@ const LayoutList = () => {
           </div>
         </div>
 
-        {/* ===== Calibration & Tracking Controls ===== */}
+        {/* Calibration & Tracking Controls */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3 px-4">
           {/* Start Calibration */}
           {!isCalibrating && !calibrationCompleted && (
@@ -559,7 +706,10 @@ const LayoutList = () => {
               className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
               disabled={
                 !selectedLayout ||
-                !(WebGazerSingleton.hasSavedCalibration() || calibrationCompleted)
+                !(
+                  WebGazerSingleton.hasSavedCalibration() ||
+                  calibrationCompleted
+                )
               }
             >
               Start Eye Tracking
@@ -612,7 +762,7 @@ const LayoutList = () => {
           </button>
         </div>
 
-        {/* ===== Viewer Analytics ===== */}
+        {/* Viewer Analytics (basic) */}
         {selectedLayout && (
           <div className="mt-8 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
@@ -634,17 +784,19 @@ const LayoutList = () => {
         )}
       </div>
 
-      {/* ===== Calibration Overlay ===== */}
+      {/* Calibration Overlay */}
       {isCalibrating && (
-        <CalibrationComponent onCalibrationComplete={handleCalibrationComplete} />
+        <CalibrationComponent
+          onCalibrationComplete={handleCalibrationComplete}
+        />
       )}
 
-      {/* ===== Gaze Tracking ===== */}
+      {/* Gaze Tracking */}
       {isTracking && selectedLayout && (
         <GazeTrackingComponent onGaze={handleGazeAtAd} isActive={isTracking} />
       )}
 
-      {/* ===== Gaze Visualizer ===== */}
+      {/* Gaze Visualizer */}
       {showVisualizer && currentGazeData && (
         <GazeVisualizer
           gazeData={currentGazeData}
