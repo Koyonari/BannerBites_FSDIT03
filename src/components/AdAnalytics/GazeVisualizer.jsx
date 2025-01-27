@@ -1,20 +1,35 @@
 // src/components/AdAnalytics/GazeVisualizer.jsx
 import React from "react";
-import { AnimatePresence } from "framer-motion";
-import AnimatedGazeDot from "./AnimatedGazeDot";
+import { motion } from "framer-motion";
 
-const GazeVisualizer = ({ gazeData }) => {
+const GazeVisualizer = ({ gazeData, boundingBoxes, showBorders }) => {
   return (
     <>
-      {/* Optionally keep your canvas for other visuals */}
-      {/* ...canvas drawing logic if needed... */}
+      {/* Gaze Dot */}
+      {gazeData && (
+        <motion.div
+          className="absolute z-50 h-6 w-6 rounded-full bg-red-500"
+          initial={{ x: gazeData.x, y: gazeData.y }}
+          animate={{ x: gazeData.x, y: gazeData.y }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          style={{ top: gazeData.y, left: gazeData.x, position: "absolute" }}
+        />
+      )}
 
-      {/* Render the animated gaze dot only if gaze data is available */}
-      <AnimatePresence>
-        {gazeData && (
-          <AnimatedGazeDot x={gazeData.x - window.scrollX} y={gazeData.y - window.scrollY} />
-        )}
-      </AnimatePresence>
+      {/* Bounding Boxes */}
+      {showBorders &&
+        boundingBoxes.map((box, index) => (
+          <div
+            key={index}
+            className="absolute border-2 border-red-500 pointer-events-none"
+            style={{
+              top: box.top,
+              left: box.left,
+              width: box.width,
+              height: box.height,
+            }}
+          />
+        ))}
     </>
   );
 };

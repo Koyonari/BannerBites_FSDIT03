@@ -20,12 +20,15 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
   const [clickCount, setClickCount] = useState(0);
   const [dotFeedback, setDotFeedback] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
+    // Ensure WebGazer is initialized and ready to record
     (async () => {
       try {
-        const wg = await WebGazerSingleton.initialize();
-        wg.setStorePoints(true);
+        await WebGazerSingleton.initialize();
+        WebGazerSingleton.instance.setStorePoints(true);
+        console.log("WebGazer initialized for calibration.");
       } catch (err) {
         console.error("Calibration initialization error:", err);
       }
@@ -33,19 +36,19 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
   }, []);
 
   const handleDotClick = async () => {
-    // Provide immediate visual feedback
     setDotFeedback(true);
-    setTimeout(() => setDotFeedback(false), 80);
+    setTimeout(() => setDotFeedback(false), 200);
 
     const { xPercent, yPercent } = calibrationPoints[currentPointIndex];
     const x = (xPercent / 100) * window.innerWidth;
     const y = (yPercent / 100) * window.innerHeight;
 
     try {
-      const wg = await WebGazerSingleton.initialize();
-      wg.recordScreenPosition(x, y);
+      // Record the screen position for calibration
+      WebGazerSingleton.instance.recordScreenPosition(x, y);
+      console.log(`Recorded calibration point ${currentPointIndex + 1}: (${x}, ${y})`);
     } catch (error) {
-      console.error("Error recording position:", error);
+      console.error("Error recording calibration position:", error);
     }
 
     setClickCount((prev) => {
@@ -64,9 +67,12 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
   };
 
   const { xPercent, yPercent } = calibrationPoints[currentPointIndex];
+
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-60 z-[9999]">
-      <p className="text-white mb-4 text-lg">Click each dot {requiredClicks} times to calibrate.</p>
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-70 z-50">
+      <div className="absolute top-5 text-white text-lg">
+        Click each dot {requiredClicks} times to calibrate.
+      </div>
       <div
         onClick={handleDotClick}
         style={{
@@ -74,18 +80,25 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
           left: `${xPercent}%`,
           top: `${yPercent}%`,
           transform: "translate(-50%, -50%)",
-          width: 40,
-          height: 40,
+          width: 60,
+          height: 60,
           borderRadius: "50%",
-          backgroundColor: dotFeedback ? "lime" : "red",
-          border: "2px solid white",
+          backgroundColor: dotFeedback ? "limegreen" : "tomato",
+          border: "3px solid white",
           cursor: "pointer",
+          transition: "background-color 0.2s",
         }}
+        aria-label={`Calibration Point ${currentPointIndex + 1}`}
       />
-      <p className="mt-4 text-white">
-        Point {currentPointIndex + 1} of {calibrationPoints.length}
-      </p>
-      <p className="text-white">Clicks: {clickCount} / {requiredClicks}</p>
+      <div className="absolute bottom-5 text-white">
+        <span>
+          Point {currentPointIndex + 1} of {calibrationPoints.length}
+        </span>
+        <br />
+        <span>
+          Clicks: {clickCount} / {requiredClicks}
+        </span>
+      </div>
     </div>
   );
 };

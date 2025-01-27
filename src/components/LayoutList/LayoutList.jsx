@@ -1,7 +1,9 @@
+// src/components/AdAnalytics/LayoutList.jsx
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
+import Cookies from "js-cookie";
 import axios from "axios";
-import WebGazerSingleton from "../../utils/WebGazerSingleton";
 
 // UI components
 import Navbar from "../Navbar";
@@ -10,52 +12,58 @@ import CalibrationComponent from "../AdAnalytics/CalibrationComponent";
 import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
 import GazeVisualizer from "../AdAnalytics/GazeVisualizer";
 
-import { getPermissionsFromToken} from "../../utils/permissionsUtils";
-import Cookies from "js-cookie";
+import WebGazerSingleton from "../../utils/WebGazerSingleton";
+import { getPermissionsFromToken } from "../../utils/permissionsUtils";
 
 const LayoutList = () => {
-  // Layout / Error / Loading states
+  // ===== Layouts, Errors, Loading =====
   const [layouts, setLayouts] = useState([]);
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // UI toggles
+  // ===== UI Toggles =====
   const [showAllLayouts, setShowAllLayouts] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  // eslint-disable-next-line
-  const [isHovering, setIsHovering] = useState(false);
+  const [isHovering, setIsHovering] = useState(false); // Used to show/hide fullscreen button
 
-  // Fullscreen logic
+  // ===== Fullscreen Logic =====
   const [isFullscreen, setIsFullscreen] = useState(false);
   const previewRef = useRef(null);
 
-  // Eye tracking & calibration states
+  // ===== Eye Tracking & Calibration States =====
   const [isModelReady, setIsModelReady] = useState(false);
   const [isTracking, setIsTracking] = useState(false);
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [calibrationCompleted, setCalibrationCompleted] = useState(false);
 
-  // Consent + analytics
-  const [hasConsent, setHasConsent] = useState(false);
+  // ===== Analytics =====
   const [retentionTime, setRetentionTime] = useState(0);
   const [isLookingAtAd, setIsLookingAtAd] = useState(false);
   const [gazedAdId, setGazedAdId] = useState(null);
   const [currentGazeData, setCurrentGazeData] = useState(null);
 
-  // WebSocket references
+  // ===== Bounding Box Overlays =====
+  const [adBoundingBoxes, setAdBoundingBoxes] = useState([]);
+  const [showBorders, setShowBorders] = useState(false);
+
+  // ===== Additional Toggles =====
+  const [showCamera, setShowCamera] = useState(true); // Toggle camera feed
+  const [showVisualizer, setShowVisualizer] = useState(true); // Toggle gaze dot
+
+  // ===== WebSocket References =====
   const websocketRef = useRef(null);
   const pendingLayoutIdRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
 
-  // Constants
+  // ===== Constants =====
   const MOBILE_DISPLAY_LIMIT = 3;
 
-
+  // ===== Permissions =====
   const [permissions, setPermissions] = useState({});
-    
+
+  // ===== Fetch User Permissions =====
   useEffect(() => {
-    // Fetch permissions whenever the token changes
     const token = Cookies.get("authToken");
     if (token) {
       getPermissionsFromToken(token).then(setPermissions);
@@ -63,17 +71,21 @@ const LayoutList = () => {
       console.warn("No auth token found.");
       setPermissions({});
     }
-  }, []); // Runs only once when the component mounts
+  }, []);
 
-
-  // 1) Preload WebGazer once
+  // ===== Preload WebGazer =====
   useEffect(() => {
     let mounted = true;
     WebGazerSingleton.preload()
       .then(() => {
-        if (mounted) {
-          setIsModelReady(true);
-          console.log("[LayoutList] WebGazer model preloaded");
+        if (!mounted) return;
+        setIsModelReady(true);
+        console.log("[LayoutList] WebGazer model preloaded");
+
+        // Check if we have saved calibration data; if yes, skip calibration
+        if (WebGazerSingleton.hasSavedCalibration()) {
+          console.log("Existing WebGazer calibration detected. Skipping calibration step.");
+          setCalibrationCompleted(true);
         }
       })
       .catch((err) => {
@@ -85,11 +97,10 @@ const LayoutList = () => {
     };
   }, []);
 
-  // 2) Handle window resize and fullscreen
+  // ===== Handle Window Resize & Fullscreen Changes =====
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
-    const handleFullscreenChange = () =>
-      setIsFullscreen(!!document.fullscreenElement);
+    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
 
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -101,12 +112,12 @@ const LayoutList = () => {
     };
   }, []);
 
-  // 3) Initial layouts fetch
+  // ===== Fetch Layouts Initially =====
   useEffect(() => {
     fetchLayouts();
   }, []);
 
-  // 4) WebSocket cleanup
+  // ===== Cleanup WebSocket on Unmount =====
   useEffect(() => {
     return () => {
       if (websocketRef.current) {
@@ -115,18 +126,7 @@ const LayoutList = () => {
     };
   }, []);
 
-  const toggleFullscreen = async () => {
-    try {
-      if (!isFullscreen) {
-        await previewRef.current.requestFullscreen();
-      } else {
-        await document.exitFullscreen();
-      }
-    } catch (err) {
-      console.error("Fullscreen error:", err);
-    }
-  };
-
+  // ===== Fetch Layouts & Establish WebSocket Connection =====
   const fetchLayouts = async () => {
     try {
       setLoading(true);
@@ -144,9 +144,7 @@ const LayoutList = () => {
     websocketRef.current = new WebSocket("ws://localhost:5000");
 
     websocketRef.current.onopen = () => {
-      websocketRef.current.send(
-        JSON.stringify({ type: "subscribe", layoutId }),
-      );
+      websocketRef.current.send(JSON.stringify({ type: "subscribe", layoutId }));
     };
 
     websocketRef.current.onmessage = (event) => {
@@ -165,10 +163,7 @@ const LayoutList = () => {
     };
 
     websocketRef.current.onclose = () => {
-      if (
-        pendingLayoutIdRef.current === layoutId &&
-        reconnectAttemptsRef.current < 5
-      ) {
+      if (pendingLayoutIdRef.current === layoutId && reconnectAttemptsRef.current < 5) {
         reconnectAttemptsRef.current += 1;
         setTimeout(() => establishWebSocketConnection(layoutId), 5000);
       }
@@ -195,11 +190,10 @@ const LayoutList = () => {
         websocketRef.current = null;
       }
 
-      const response = await axios.get(
-        `http://localhost:5000/api/layouts/${layoutId}`,
-      );
+      const response = await axios.get(`http://localhost:5000/api/layouts/${layoutId}`);
       const layoutData = response.data;
 
+      // Gather all adIds
       const adIdsSet = new Set();
       layoutData.gridItems.forEach((item) => {
         item.scheduledAds.forEach((scheduledAd) => {
@@ -208,17 +202,15 @@ const LayoutList = () => {
       });
       const adIds = Array.from(adIdsSet);
 
-      const adsResponse = await axios.post(
-        "http://localhost:5000/api/ads/batchGet",
-        { adIds },
-      );
+      // Fetch full Ad objects
+      const adsResponse = await axios.post("http://localhost:5000/api/ads/batchGet", { adIds });
       const ads = adsResponse.data;
-
       const adsMap = {};
       ads.forEach((ad) => {
         adsMap[ad.adId] = ad;
       });
 
+      // Attach each ad object to the layout items
       layoutData.gridItems = layoutData.gridItems.map((item) => {
         const updatedScheduledAds = item.scheduledAds.map((scheduledAd) => ({
           ...scheduledAd,
@@ -237,19 +229,39 @@ const LayoutList = () => {
     }
   };
 
+  // ===== Bounding Box Logic =====
+  const updateAdBoundingBoxes = useCallback(() => {
+    const boxes = [];
+    document.querySelectorAll(".ad-item").forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      boxes.push({
+        top: rect.top + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        height: rect.height,
+      });
+    });
+    setAdBoundingBoxes(boxes);
+  }, []);
+
+  useEffect(() => {
+    updateAdBoundingBoxes();
+    window.addEventListener("resize", updateAdBoundingBoxes);
+    return () => {
+      window.removeEventListener("resize", updateAdBoundingBoxes);
+    };
+  }, [updateAdBoundingBoxes, selectedLayout]);
+
+  const toggleBorders = () => setShowBorders((prev) => !prev);
+
+  // ===== Gaze Event Handling =====
   const handleGazeAtAd = useCallback(
     ({ x, y }) => {
       const adElements = document.querySelectorAll(".ad-item");
       let foundAdId = null;
-
       adElements.forEach((adElement) => {
         const rect = adElement.getBoundingClientRect();
-        if (
-          x >= rect.left &&
-          x <= rect.right &&
-          y >= rect.top &&
-          y <= rect.bottom
-        ) {
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
           foundAdId = adElement.getAttribute("data-ad-id");
         }
       });
@@ -264,21 +276,18 @@ const LayoutList = () => {
         setIsLookingAtAd(false);
         setGazedAdId(null);
       }
-
       setCurrentGazeData({ x, y });
     },
     [gazedAdId],
   );
 
-  // Handlers for calibration, consent, and tracking
+  // ===== Calibration / Tracking Handlers =====
   const handleStartCalibration = () => {
     if (!isModelReady) {
       alert("Eye Tracking model still loading, please wait...");
       return;
     }
-    if (isTracking) {
-      handleEndTracking();
-    }
+    if (isTracking) handleEndTracking();
     setIsCalibrating(true);
     setCalibrationCompleted(false);
   };
@@ -287,11 +296,70 @@ const LayoutList = () => {
     setIsCalibrating(false);
     setCalibrationCompleted(true);
     setIsTracking(true);
+
+    // Save calibration data to cookie
+    WebGazerSingleton.saveCalibrationDataToCookie();
   };
 
   const handleRecalibrate = () => {
+    WebGazerSingleton.resetCalibrationData();
     setCalibrationCompleted(false);
     setIsCalibrating(true);
+  };
+
+  // ===== Start Tracking Handler =====
+  const handleStartTracking = async () => {
+    console.log("Start Eye Tracking button clicked");
+    
+    if (!isModelReady) {
+      alert("Eye Tracking model still loading, please wait...");
+      console.log("WebGazer model not ready");
+      return;
+    }
+  
+    // Ensure calibration data exists
+    if (!WebGazerSingleton.hasSavedCalibration() && !calibrationCompleted) {
+      alert("You must calibrate before starting eye tracking.");
+      console.log("Calibration data missing");
+      return;
+    }
+  
+    try {
+      await WebGazerSingleton.initialize((data) => {
+        if (data) handleGazeAtAd(data);
+      });
+      setIsTracking(true);
+      console.log("Eye Tracking started with existing calibration data.");
+  
+      // Apply camera visibility based on current toggle state
+      WebGazerSingleton.setCameraVisibility(showCamera);
+    } catch (err) {
+      console.error("Failed to start tracking:", err);
+    }
+  };
+
+  const handleResumeTracking = async () => {
+    if (!isModelReady) {
+      alert("Eye Tracking model still loading, please wait...");
+      return;
+    }
+    if (!calibrationCompleted) {
+      alert("You must calibrate before resuming tracking.");
+      return;
+    }
+
+    try {
+      await WebGazerSingleton.initialize((data) => {
+        if (data) handleGazeAtAd(data);
+      });
+      setIsTracking(true);
+      console.log("WebGazer tracking resumed.");
+
+      // Apply camera visibility based on current toggle state
+      WebGazerSingleton.setCameraVisibility(showCamera);
+    } catch (err) {
+      console.error("Failed to resume tracking:", err);
+    }
   };
 
   const handleEndTracking = () => {
@@ -303,45 +371,50 @@ const LayoutList = () => {
     setCurrentGazeData(null);
   };
 
-  const handleConsent = () => setHasConsent(true);
-  const handleDeclineConsent = () => {
-    setHasConsent(false);
-    setIsTracking(false);
-    setRetentionTime(0);
-    setIsLookingAtAd(false);
-    setGazedAdId(null);
-    setCurrentGazeData(null);
+  // ===== Toggle Handlers =====
+  const handleToggleCamera = () => {
+    const newVal = !showCamera;
+    setShowCamera(newVal);
+    // If tracking is active, toggle camera immediately
+    if (isTracking && WebGazerSingleton.instance) {
+      WebGazerSingleton.setCameraVisibility(newVal);
+    }
   };
 
-  const visibleLayouts =
-    isMobile && !showAllLayouts
-      ? layouts.slice(0, MOBILE_DISPLAY_LIMIT)
-      : layouts;
-  const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
+  const handleToggleVisualizer = () => setShowVisualizer((prev) => !prev);
 
-  if (!isModelReady) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p>Loading Eye Tracking Model...</p>
-      </div>
-    );
-  }
+  // ===== Fullscreen Handler =====
+  const toggleFullscreen = async () => {
+    try {
+      if (!isFullscreen) {
+        await previewRef.current.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error("Fullscreen error:", err);
+    }
+  };
+
+  // ===== Layouts Display Logic =====
+  const visibleLayouts =
+    isMobile && !showAllLayouts ? layouts.slice(0, MOBILE_DISPLAY_LIMIT) : layouts;
+  const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
 
   return (
     <div className="min-h-screen dark:dark-bg">
       <Navbar />
+
       <div className="container mx-auto w-full p-4 md:p-12">
+        {/* Layout Selection and Preview */}
         <div className="flex flex-col md:min-h-[600px] md:flex-row">
-          {/* Sidebar */}
+          {/* Sidebar: Available Layouts */}
           <div className="w-full md:w-[300px] md:flex-shrink-0">
             <div className="mb-6 rounded-lg p-6 shadow light-bg dark:dark-bg dark:secondary-text md:mb-0">
               <h2 className="mb-4 text-xl font-bold">Available Layouts</h2>
               {loading && !selectedLayout && (
                 <div className="flex items-center justify-center p-4 neutral-text">
-                  <svg
-                    className="mr-2 h-5 w-5 animate-spin"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="mr-2 h-5 w-5 animate-spin" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -365,56 +438,52 @@ const LayoutList = () => {
                   Error: {error}
                 </div>
               )}
-            {permissions?.createAds ? (
 
-              <div className="space-y-2">
-                {visibleLayouts.map((layout) => (
-                  
-                  <button
-                    key={layout.layoutId}
-                    className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
-                      selectedLayout?.layoutId === layout.layoutId
-                        ? "secondary-bg secondary-text"
-                        : "neutral-bg primary-text hover:neutralalt-bg"
-                    }`}
-                    onClick={() => handleLayoutSelect(layout.layoutId)}
-                  >
-                    {layout.name || `Layout ${layout.layoutId}`}
-                  </button>
-                  
-                ))}
-                {hasMoreLayouts && (
-                  <button
-                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors neutral-bg neutral-text hover:neutral-bg"
-                    onClick={() => setShowAllLayouts(!showAllLayouts)}
-                  >
-                    <span>{showAllLayouts ? "Show Less" : "Show More"}</span>
-                  </button>
-                )}
-              </div>
-            ): (
-              <div className="text-red-500 font-medium">
-                You don't have the permissions to view this content.
-              </div>
-            )}
+              {permissions?.createAds ? (
+                <div className="space-y-2">
+                  {visibleLayouts.map((layout) => (
+                    <button
+                      key={layout.layoutId}
+                      className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
+                        selectedLayout?.layoutId === layout.layoutId
+                          ? "secondary-bg secondary-text"
+                          : "neutral-bg primary-text hover:neutralalt-bg"
+                      }`}
+                      onClick={() => handleLayoutSelect(layout.layoutId)}
+                    >
+                      {layout.name || `Layout ${layout.layoutId}`}
+                    </button>
+                  ))}
+                  {hasMoreLayouts && (
+                    <button
+                      className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors neutral-bg neutral-text hover:neutral-bg"
+                      onClick={() => setShowAllLayouts((prev) => !prev)}
+                    >
+                      <span>{showAllLayouts ? "Show Less" : "Show More"}</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="font-medium text-red-500">
+                  You don't have permission to view this content.
+                </div>
+              )}
             </div>
-            
           </div>
 
-          {/* Main layout preview */}
+          {/* Main Layout Preview */}
           <div className="flex-1 md:ml-8">
             <div
               className="relative flex h-[500px] items-center justify-center rounded-lg border-8 p-4 secondary-border md:h-full md:min-h-[600px]"
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
             >
-              {selectedLayout && !loading && (
+              {/* Fullscreen Toggle Button - Visible on Hover */}
+              {selectedLayout && !loading && isHovering && (
                 <button
                   onClick={toggleFullscreen}
                   className="absolute right-6 top-6 z-10 rounded-full bg-gray-600 p-2 text-white hover:bg-gray-800"
-                  aria-label={
-                    isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
-                  }
+                  aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                 >
                   {isFullscreen ? (
                     <Minimize2 className="h-5 w-5" />
@@ -431,10 +500,7 @@ const LayoutList = () => {
               >
                 {loading && selectedLayout && (
                   <div className="flex h-full items-center justify-center p-4 neutral-bg">
-                    <svg
-                      className="mr-2 h-5 w-5 animate-spin"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="mr-2 h-5 w-5 animate-spin" viewBox="0 0 24 24">
                       <circle
                         className="opacity-25"
                         cx="12"
@@ -453,9 +519,7 @@ const LayoutList = () => {
                     Loading layout preview...
                   </div>
                 )}
-                {selectedLayout && !loading && (
-                  <LayoutViewer layout={selectedLayout} />
-                )}
+                {selectedLayout && !loading && <LayoutViewer layout={selectedLayout} />}
                 {!selectedLayout && !loading && (
                   <div className="flex h-full items-center justify-center p-4 neutral-text">
                     Select a layout to preview
@@ -466,8 +530,8 @@ const LayoutList = () => {
           </div>
         </div>
 
-        {/* Calibration & Tracking Controls */}
-        <div className="mt-8 flex justify-center space-x-3 px-4">
+        {/* ===== Calibration & Tracking Controls ===== */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3 px-4">
           {/* Start Calibration */}
           {!isCalibrating && !calibrationCompleted && (
             <button
@@ -488,6 +552,20 @@ const LayoutList = () => {
             Recalibrate
           </button>
 
+          {/* Start Eye Tracking */}
+          {!isTracking && (
+            <button
+              onClick={handleStartTracking}
+              className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
+              disabled={
+                !selectedLayout ||
+                !(WebGazerSingleton.hasSavedCalibration() || calibrationCompleted)
+              }
+            >
+              Start Eye Tracking
+            </button>
+          )}
+
           {/* End Tracking */}
           {isTracking && (
             <button
@@ -498,27 +576,44 @@ const LayoutList = () => {
             </button>
           )}
 
-          {/* Consent */}
-          {!hasConsent && (
-            <>
-              <button
-                onClick={handleConsent}
-                className="rounded-lg bg-green-500 px-6 py-2.5 text-white transition hover:bg-green-600"
-              >
-                Consent to Eye Tracking
-              </button>
-              <button
-                onClick={handleDeclineConsent}
-                className="rounded-lg bg-gray-500 px-6 py-2.5 text-white transition hover:bg-gray-600"
-              >
-                Decline
-              </button>
-            </>
+          {/* Resume Tracking */}
+          {!isTracking && calibrationCompleted && (
+            <button
+              onClick={handleResumeTracking}
+              className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
+              disabled={!selectedLayout}
+            >
+              Resume Eye Tracking
+            </button>
           )}
+
+          {/* Toggle Bounding Box Borders */}
+          <button
+            onClick={toggleBorders}
+            className="rounded-lg bg-gray-500 px-6 py-2.5 text-white transition hover:bg-gray-600"
+          >
+            {showBorders ? "Hide Borders" : "Show Borders"}
+          </button>
+
+          {/* Toggle Camera Feed */}
+          <button
+            onClick={handleToggleCamera}
+            className="rounded-lg bg-gray-500 px-6 py-2.5 text-white transition hover:bg-gray-600"
+          >
+            {showCamera ? "Hide Camera" : "Show Camera"}
+          </button>
+
+          {/* Toggle Gaze Visualizer */}
+          <button
+            onClick={handleToggleVisualizer}
+            className="rounded-lg bg-gray-500 px-6 py-2.5 text-white transition hover:bg-gray-600"
+          >
+            {showVisualizer ? "Hide Gaze Dot" : "Show Gaze Dot"}
+          </button>
         </div>
 
-        {/* Viewer Analytics */}
-        {selectedLayout && hasConsent && (
+        {/* ===== Viewer Analytics ===== */}
+        {selectedLayout && (
           <div className="mt-8 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
             <p className="mb-2">
@@ -539,20 +634,24 @@ const LayoutList = () => {
         )}
       </div>
 
-      {/* Calibration Overlay */}
+      {/* ===== Calibration Overlay ===== */}
       {isCalibrating && (
-        <CalibrationComponent
-          onCalibrationComplete={handleCalibrationComplete}
-        />
+        <CalibrationComponent onCalibrationComplete={handleCalibrationComplete} />
       )}
 
-      {/* Gaze Tracking */}
-      {isTracking && selectedLayout && hasConsent && (
+      {/* ===== Gaze Tracking ===== */}
+      {isTracking && selectedLayout && (
         <GazeTrackingComponent onGaze={handleGazeAtAd} isActive={isTracking} />
       )}
 
-      {/* Gaze Visualizer */}
-      {currentGazeData && <GazeVisualizer gazeData={currentGazeData} />}
+      {/* ===== Gaze Visualizer ===== */}
+      {showVisualizer && currentGazeData && (
+        <GazeVisualizer
+          gazeData={currentGazeData}
+          boundingBoxes={adBoundingBoxes}
+          showBorders={showBorders}
+        />
+      )}
     </div>
   );
 };
