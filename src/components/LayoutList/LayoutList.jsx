@@ -10,7 +10,7 @@ import CalibrationComponent from "../AdAnalytics/CalibrationComponent";
 import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
 import GazeVisualizer from "../AdAnalytics/GazeVisualizer";
 
-import { getPermissionsFromToken} from "../../utils/permissionsUtils";
+import { getPermissionsFromToken } from "../../utils/permissionsUtils";
 import Cookies from "js-cookie";
 
 const LayoutList = () => {
@@ -51,9 +51,8 @@ const LayoutList = () => {
   // Constants
   const MOBILE_DISPLAY_LIMIT = 3;
 
-
   const [permissions, setPermissions] = useState({});
-    
+
   useEffect(() => {
     // Fetch permissions whenever the token changes
     const token = Cookies.get("authToken");
@@ -64,7 +63,6 @@ const LayoutList = () => {
       setPermissions({});
     }
   }, []); // Runs only once when the component mounts
-
 
   // 1) Preload WebGazer once
   useEffect(() => {
@@ -365,40 +363,36 @@ const LayoutList = () => {
                   Error: {error}
                 </div>
               )}
-            {permissions?.createAds ? (
-
-              <div className="space-y-2">
-                {visibleLayouts.map((layout) => (
-                  
-                  <button
-                    key={layout.layoutId}
-                    className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
-                      selectedLayout?.layoutId === layout.layoutId
-                        ? "secondary-bg secondary-text"
-                        : "neutral-bg primary-text hover:neutralalt-bg"
-                    }`}
-                    onClick={() => handleLayoutSelect(layout.layoutId)}
-                  >
-                    {layout.name || `Layout ${layout.layoutId}`}
-                  </button>
-                  
-                ))}
-                {hasMoreLayouts && (
-                  <button
-                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors neutral-bg neutral-text hover:neutral-bg"
-                    onClick={() => setShowAllLayouts(!showAllLayouts)}
-                  >
-                    <span>{showAllLayouts ? "Show Less" : "Show More"}</span>
-                  </button>
-                )}
-              </div>
-            ): (
-              <div className="text-red-500 font-medium">
-                You don't have the permissions to view this content.
-              </div>
-            )}
+              {permissions?.createAds ? (
+                <div className="space-y-2">
+                  {visibleLayouts.map((layout) => (
+                    <button
+                      key={layout.layoutId}
+                      className={`w-full rounded-lg px-4 py-2 text-left transition-colors ${
+                        selectedLayout?.layoutId === layout.layoutId
+                          ? "primary-bg secondary-text"
+                          : "neutral-bg primary-text hover:neutralalt-bg"
+                      }`}
+                      onClick={() => handleLayoutSelect(layout.layoutId)}
+                    >
+                      {layout.name || `Layout ${layout.layoutId}`}
+                    </button>
+                  ))}
+                  {hasMoreLayouts && (
+                    <button
+                      className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors neutral-bg neutral-text hover:neutral-bg"
+                      onClick={() => setShowAllLayouts(!showAllLayouts)}
+                    >
+                      <span>{showAllLayouts ? "Show Less" : "Show More"}</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="font-medium alert2-text">
+                  You don't have the permissions to view this content.
+                </div>
+              )}
             </div>
-            
           </div>
 
           {/* Main layout preview */}
@@ -425,12 +419,12 @@ const LayoutList = () => {
               )}
               <div
                 ref={previewRef}
-                className={`h-full w-full overflow-hidden rounded-lg light-bg ${
+                className={`h-full w-full overflow-hidden rounded-lg bg-white ${
                   isFullscreen ? "flex items-center justify-center" : ""
                 }`}
               >
                 {loading && selectedLayout && (
-                  <div className="flex h-full items-center justify-center p-4 neutral-bg">
+                  <div className="flex h-full items-center justify-center p-4 light-bg">
                     <svg
                       className="mr-2 h-5 w-5 animate-spin"
                       viewBox="0 0 24 24"

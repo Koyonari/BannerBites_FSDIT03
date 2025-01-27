@@ -3,7 +3,7 @@ import axios from "axios";
 import Navbar from "../Navbar";
 import { Search, Trash2, Upload, X } from "lucide-react";
 
-import { getPermissionsFromToken} from "../../utils/permissionsUtils";
+import { getPermissionsFromToken } from "../../utils/permissionsUtils";
 import Cookies from "js-cookie";
 
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -41,20 +41,18 @@ const AdUnit = () => {
     });
   };
 
-
   const [permissions, setPermissions] = useState({});
-  
-    useEffect(() => {
-      // Fetch permissions whenever the token changes
-      const token = Cookies.get("authToken");
-      if (token) {
-        getPermissionsFromToken(token).then(setPermissions);
-      } else {
-        console.warn("No auth token found.");
-        setPermissions({});
-      }
-    }, []); // Runs only once when the component mounts
-  
+
+  useEffect(() => {
+    // Fetch permissions whenever the token changes
+    const token = Cookies.get("authToken");
+    if (token) {
+      getPermissionsFromToken(token).then(setPermissions);
+    } else {
+      console.warn("No auth token found.");
+      setPermissions({});
+    }
+  }, []); // Runs only once when the component mounts
 
   // Function to fetch ads from the backend
   const fetchAds = async () => {
@@ -147,16 +145,16 @@ const AdUnit = () => {
               placeholder="Search advertisements"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-12 w-full rounded-lg border px-4 pl-10 text-sm transition-colors primary-border primary-text placeholder-primary ring-primary focus:outline-none focus:ring-2 dark:bg-bg-dark dark:secondary-border dark:secondary-text dark:placeholder-secondary lg:h-14 lg:text-base"
+              className="dark:bg-dark-bg h-12 w-full rounded-lg border px-4 pl-10 text-sm transition-colors primary-border primary-text placeholder-primary focus:outline-none focus:ring-2 focus:ring-primary dark:secondary-border dark:secondary-text dark:placeholder-secondary lg:h-14 lg:text-base"
             />
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform neutral-text" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform neutral-text" />{" "}
           </div>
         </div>
 
         {/* Upload Button */}
         <button
           onClick={() => setIsUploadPopupVisible(true)}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all duration-300 primary-bg secondary-text hover:secondary-bg focus:ring-2 focus:ring-offset-2 sm:w-1/4 lg:h-14 lg:text-base"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all duration-300 primary-bg secondary-text hover:secondary-bg focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-1/4 lg:h-14 lg:text-base"
         >
           <Upload className="h-5 w-5" />
           Upload Media
@@ -165,7 +163,7 @@ const AdUnit = () => {
 
       {/* Upload Media Popup */}
       {isUploadPopupVisible && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-base-black bg-opacity-50">
           <div className="w-96 rounded-lg p-6 shadow-xl light-bg dark:dark-bg">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-xl font-bold primary-text dark:secondary-text">
@@ -173,7 +171,7 @@ const AdUnit = () => {
               </h2>
               <button
                 onClick={() => setIsUploadPopupVisible(false)}
-                className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="rounded-full p-1 hover:neutral-bg dark:hover:bg-base-grey"
               >
                 <X className="h-5 w-5 neutral-text" />
               </button>
@@ -186,7 +184,7 @@ const AdUnit = () => {
                 <select
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value)}
-                  className="w-full rounded-lg border px-3 py-2 text-sm primary-border primary-text dark:bg-bg-dark dark:secondary-border dark:secondary-text"
+                  className="dark:bg-dark-bg w-full rounded-lg border px-3 py-2 text-sm primary-border primary-text dark:secondary-border dark:secondary-text"
                 >
                   <option value="image">Image</option>
                   <option value="video">Video</option>
@@ -297,114 +295,116 @@ const AdUnit = () => {
 
       {/* Display Ads Grid */}
       <div className="p-4 sm:p-6 lg:p-8">
-      {/* Media Upload Form */}
-      <div className="px-4 py-6">
-      {permissions?.createAds && (
-        <form onSubmit={handleUpload} className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold">Media Type:</label>
-            <select
-              value={mediaType}
-              onChange={(e) => setMediaType(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2"
-            >
-              <option value="image">Image</option>
-              <option value="video">Video</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-bold">Title:</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter title"
-              className="w-full rounded-lg border px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold">Description:</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter description"
-              className="w-full rounded-lg border px-3 py-2"
-            ></textarea>
-          </div>
-          <div>
-            <label className="block text-sm font-bold">Media File:</label>
-            <input
-              type="file"
-              accept={mediaType === "image" ? "image/*" : "video/*"}
-              onChange={(e) => setMediaFile(e.target.files[0])}
-              className="w-full"
-            />
-          </div>
-          <div>
-            <button
-              type="submit"
-              disabled={uploading}
-              className="primary-bg hover:secondary-bg w-full rounded-lg py-2 text-white font-bold"
-            >
-              {uploading ? "Uploading..." : "Upload Media"}
-            </button>
-          </div>
-        </form>
-      )}
-      </div>
-
-      {/* Display Ads */}
-      <div className="px-4 py-6">
-        {filteredAds.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredAds.map((ad) => (
-              <div
-                key={ad.adId}
-                className="group relative overflow-hidden rounded-lg border shadow-sm transition-all duration-300 primary-border light-bg hover:-translate-y-1 hover:shadow-lg dark:secondary-border dark:dark-bg"
-              >
-                <button
-                  onClick={() => {
-                    setAdToDelete(ad.adId);
-                    setIsDeletePopupVisible(true);
-                  }}
-                  className="absolute right-3 top-3 rounded-full bg-red-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-red-600 group-hover:opacity-100"
+        {/* Media Upload Form */}
+        <div className="px-4 py-6">
+          {permissions?.createAds && (
+            <form onSubmit={handleUpload} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold">Media Type:</label>
+                <select
+                  value={mediaType}
+                  onChange={(e) => setMediaType(e.target.value)}
+                  className="w-full rounded-lg border px-3 py-2"
                 >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                <div className="aspect-video overflow-hidden">
-                  {ad.type.toLowerCase() === "image" ? (
-                    <img
-                      src={ad.content?.src}
-                      alt={ad.content?.title || "Untitled"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <video
-                      controls
-                      src={ad.content?.src}
-                      className="h-full w-full"
-                    />
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="mb-2 text-lg font-semibold primary-text dark:secondary-text">
-                    {ad.content?.title || "Untitled"}
-                  </h3>
-                  <p className="mb-2 text-sm neutral-text">
-                    {ad.content?.description || "No description provided."}
-                  </p>
-                  <p className="text-xs neutral-text">ID: {ad.adId}</p>
-                </div>
+                  <option value="image">Image</option>
+                  <option value="video">Video</option>
+                </select>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex h-40 items-center justify-center">
-            <p className="text-center neutral-text">No advertisements found</p>
-          </div>
-        )}
+              <div>
+                <label className="block text-sm font-bold">Title:</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter title"
+                  className="w-full rounded-lg border px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold">Description:</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter description"
+                  className="w-full rounded-lg border px-3 py-2"
+                ></textarea>
+              </div>
+              <div>
+                <label className="block text-sm font-bold">Media File:</label>
+                <input
+                  type="file"
+                  accept={mediaType === "image" ? "image/*" : "video/*"}
+                  onChange={(e) => setMediaFile(e.target.files[0])}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="w-full rounded-lg py-2 font-bold text-white primary-bg hover:secondary-bg"
+                >
+                  {uploading ? "Uploading..." : "Upload Media"}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Display Ads */}
+        <div className="px-4 py-6">
+          {filteredAds.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredAds.map((ad) => (
+                <div
+                  key={ad.adId}
+                  className="group relative overflow-hidden rounded-lg border shadow-sm transition-all duration-300 primary-border light-bg hover:-translate-y-1 hover:shadow-lg dark:secondary-border dark:dark-bg"
+                >
+                  <button
+                    onClick={() => {
+                      setAdToDelete(ad.adId);
+                      setIsDeletePopupVisible(true);
+                    }}
+                    className="absolute right-3 top-3 rounded-full bg-red-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-red-600 group-hover:opacity-100"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <div className="aspect-video overflow-hidden">
+                    {ad.type.toLowerCase() === "image" ? (
+                      <img
+                        src={ad.content?.src}
+                        alt={ad.content?.title || "Untitled"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <video
+                        controls
+                        src={ad.content?.src}
+                        className="h-full w-full"
+                      />
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="mb-2 text-lg font-semibold primary-text dark:secondary-text">
+                      {ad.content?.title || "Untitled"}
+                    </h3>
+                    <p className="mb-2 text-sm neutral-text">
+                      {ad.content?.description || "No description provided."}
+                    </p>
+                    <p className="text-xs neutral-text">ID: {ad.adId}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex h-40 items-center justify-center">
+              <p className="text-center neutral-text">
+                No advertisements found
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 };
