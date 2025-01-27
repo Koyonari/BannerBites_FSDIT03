@@ -10,6 +10,7 @@ const tvRoutes = require("./routes/tvRoutes");
 const authRoutes = require("./routes/authRoutes");
 const adsRoutes = require("./routes/adsRoutes");
 const roleRoutes = require("./routes/roleRoutes");
+const { handleWebSocketMessage } = require("./controllers/webSocketController");
 
 // Import the state management functions
 const { layoutUpdatesCache, addClient, removeClient, broadcastToClients } = require("./state");
@@ -48,33 +49,11 @@ app.use('/api/roles', roleRoutes);
 
 // WebSocket Server Handling
 wss.on("connection", (ws) => {
-  console.log("[BACKEND] New WebSocket connection established");
-  // Handle incoming messages from the WebSocket clients
-  ws.on("message", async (message) => {
-    try {
-      // Parse the incoming message
-      const parsedMessage = JSON.parse(message);
-      if (parsedMessage.type === "subscribe" && parsedMessage.layoutId) {
-        const layoutId = parsedMessage.layoutId;
-
-        // Add client to the state
-        addClient(ws, layoutId);
-
-        // Send cached data if available
-        const cachedData = layoutUpdatesCache[layoutId];
-        if (cachedData) {
-          ws.send(JSON.stringify({ type: "layoutData", data: cachedData }));
-        }
-      }
-    } catch (error) {
-      console.error("[BACKEND] Error handling WebSocket message:", error);
-    }
-  });
+  console.log("[BACKEND] New WebSocket connection");
+  ws.on("message", (message) => handleWebSocketMessage(ws, message));
 
   ws.on("close", () => {
     console.log("[BACKEND] WebSocket client disconnected");
-
-    // Remove the disconnected client from the clients list
     removeClient(ws);
   });
 });

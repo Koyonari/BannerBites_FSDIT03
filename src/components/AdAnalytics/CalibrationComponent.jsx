@@ -28,7 +28,7 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
         wg.setStorePoints(true);
       } catch (err) {
         console.error("Calibration initialization error:", err);
-      }
+      } 
     })();
   }, []);
 
