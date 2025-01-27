@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
-import { HomeIcon, LayoutList, CircleUserRound, ImagePlus } from "lucide-react";
+import {
+  HomeIcon,
+  LayoutList,
+  CircleUserRound,
+  ImagePlus,
+  UserRoundPen,
+} from "lucide-react";
 import Hamburger from "hamburger-react";
 import { useNavigate } from "react-router-dom";
 import React from "react";
@@ -65,11 +71,11 @@ function Navbar() {
   return (
     <>
       <nav className="fixed left-0 right-0 top-0 z-[999] border-b-2 border-b-black transition-colors duration-500 light-bg dark:border-b-white dark:dark-bg">
-        <div className="flex h-20 items-center justify-between px-6 xl:h-32">
+        <div className="flex h-20 items-center justify-between px-6 xl:h-24">
           <div>
             <h1 className="text-3xl font-bold primary-text dark:secondary-text xl:text-5xl">
               Banner
-              <span className="xl:outline-5 outline-1 accent-text">Bites</span>
+              <span className="outline-1 accent-text xl:outline-5">Bites</span>
             </h1>
           </div>
 
@@ -89,6 +95,10 @@ function Navbar() {
             <CircleUserRound
               className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
               onClick={() => navigate("/login")}
+            />
+            <UserRoundPen
+              className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
+              onClick={() => navigate("/customrole")}
             />
             <DarkModeSwitch
               checked={isDarkMode}
@@ -121,6 +131,7 @@ function Navbar() {
               { Icon: LayoutList, path: "/layouts" },
               { Icon: ImagePlus, path: "/adunit" },
               { Icon: CircleUserRound, path: "/login" },
+              { Icon: UserRoundPen, path: "/customrole" },
             ].map(({ Icon, path }) => (
               <div
                 key={path}

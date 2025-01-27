@@ -22,7 +22,7 @@ const getUserByUsername = async (username) => {
     return {
       username: item.username.S,
       password: item.password.S,
-      roles: item.roles ? item.roles.M : null,
+      roles: item.roles.S,
       userId: item.userId.S,
     };
   } else {

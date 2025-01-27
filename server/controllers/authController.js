@@ -1,12 +1,12 @@
 const { authenticateUser } = require('../middleware/authMiddleware');
 
 const login = async (req, res) => {
-    const { username, password, role } = req.body;
+    const { username, password, roles } = req.body;
   
     try {
-      const token = await authenticateUser(username, password, role); // Pass role to the authenticateUser function
+      const token = await authenticateUser(username, password, roles); // Pass role to the authenticateUser function
       res.cookie('authToken', token, {
-        httpOnly: true,
+        httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 1000 // 1 hour
       });

@@ -9,6 +9,8 @@ const locationRoutes = require("./routes/locationRoutes");
 const tvRoutes = require("./routes/tvRoutes");
 const authRoutes = require("./routes/authRoutes");
 const adsRoutes = require("./routes/adsRoutes");
+const roleRoutes = require("./routes/roleRoutes");
+
 // Import the state management functions
 const { layoutUpdatesCache, addClient, removeClient, broadcastToClients } = require("./state");
 const { generatePresignedUrlController, fetchLayoutById } = require("./controllers/layoutController");
@@ -42,6 +44,7 @@ app.use("/api/tvs", tvRoutes);
 app.use("/api", authRoutes);
 app.post("/generate-presigned-url", generatePresignedUrlController);
 app.use('/api/ads', adsRoutes);
+app.use('/api/roles', roleRoutes);
 
 // WebSocket Server Handling
 wss.on("connection", (ws) => {

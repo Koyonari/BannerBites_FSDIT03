@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useDrop } from "react-dnd";
 import { Tooltip } from "react-tooltip";
-import AdListPopup from "./AdListPopup";
 import { CircleMinus, View, Pencil } from "lucide-react";
 import StyledAlert from "../StyledAlert";
+import AdListPopup from "./AdListPopup";
 
 const Checkbox = ({ checked, onChange, className, showHelp }) => (
   <div
@@ -57,12 +57,16 @@ const GridCell = ({
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: "AD_ITEM",
-      drop: (draggedItem) => onDrop(draggedItem, index, rowIndex, colIndex),
+      drop: (draggedItem) => {
+        // Support both old and new drop formats
+        const adData = draggedItem.ad || draggedItem;
+        onDrop(adData, index, rowIndex, colIndex);
+      },
       collect: (monitor) => ({
         isOver: monitor.isOver(),
       }),
     }),
-    [onDrop, index, rowIndex, colIndex],
+    [onDrop, index, rowIndex, colIndex]
   );
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -105,7 +109,7 @@ const GridCell = ({
     e.stopPropagation();
     let cellIndex = index;
 
-    if (item.hidden) {
+    if (item?.hidden) {
       if (typeof getMainCellIndex === "function") {
         cellIndex = getMainCellIndex(index);
         if (cellIndex === -1) {
@@ -137,7 +141,7 @@ const GridCell = ({
     e.stopPropagation();
     let cellIndex = index;
 
-    if (item.hidden) {
+    if (item?.hidden) {
       if (typeof getMainCellIndex === "function") {
         cellIndex = getMainCellIndex(index);
         if (cellIndex === -1) {
@@ -159,8 +163,8 @@ const GridCell = ({
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   let adToDisplay = null;
-  if (item && item.scheduledAds && item.scheduledAds.length > 0) {
-    const sortedAds = item.scheduledAds.sort((a, b) => {
+  if (item?.scheduledAds?.length > 0) {
+    const sortedAds = [...item.scheduledAds].sort((a, b) => {
       const [aHour, aMinute] = a.scheduledTime.split(":").map(Number);
       const [bHour, bMinute] = b.scheduledTime.split(":").map(Number);
       return aHour * 60 + aMinute - (bHour * 60 + bMinute);
@@ -182,9 +186,8 @@ const GridCell = ({
     }
   }
 
-  // Define renderAdContent function
   const renderAdContent = () => {
-    if (!adToDisplay || !adToDisplay.ad) {
+    if (!adToDisplay?.ad) {
       return (
         <div className="flex h-full w-full items-center justify-center">
           <p className="text-center xl:text-2xl 2xl:text-3xl">Drop ad here</p>
@@ -337,7 +340,7 @@ const GridCell = ({
         </div>
       )}
 
-      {isPopupOpen && item.scheduledAds && item.scheduledAds.length > 0 && (
+      {isPopupOpen && item?.scheduledAds?.length > 0 && (
         <AdListPopup
           scheduledAds={item.scheduledAds}
           onClose={togglePopup}
