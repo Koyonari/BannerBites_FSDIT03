@@ -2,12 +2,16 @@
 
 const {
   getOrCreateSessionData,
-  sessionBuffer,
+  sessionMap,
 } = require("../state/sessionBuffer");
 const { persistSessionToDynamo } = require("../services/dynamoService");
 const { layoutUpdatesCache, addClient, removeClient } = require("../state");
 
-// This function is called whenever a 'message' event comes in
+/**
+ * Handles incoming WebSocket messages.
+ * @param {WebSocket} ws - The WebSocket connection.
+ * @param {string} message - The received message.
+ */
 async function handleWebSocketMessage(ws, message) {
   try {
     const parsedMessage = JSON.parse(message);
@@ -28,7 +32,7 @@ async function handleWebSocketMessage(ws, message) {
       const { sessionId, startTime } = parsedMessage.data;
       const sessionData = getOrCreateSessionData(sessionId);
 
-      sessionData.startTime = startTime || new Date().toISOString();
+      sessionData.enterTime = startTime || new Date().toISOString();
       console.log("[WS] Session started:", sessionId);
     }
 
@@ -41,7 +45,7 @@ async function handleWebSocketMessage(ws, message) {
       if (!sessionId) return;
 
       const sessionData = getOrCreateSessionData(sessionId);
-      sessionData.events.push({
+      sessionData.gazeSamples.push({
         type: parsedMessage.type,
         ...rest,
       });
@@ -55,7 +59,7 @@ async function handleWebSocketMessage(ws, message) {
       // Check if we have an entry in the Map
       if (sessionMap.has(sessionId)) {
         const sessionData = sessionMap.get(sessionId);
-        sessionData.endTime = endTime || new Date().toISOString();
+        sessionData.exitTime = endTime || new Date().toISOString();
 
         // Persist the complete session
         await persistSessionToDynamo(sessionData);
@@ -65,25 +69,36 @@ async function handleWebSocketMessage(ws, message) {
         console.log("[WS] Session ended + persisted:", sessionId);
       }
     }
+
     // 5) Handle "adSessionComplete"
     else if (parsedMessage.type === "adSessionComplete") {
-      const { adSessionId, adId, enterTime, exitTime, dwellTime, gazeSamples } =
-        parsedMessage.data;
-
-      // We could create a small object for the session:
-      const sessionObj = {
-        adSessionId,
+      const {
+        adSessionId: sessionId,
+        adId,
         enterTime,
         exitTime,
         dwellTime,
         gazeSamples,
-        // Possibly add user info or sessionId if you want
-      };
+      } = parsedMessage.data;
 
-      // Attempt to update Dynamo with concurrency checks
-      // appendAdSessions can handle multiple sessions at once,
-      // so we pass an array of 1 item here:
-      await appendAdSessions(adId, [sessionObj]);
+      if (!sessionId || !adId) {
+        console.warn("[WS] Missing sessionId or adId in adSessionComplete message.");
+        return;
+      }
+
+      // Create or retrieve existing session data
+      const sessionData = getOrCreateSessionData(sessionId);
+      sessionData.adId = adId;
+      sessionData.enterTime = enterTime || new Date().toISOString();
+      sessionData.exitTime = exitTime || new Date().toISOString();
+      sessionData.dwellTime = dwellTime || 0;
+      sessionData.gazeSamples = gazeSamples || [];
+
+      // Persist the session data
+      await persistSessionToDynamo(sessionData);
+
+      // Remove from memory
+      sessionMap.delete(sessionId);
 
       console.log("[WS] adSessionComplete stored in Dynamo for adId:", adId);
     } else {
