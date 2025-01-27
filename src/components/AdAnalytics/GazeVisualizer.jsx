@@ -1,4 +1,5 @@
-// src/components/AdAnalytics/GazeVisualizer.jsx
+// src/components/GazeVisualizer.jsx
+
 import React from "react";
 import { motion } from "framer-motion";
 
@@ -8,11 +9,12 @@ const GazeVisualizer = ({ gazeData, boundingBoxes, showBorders }) => {
       {/* Gaze Dot */}
       {gazeData && (
         <motion.div
-          className="absolute z-50 h-6 w-6 rounded-full bg-red-500"
+          className="absolute z-50 h-6 w-6 rounded-full bg-red-500 pointer-events-none"
           initial={{ x: gazeData.x, y: gazeData.y }}
           animate={{ x: gazeData.x, y: gazeData.y }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           style={{ top: gazeData.y, left: gazeData.x, position: "absolute" }}
+          aria-label="Gaze Dot"
         />
       )}
 
@@ -27,7 +29,10 @@ const GazeVisualizer = ({ gazeData, boundingBoxes, showBorders }) => {
               left: box.left,
               width: box.width,
               height: box.height,
+              position: "absolute",
+              zIndex: 9999  // or a high enough value
             }}
+            aria-label={`Bounding Box ${index + 1}`}
           />
         ))}
     </>

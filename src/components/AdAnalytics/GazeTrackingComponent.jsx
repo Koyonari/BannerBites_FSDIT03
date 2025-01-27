@@ -1,7 +1,7 @@
 // src/components/AdAnalytics/GazeTrackingComponent.jsx
 import { useEffect, useRef } from "react";
 import WebGazerSingleton from "../../utils/WebGazerSingleton";
-import KalmanFilter from "../../utils/KalmanFilter"; // Ensure this utility exists
+import KalmanFilter from "../../utils/KalmanFilter";
 
 const GazeTrackingComponent = ({
   isActive,
