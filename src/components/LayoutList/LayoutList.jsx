@@ -340,6 +340,7 @@ const LayoutList = () => {
       };
       websocketRef.current.send(JSON.stringify(payload));
       console.log("[LayoutList] Sent adSessionComplete:", payload);
+      console.log("[Client] Sending adSessionComplete:", JSON.stringify(payload, null, 2));
     } else {
       console.warn("WebSocket not open; cannot send session data.");
     }
