@@ -1,21 +1,26 @@
 // state/sessionBuffer.js
 
-const sessionBuffer = {}; 
-// key: sessionId, value: { sessionId, startTime, endTime, events: [] }
+// Instead of an object, use a Map to store session data keyed by sessionId
+const sessionMap = new Map();
 
+/**
+ * Returns existing session data for sessionId
+ * or creates a new record in sessionMap if none exists yet.
+ */
 function getOrCreateSessionData(sessionId) {
-  if (!sessionBuffer[sessionId]) {
-    sessionBuffer[sessionId] = {
+  if (!sessionMap.has(sessionId)) {
+    sessionMap.set(sessionId, {
       sessionId,
       startTime: null,
       endTime: null,
-      events: [],
-    };
+      events: [], 
+      // or adSessions: [] if you prefer
+    });
   }
-  return sessionBuffer[sessionId];
+  return sessionMap.get(sessionId);
 }
 
 module.exports = {
-  sessionBuffer,
+  sessionMap,
   getOrCreateSessionData,
 };
