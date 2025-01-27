@@ -1,52 +1,8 @@
 import { jwtDecode } from "jwt-decode";
 import React, { useState, useEffect } from "react";
 import Navbar from "../Navbar";
+import ExpandableCard from "./ExpandableCard";
 import Cookies from "js-cookie";
-
-const formatPermissionName = (permission) => {
-  // Split by capital letters and join with spaces
-  return permission
-    .split(/(?=[A-Z])/)
-    .join(" ")
-    .replace(/^\w/, (c) => c.toUpperCase());
-};
-
-const RoleCard = ({ role, permissions, onEdit, onDelete }) => (
-  <div className="mb-4 rounded-lg border-2 p-6 transition-all duration-200 primary-border light-bg hover:border-blue-500 dark:dark-bg">
-    <div className="mb-4 flex items-start justify-between">
-      <h3 className="text-xl font-semibold accent-text">{role}</h3>
-      <div className="flex gap-2">
-        <button
-          onClick={onEdit}
-          className="rounded bg-[#2d3545] px-4 py-1.5 text-text-dark transition-colors duration-200 hover:bg-[#3a4355]"
-        >
-          Edit
-        </button>
-        <button
-          onClick={onDelete}
-          className="rounded px-4 py-1.5 text-text-dark transition-colors duration-200 alert-bg"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-      {Object.entries(permissions).map(([key, value]) => (
-        <div key={key} className="flex items-center">
-          <span className="min-w-[140px] text-gray-400">
-            {formatPermissionName(key)}:
-          </span>
-          <span
-            className={`ml-2 ${value ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}
-          >
-            {value ? "Yes" : "No"}
-          </span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
 
 const CustomRole = () => {
   const [token, setToken] = useState(null);
@@ -244,6 +200,12 @@ const CustomRole = () => {
       },
     }));
   };
+  const formatPermissionName = (permission) => {
+    return permission
+      .split(/(?=[A-Z])/)
+      .join(" ")
+      .replace(/^\w/, (c) => c.toUpperCase());
+  };
   return (
     <div className="min-h-screen bg-bg-light text-text-dark dark:bg-bg-dark">
       <Navbar />
@@ -255,7 +217,6 @@ const CustomRole = () => {
           <p className="text-lg primary-text dark:neutral-text">
             Current Role: {userRole || "No role detected"}
           </p>
-          {/* Conditional Logout Button */}
           {token && (
             <button
               onClick={handleLogout}
@@ -265,7 +226,6 @@ const CustomRole = () => {
             </button>
           )}
 
-          {/* Permission-specific buttons with improved styling */}
           <div className="mt-4 flex flex-wrap gap-4">
             {permissions?.view && permissions?.view !== "No" && (
               <button
@@ -312,7 +272,7 @@ const CustomRole = () => {
           </h2>
           <div className="space-y-4">
             {defaultRoles.map((roleObj, index) => (
-              <RoleCard
+              <ExpandableCard
                 key={index}
                 role={roleObj.role}
                 permissions={roleObj.permissions}
