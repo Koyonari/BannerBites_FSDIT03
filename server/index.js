@@ -10,12 +10,15 @@ const tvRoutes = require("./routes/tvRoutes");
 const authRoutes = require("./routes/authRoutes");
 const adsRoutes = require("./routes/adsRoutes");
 const roleRoutes = require("./routes/roleRoutes");
+const heatmapRoutes = require("./routes/heatmapRoutes");
 const { handleWebSocketMessage } = require("./controllers/webSocketController");
 
+
 // Import the state management functions
-const { layoutUpdatesCache, addClient, removeClient, broadcastToClients } = require("./state");
+const { layoutUpdatesCache, addClient, removeClient, broadcastToClients } = require("./state/websocketState");
 const { generatePresignedUrlController, fetchLayoutById } = require("./controllers/layoutController");
-const { listenToDynamoDbStreams } = require("./middleware/awsMiddleware");
+const { listenToDynamoDbStreams } = require("./middleware/layoutListener");
+const { listenToHeatmapStreams } = require("./middleware/heatmapListener");
 
 dotenv.config();
 
@@ -46,6 +49,7 @@ app.use("/api", authRoutes);
 app.post("/generate-presigned-url", generatePresignedUrlController);
 app.use('/api/ads', adsRoutes);
 app.use('/api/roles', roleRoutes);
+app.use("/api/heatmap", heatmapRoutes);
 
 // WebSocket Server Handling
 wss.on("connection", (ws) => {
@@ -64,5 +68,16 @@ server.listen(PORT, () => {
 });
 
 
-// Listen to DynamoDB streams
-listenToDynamoDbStreams();
+(async () => {
+  try {
+    // Start listening to layout update streams
+    await listenToDynamoDbStreams();
+    console.log("[LAYOUT] DynamoDB stream listener for layouts initialized.");
+
+    // Start listening to heatmap update streams
+    await listenToHeatmapStreams();
+    console.log("[HEATMAP] DynamoDB stream listener for heatmaps initialized.");
+  } catch (error) {
+    console.error("[INIT] Failed to initialize stream listeners:", error);
+  }
+})();

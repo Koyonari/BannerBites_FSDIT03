@@ -2,35 +2,17 @@
 
 const { DynamoDBClient, PutItemCommand, UpdateItemCommand } = require("@aws-sdk/client-dynamodb");
 
-const client = new DynamoDBClient({ region: "ap-southeast-1" });
-
+const client = new DynamoDBClient({ region: process.env.AWS_REGION });
 const AD_ANALYTICS_TABLE = "AdAnalytics";
 const AD_AGGREGATES_TABLE = "AdAggregates";
 
 /**
- * Persists a session to the AdAnalytics DynamoDB table.
- * @param {Object} sessionData - The session data to persist.
+ * Persists a session to the AdAnalytics table.
+ * @param {object} sessionData
  */
 async function persistSessionToDynamo(sessionData) {
   const { sessionId, adId, enterTime, exitTime, dwellTime, gazeSamples } = sessionData;
-
-  // Validate required fields
-  if (!sessionId || !adId) {
-    console.error("Missing sessionId or adId. Cannot persist to DynamoDB.", { sessionId, adId });
-    return;
-  }
-
-  // Validate dwellTime
-  if (typeof dwellTime !== 'number' || isNaN(dwellTime)) {
-    console.error("Invalid dwellTime. Cannot persist to DynamoDB.", { dwellTime });
-    return;
-  }
-
-  // Validate gazeSamples
-  if (!gazeSamples || typeof gazeSamples !== 'string') {
-    console.error("Invalid gazeSamples. Cannot persist to DynamoDB.", { gazeSamples });
-    return;
-  }
+  console.log("[Dynamo] Persisting session:", sessionId, "for adId:", adId);
 
   const item = {
     sessionId: { S: sessionId },
@@ -38,7 +20,7 @@ async function persistSessionToDynamo(sessionData) {
     enterTime: { S: enterTime || "" },
     exitTime: { S: exitTime || "" },
     dwellTime: { N: dwellTime.toString() },
-    gazeSamples: { S: gazeSamples },
+    gazeSamples: { S: JSON.stringify(gazeSamples) },
     lastUpdated: { S: new Date().toISOString() },
   };
 
@@ -50,52 +32,49 @@ async function persistSessionToDynamo(sessionData) {
       })
     );
 
-    console.log("Successfully inserted session data into AdAnalytics", { sessionId, adId, gazeSamplesCount: JSON.parse(gazeSamples).length });
+    console.log(
+      "[Dynamo] Inserted session:",
+      sessionId,
+      "for adId:",
+      adId,
+      "with gaze samples count:",
+      gazeSamples.length
+    );
 
     // Update aggregates
-    await updateAdAggregates(adId, dwellTime, JSON.parse(gazeSamples).length);
+    await updateAdAggregates(adId, dwellTime, gazeSamples.length);
   } catch (error) {
-    console.error("Error persisting session data to DynamoDB", { error, sessionId, adId });
+    console.error("[Dynamo] Error persisting session:", error);
   }
 }
 
 /**
- * Updates the AdAggregates table with new session data.
- * @param {string} adId - The ad identifier.
- * @param {number} dwellTime - The dwell time in milliseconds.
- * @param {number} gazeSampleCount - The number of gaze samples.
+ * Updates aggregated metrics in the AdAggregates table.
+ * @param {string} adId
+ * @param {number} dwellTime
+ * @param {number} gazeSamplesCount
  */
-async function updateAdAggregates(adId, dwellTime, gazeSampleCount) {
-  if (!adId) {
-    console.error("Missing adId. Cannot update AdAggregates.", { adId });
-    return;
-  }
+async function updateAdAggregates(adId, dwellTime, gazeSamplesCount) {
+  const params = {
+    TableName: AD_AGGREGATES_TABLE,
+    Key: {
+      adId: { S: adId },
+    },
+    UpdateExpression:
+      "ADD totalDwellTime :tdw, totalSessions :ts, totalGazeSamples :tgs SET lastUpdated = :lu",
+    ExpressionAttributeValues: {
+      ":tdw": { N: dwellTime.toString() },
+      ":ts": { N: "1" },
+      ":tgs": { N: gazeSamplesCount.toString() },
+      ":lu": { S: new Date().toISOString() },
+    },
+  };
 
   try {
-    await client.send(
-      new UpdateItemCommand({
-        TableName: AD_AGGREGATES_TABLE,
-        Key: {
-          adId: { S: adId },
-        },
-        UpdateExpression:
-          "SET totalDwellTime = if_not_exists(totalDwellTime, :start) + :dwellTime, " +
-          "totalGazeSamples = if_not_exists(totalGazeSamples, :start) + :gazeSampleCount, " +
-          "totalSessions = if_not_exists(totalSessions, :start) + :one, " +
-          "lastUpdated = :lastUpdated",
-        ExpressionAttributeValues: {
-          ":dwellTime": { N: dwellTime.toString() },
-          ":gazeSampleCount": { N: gazeSampleCount.toString() },
-          ":one": { N: "1" },
-          ":lastUpdated": { S: new Date().toISOString() },
-          ":start": { N: "0" },
-        },
-      })
-    );
-
-    console.log("Successfully updated AdAggregates", { adId, dwellTime, gazeSampleCount });
+    await client.send(new UpdateItemCommand(params));
+    console.log(`[Dynamo] Updated aggregates for adId: ${adId}`);
   } catch (error) {
-    console.error("Error updating AdAggregates in DynamoDB", { error, adId });
+    console.error(`[Dynamo] Error updating aggregates for adId: ${adId}:`, error);
   }
 }
 
