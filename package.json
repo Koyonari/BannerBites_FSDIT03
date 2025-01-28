@@ -20,6 +20,7 @@
     "d3": "^7.9.0",
     "gazer": "^1.0.0",
     "hamburger-react": "^2.5.1",
+    "heatmap.js": "^2.0.5",
     "iodash": "^0.0.1-security",
     "js-cookie": "^3.0.5",
     "jwt-decode": "^4.0.0",

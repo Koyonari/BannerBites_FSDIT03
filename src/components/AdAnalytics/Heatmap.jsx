@@ -49,14 +49,16 @@ const Heatmap = ({ data, width, height, title }) => {
       .interpolator(d3.interpolateInferno)
       .domain([0, maxValue]);
 
-    g.append("g")
-      .attr("transform", `translate(0, ${innerHeight})`)
-      .call(d3.axisBottom(xScale))
-      .selectAll("text")
-      .attr("transform", "rotate(-45)")
-      .style("text-anchor", "end");
-
-    g.append("g").call(d3.axisLeft(yScale));
+    g.selectAll("rect")
+      .data(data)
+      .enter()
+      .append("rect")
+      .attr("x", (d) => xScale(d.x))
+      .attr("y", (d) => yScale(d.y))
+      .attr("width", xScale.bandwidth())
+      .attr("height", yScale.bandwidth())
+      .style("fill", (d) => colorScale(d.value))
+      .style("stroke", "#fff");
 
     svg
       .append("text")
@@ -65,115 +67,16 @@ const Heatmap = ({ data, width, height, title }) => {
       .attr("text-anchor", "middle")
       .style("font-size", "20px")
       .text(title || "Heatmap");
-
-    const tooltip = d3
-      .select(tooltipRef.current)
-      .style("position", "absolute")
-      .style("visibility", "hidden")
-      .style("background-color", "rgba(0,0,0,0.7)")
-      .style("color", "#fff")
-      .style("padding", "5px 10px")
-      .style("border-radius", "4px")
-      .style("pointer-events", "none")
-      .style("font-size", "12px");
-
-    g.selectAll("rect")
-      .data(data, (d) => `${d.x}:${d.y}`)
-      .enter()
-      .append("rect")
-      .attr("x", (d) => xScale(d.x))
-      .attr("y", (d) => yScale(d.y))
-      .attr("width", xScale.bandwidth())
-      .attr("height", yScale.bandwidth())
-      .style("fill", (d) => colorScale(d.value))
-      .style("stroke", "#fff")
-      .style("stroke-width", 1)
-      .on("mouseover", (event, d) => {
-        tooltip
-          .style("visibility", "visible")
-          .html(
-            `<strong>X:</strong> ${d.x}<br/><strong>Y:</strong> ${d.y}<br/><strong>Value:</strong> ${d.value}`
-          );
-      })
-      .on("mousemove", (event) => {
-        tooltip
-          .style("top", `${event.pageY - 10}px`)
-          .style("left", `${event.pageX + 10}px`);
-      })
-      .on("mouseout", () => {
-        tooltip.style("visibility", "hidden");
-      });
-
-    const legendWidth = 20;
-    const legendHeight = innerHeight;
-
-    const legend = svg
-      .append("g")
-      .attr(
-        "transform",
-        `translate(${width - margin.right + 20}, ${margin.top})`
-      );
-
-    const defs = svg.append("defs");
-
-    const linearGradient = defs
-      .append("linearGradient")
-      .attr("id", "linear-gradient")
-      .attr("x1", "0%")
-      .attr("y1", "0%")
-      .attr("x2", "0%")
-      .attr("y2", "100%");
-
-    linearGradient
-      .selectAll("stop")
-      .data(
-        colorScale.ticks().map((t, i, n) => ({
-          offset: `${(i / (n.length - 1)) * 100}%`,
-          color: colorScale(t),
-        }))
-      )
-      .enter()
-      .append("stop")
-      .attr("offset", (d) => d.offset)
-      .attr("stop-color", (d) => d.color);
-
-    legend
-      .append("rect")
-      .attr("width", legendWidth)
-      .attr("height", legendHeight)
-      .style("fill", "url(#linear-gradient)");
-
-    const legendScale = d3
-      .scaleLinear()
-      .domain(colorScale.domain())
-      .range([legendHeight, 0]);
-
-    const legendAxis = d3
-      .axisRight(legendScale)
-      .ticks(5)
-      .tickSize(-legendWidth);
-
-    legend
-      .append("g")
-      .attr("transform", `translate(${legendWidth}, 0)`)
-      .call(legendAxis)
-      .select(".domain")
-      .remove();
   }, [data, width, height, title]);
 
-  return (
-    <div style={{ position: "relative" }}>
-      <svg ref={svgRef}></svg>
-      <div ref={tooltipRef}></div>
-    </div>
-  );
+  return <svg ref={svgRef}></svg>;
 };
 
 Heatmap.propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.shape({
-      x: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      y: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      x: PropTypes.number.isRequired,
+      y: PropTypes.number.isRequired,
       value: PropTypes.number.isRequired,
     })
   ).isRequired,

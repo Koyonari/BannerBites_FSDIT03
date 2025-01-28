@@ -6,6 +6,7 @@ import { fetchSessionDataByAdIds } from "../../services/heatmapService";
 const HeatmapOverlay = ({ layoutRef, adIds }) => {
   const [heatmapData, setHeatmapData] = useState([]);
   const [layoutDimensions, setLayoutDimensions] = useState({ width: 0, height: 0 });
+  const [isLoading, setIsLoading] = useState(false); // For managing loading state
   const [hasError, setHasError] = useState(false); // For error state
   const [errorMessage, setErrorMessage] = useState(""); // For detailed error messages
 
@@ -17,28 +18,30 @@ const HeatmapOverlay = ({ layoutRef, adIds }) => {
         const { width, height } = layoutElement.getBoundingClientRect();
         setLayoutDimensions({ width, height });
       };
-  
+
       updateDimensions();
-  
+
       const resizeObserver = new ResizeObserver(updateDimensions);
       resizeObserver.observe(layoutElement);
-  
+
       return () => {
         resizeObserver.disconnect();
       };
     }
   }, [layoutRef]);
 
-  // Fetch heatmap data when adIds change
+  // Fetch heatmap data when adIds or layoutDimensions change
   useEffect(() => {
     const fetchHeatmapData = async () => {
       try {
+        setIsLoading(true);
         console.log("Fetching heatmap data for adIds:", adIds);
         const data = await fetchSessionDataByAdIds(adIds);
 
         if (!data || !data.sessions || !Array.isArray(data.sessions)) {
           console.warn("[HeatmapOverlay] No valid sessions received from API.");
           setHeatmapData([]);
+          setIsLoading(false);
           return;
         }
 
@@ -47,33 +50,37 @@ const HeatmapOverlay = ({ layoutRef, adIds }) => {
         if (sessions.length === 0) {
           console.warn("[HeatmapOverlay] No sessions found for the provided adIds.");
           setHeatmapData([]);
+          setIsLoading(false);
           return;
         }
 
         // Process gazeSamples to extract heatmap points
         const points = sessions.flatMap((session) => {
-          const gazeSamples = Array.isArray(session.gazeSamples) ? session.gazeSamples : [];
+          if (!Array.isArray(session.gazeSamples) || session.gazeSamples.length === 0) {
+            return [];
+          }
 
-          return gazeSamples.map((sample) => {
-            const layoutRect = layoutRef.current.getBoundingClientRect();
+          const layoutRect = layoutRef.current.getBoundingClientRect();
 
-            // Adjust coordinates relative to the layout
-            const relativeX = sample.x - layoutRect.left;
-            const relativeY = sample.y - layoutRect.top;
+          return session.gazeSamples.map((sample) => {
+            // Normalize and scale the gaze points based on layout dimensions
+            const normalizedX = sample.x * layoutRect.width;
+            const normalizedY = sample.y * layoutRect.height;
 
-            // Normalize and return heatmap point
             return {
-              x: (relativeX / layoutDimensions.width) * layoutDimensions.width,
-              y: (relativeY / layoutDimensions.height) * layoutDimensions.height,
+              x: normalizedX,
+              y: normalizedY,
               value: sample.value || 1,
             };
           });
         });
 
         setHeatmapData(points);
-        console.log("[Frontend][Heatmap] Heatmap points:", points);
+        console.log("[HeatmapOverlay] Processed heatmap points:", points);
       } catch (error) {
         handleFetchError(error);
+      } finally {
+        setIsLoading(false); // Always end loading state
       }
     };
 
@@ -111,8 +118,12 @@ const HeatmapOverlay = ({ layoutRef, adIds }) => {
     );
   }
 
-  if (heatmapData.length === 0 || layoutDimensions.width === 0 || layoutDimensions.height === 0) {
-    return null;
+  if (isLoading || heatmapData.length === 0 || layoutDimensions.width === 0 || layoutDimensions.height === 0) {
+    return (
+      <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-transparent">
+        <p className="text-gray-500">Loading heatmap...</p>
+      </div>
+    );
   }
 
   return (

@@ -21,8 +21,7 @@ const HeatmapController = {
    */
   getSessionDataByAdId: async (req, res) => {
     try {
-      const { adId } = req.params; // Get adId from URL parameter
-      console.log("Received GET request for adId:", adId);
+      const { adId } = req.params;
 
       if (!adId) {
         return res.status(400).json({ message: "adId is required." });
@@ -53,7 +52,6 @@ const HeatmapController = {
 
       const allSessions = [];
       for (const adId of adIds) {
-        console.log(`Fetching sessions for adId: ${adId}`);
         const sessions = await HeatmapModel.getSessionDataByAdId(adId);
         allSessions.push(...sessions.items);
       }
@@ -61,6 +59,29 @@ const HeatmapController = {
       res.status(200).json({ sessions: allSessions });
     } catch (error) {
       console.error("Error in getSessionDataByAdIds:", error);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
+
+  /**
+   * Fetch session data by session IDs.
+   * @param {Object} req - Express request object.
+   * @param {Object} res - Express response object.
+   */
+  getSessionDataBySessionIds: async (req, res) => {
+    try {
+      const { sessionIds } = req.body;
+
+      if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "sessionIds must be a non-empty array." });
+      }
+
+      const sessions = await HeatmapModel.getSessionDataBySessionIds(sessionIds);
+      res.status(200).json({ sessions });
+    } catch (error) {
+      console.error("Error in getSessionDataBySessionIds:", error);
       res.status(500).json({ message: "Internal server error." });
     }
   },
@@ -78,12 +99,10 @@ const HeatmapController = {
         return res.status(400).json({ message: "adId is required." });
       }
 
-      console.log(`Testing getSessionIdsForAdId with adId: ${adId}`);
       const sessions = await HeatmapModel.getSessionIdsForAdId(adId);
-
       res.status(200).json({ sessions });
     } catch (error) {
-      console.error("Error in testGetSessionIdsForAdId:", error);
+      console.error("Error in getSessionIdsForAdId:", error);
       res.status(500).json({ message: "Internal server error." });
     }
   },
