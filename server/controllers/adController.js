@@ -107,6 +107,33 @@ const AdController = {
       res.status(500).json({ message: "Internal server error." });
     }
   },
+
+  // Update Preuplaoded Ad Metadata
+  updateAdMetadata: async (req, res) => {
+    try {
+      const { adId } = req.params;
+      const { title, description } = req.body;
+  
+      // Get existing ad
+      const existingAd = await AdModel.getAdById(adId);
+      if (!existingAd) {
+        return res.status(404).json({ message: "Ad not found." });
+      }
+  
+      // Update only the title and description
+      existingAd.content.title = title;
+      existingAd.content.description = description;
+      existingAd.updatedAt = new Date().toISOString();
+  
+      // Save the updated ad
+      await AdModel.saveAd(existingAd);
+  
+      res.json({ message: "Ad updated successfully.", ad: existingAd });
+    } catch (error) {
+      console.error("Error updating ad metadata:", error);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
   
 };
 
