@@ -9,8 +9,6 @@ import { MoveLeft } from "lucide-react";
 import { getPermissionsFromToken } from "../../utils/permissionsUtils";
 import Cookies from "js-cookie";
 
-const sortOptions = [{ value: "alpha", label: "Sort by Alphabetical" }];
-
 const Card = ({ title, date, onClick }) => {
   return (
     <div
@@ -29,7 +27,7 @@ const Card = ({ title, date, onClick }) => {
 const UserHome = ({ onSelectLocation, onSelectTV }) => {
   const [locations, setLocations] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("alpha");
+  const [sortBy] = useState("alpha");
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [showTVSelector, setShowTVSelector] = useState(false);
   const [selectedTVId, setSelectedTVId] = useState(null);
@@ -140,29 +138,8 @@ const UserHome = ({ onSelectLocation, onSelectTV }) => {
     <section className="min-h-screen light-bg dark:dark-bg">
       <Navbar />
       <div className="mx-auto flex w-full flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32">
-        {/* Sort Dropdown */}
-        <div className="w-full sm:w-1/6">
-          <div className="relative h-10 rounded-lg border secondary-border lg:h-16 xl:h-20">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="h-full w-full rounded-lg bg-transparent px-3 text-sm focus:outline-none dark:dark-bg dark:secondary-text sm:text-base lg:text-lg xl:text-2xl"
-            >
-              {sortOptions.map((option) => (
-                <option
-                  key={option.value}
-                  className="dark:text-gray-200 lg:text-lg xl:text-2xl"
-                  value={option.value}
-                >
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
         {/* Search Bar */}
-        <div className="w-full sm:w-3/5">
+        <div className="w-full sm:w-4/5">
           <div className="relative h-10 rounded-lg border secondary-border lg:h-16 lg:text-lg xl:h-20 xl:text-2xl">
             <input
               type="text"
