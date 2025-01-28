@@ -412,14 +412,17 @@ const AdUnit = () => {
                     )}
 
                     {/* Edit Button */}
+                    {permissions?.edit &&(
                     <button
                       onClick={() => handleEditClick(ad)}
                       className="absolute right-12 top-3 z-10 rounded-full bg-blue-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-blue-600 group-hover:opacity-100"
                     >
                       <Edit2 className="h-4 w-4" />
                     </button>
+                    )}
 
                     {/* Delete Button */}
+                    {permissions?.edit &&(
                     <button
                       onClick={() => {
                         setAdToDelete(ad.adId);
@@ -429,6 +432,7 @@ const AdUnit = () => {
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
+                    )}
                   </div>
 
                   {/* Media Info */}
