@@ -1,6 +1,7 @@
 import { jwtDecode } from "jwt-decode";
 import React, { useState, useEffect } from "react";
 import Navbar from "../Navbar";
+import ExpandableCard from "./ExpandableCard";
 import Cookies from "js-cookie";
 
 const CustomRole = () => {
@@ -199,20 +200,23 @@ const CustomRole = () => {
       },
     }));
   };
-
+  const formatPermissionName = (permission) => {
+    return permission
+      .split(/(?=[A-Z])/)
+      .join(" ")
+      .replace(/^\w/, (c) => c.toUpperCase());
+  };
   return (
-    <div className="text-primary-text dark:text-secondary-text min-h-screen bg-bg-light dark:bg-bg-dark">
+    <div className="min-h-screen bg-bg-light text-text-dark dark:bg-bg-dark">
       <Navbar />
-      <div className="px-8 pt-24 xl:pt-1">
-        <div className="rounded-lg border bg-base-white p-6 shadow-md primary-border dark:bg-bg-dark">
-          <h1 className="mb-6 text-2xl font-bold accent-text">
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-8">
+          <h1 className="mb-2 text-3xl font-bold accent-text">
             Role Management
           </h1>
-          <h1 className="mb-4 neutral-text">
-            Your role: {userRole || "No role detected"}
-          </h1>
-
-          {/* Conditional Logout Button */}
+          <p className="text-lg primary-text dark:neutral-text">
+            Current Role: {userRole || "No role detected"}
+          </p>
           {token && (
             <button
               onClick={handleLogout}
@@ -222,7 +226,6 @@ const CustomRole = () => {
             </button>
           )}
 
-          {/* Permission-specific buttons with improved styling */}
           <div className="mt-4 flex flex-wrap gap-4">
             {permissions?.view && permissions?.view !== "No" && (
               <button
@@ -261,93 +264,124 @@ const CustomRole = () => {
               </button>
             )}
           </div>
+        </div>
 
-          {/* Role List */}
-          <h2 className="mb-4 mt-8 text-xl font-semibold neutral-text">
+        <section className="mb-8">
+          <h2 className="mb-4 text-2xl font-semibold primary-text dark:neutral-text">
             Role List
           </h2>
           <div className="space-y-4">
             {defaultRoles.map((roleObj, index) => (
-              <div
+              <ExpandableCard
                 key={index}
-                className="bg-neutral-bg flex items-center justify-between rounded-md border p-4 primary-border dark:bg-bg-dark"
-              >
-                <div>
-                  <h3 className="text-lg font-bold accent-text">
-                    {roleObj.role}
-                  </h3>
-                  <p className="neutral-text">
-                    {Object.entries(roleObj.permissions)
-                      .map(
-                        ([perm, value]) => `${perm}: ${value ? "Yes" : "No"}`,
-                      )
-                      .join(", ")}
-                  </p>
-                </div>
-
-                {permissions?.roleManagement && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditRole(roleObj)}
-                      className="bg-secondary-bg rounded px-3 py-1 text-base-white transition-all hover:opacity-90"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteRole(roleObj.role)}
-                      className="rounded px-3 py-1 text-base-white transition-all alert-bg hover:opacity-90"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </div>
+                role={roleObj.role}
+                permissions={roleObj.permissions}
+                onEdit={
+                  permissions?.roleManagement
+                    ? () => handleEditRole(roleObj)
+                    : null
+                }
+                onDelete={
+                  permissions?.roleManagement
+                    ? () => handleDeleteRole(roleObj.role)
+                    : null
+                }
+              />
             ))}
           </div>
+        </section>
 
-          {/* Create or Edit Role */}
-          {permissions?.roleManagement && (
-            <>
-              <h2 className="mb-4 mt-8 text-xl font-semibold neutral-text">
-                {editMode ? "Edit Role" : "Create Custom Role"}
+        {permissions?.roleManagement && (
+          <section className="mt-12 rounded-xl border-2 bg-white p-8 primary-border dark:bg-bg-dark dark:secondary-border">
+            <div className="mb-8 border-b border-gray-200 pb-4 dark:border-gray-700">
+              <h2 className="text-2xl font-semibold tracking-tight primary-text dark:neutral-text">
+                {editMode ? "Edit Role Settings" : "Create New Role"}
               </h2>
-              <div className="mt-4">
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                {editMode
+                  ? "Modify the permissions for this role. Changes will affect all users with this role."
+                  : "Configure a new role with custom permissions for your team members."}
+              </p>
+            </div>
+
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <label
+                  htmlFor="roleName"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Role Name
+                </label>
                 <input
+                  id="roleName"
                   type="text"
-                  placeholder="Role Name"
+                  placeholder="Enter role name"
                   value={newRole.role}
                   onChange={(e) =>
                     setNewRole({ ...newRole, role: e.target.value })
                   }
-                  className="mb-4 w-full rounded border bg-base-white p-2 primary-border placeholder-primary ring-primary focus:outline-none focus:ring-2 dark:bg-bg-dark"
                   disabled={editMode}
+                  className="w-full rounded-lg border-2 bg-white px-4 py-3 text-gray-700 placeholder-gray-400 shadow-sm primary-border focus:border-bg-accent focus:outline-none focus:ring-1 focus:ring-bg-accent disabled:bg-gray-50 disabled:text-gray-500 dark:bg-bg-dark dark:text-gray-200 dark:placeholder-gray-500 dark:secondary-border"
                 />
-                <div className="mb-4 flex flex-wrap gap-4">
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                    Permissions
+                  </h3>
+                  <span className="text-sm text-gray-500">
+                    Select the permissions for this role
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {Object.keys(permissions).map((perm) => (
-                    <label
+                    <div
                       key={perm}
-                      className="flex items-center gap-2 neutral-text"
+                      className="relative flex items-center rounded-lg border border-gray-200 p-4 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
                     >
-                      <input
-                        type="checkbox"
-                        checked={newRole.permissions[perm] || false}
-                        onChange={() => handlePermissionChange(perm)}
-                        className="accent-primary"
-                      />
-                      {perm.charAt(0).toUpperCase() + perm.slice(1)}
-                    </label>
+                      <div className="min-w-0 flex-1">
+                        <label
+                          htmlFor={`permission-${perm}`}
+                          className="select-none font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          {formatPermissionName(perm)}
+                        </label>
+                      </div>
+                      <div className="ml-3 flex h-5 items-center">
+                        <input
+                          id={`permission-${perm}`}
+                          type="checkbox"
+                          checked={newRole.permissions[perm] || false}
+                          onChange={() => handlePermissionChange(perm)}
+                          className="h-5 w-5 rounded border-2 border-gray-300 text-blue-600 accent-bg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-offset-gray-800"
+                        />
+                      </div>
+                    </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="flex justify-end pt-6">
                 <button
                   onClick={editMode ? handleUpdateRole : handleCreateRole}
-                  className={`rounded px-4 py-2 text-base-white transition-all hover:opacity-90 ${editMode ? "primary-bg" : "secondary-bg"} `}
+                  className="inline-flex items-center rounded-lg px-6 py-3 text-base font-medium text-white shadow-sm transition-all duration-200 primary-bg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
-                  {editMode ? "Update Role" : "Create Role"}
+                  {editMode ? (
+                    <>
+                      <span>Update Role Settings</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Create New Role</span>
+                    </>
+                  )}
                 </button>
               </div>
-            </>
-          )}
-        </div>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
