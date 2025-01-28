@@ -1,5 +1,3 @@
-// services/dynamoService.js
-
 const { DynamoDBClient, PutItemCommand, UpdateItemCommand } = require("@aws-sdk/client-dynamodb");
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION });
@@ -12,15 +10,21 @@ const AD_AGGREGATES_TABLE = "AdAggregates";
  */
 async function persistSessionToDynamo(sessionData) {
   const { sessionId, adId, enterTime, exitTime, dwellTime, gazeSamples } = sessionData;
-  console.log("[Dynamo] Persisting session:", sessionId, "for adId:", adId);
+
+  if (!adId || !sessionId) {
+    console.error("[Dynamo] Missing required fields: adId or sessionId. Cannot persist session.");
+    return;
+  }
+
+  const serializedGazeSamples = Array.isArray(gazeSamples) ? JSON.stringify(gazeSamples) : "[]";
 
   const item = {
     sessionId: { S: sessionId },
     adId: { S: adId },
-    enterTime: { S: enterTime || "" },
-    exitTime: { S: exitTime || "" },
-    dwellTime: { N: dwellTime.toString() },
-    gazeSamples: { S: JSON.stringify(gazeSamples) },
+    enterTime: { S: enterTime || new Date().toISOString() },
+    exitTime: { S: exitTime || new Date().toISOString() },
+    dwellTime: { N: (dwellTime || 0).toString() },
+    gazeSamples: { S: serializedGazeSamples },
     lastUpdated: { S: new Date().toISOString() },
   };
 
@@ -41,10 +45,15 @@ async function persistSessionToDynamo(sessionData) {
       gazeSamples.length
     );
 
-    // Update aggregates
-    await updateAdAggregates(adId, dwellTime, gazeSamples.length);
+    // Update aggregates asynchronously
+    updateAdAggregates(adId, dwellTime, gazeSamples.length).catch((error) => {
+      console.error(`[Dynamo] Failed to update aggregates for adId: ${adId}:`, error);
+    });
   } catch (error) {
-    console.error("[Dynamo] Error persisting session:", error);
+    console.error(
+      `[Dynamo] Error persisting session (sessionId: ${sessionId}, adId: ${adId}):`,
+      error
+    );
   }
 }
 

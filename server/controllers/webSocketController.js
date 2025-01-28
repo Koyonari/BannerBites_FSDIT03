@@ -88,7 +88,7 @@ async function handleSubscribe(ws, message) {
  * @param {Object} message - The parsed message object.
  */
 async function handleSessionStart(message) {
-  const { sessionId, startTime } = message.data;
+  const { sessionId, startTime, adId } = message.data; // Include adId
   if (!sessionId) {
     console.warn("[WS] Missing sessionId in sessionStart message.");
     return;
@@ -96,7 +96,8 @@ async function handleSessionStart(message) {
 
   const sessionData = getOrCreateSessionData(sessionId);
   sessionData.enterTime = startTime || new Date().toISOString();
-  console.log(`[WS] Session started: sessionId=${sessionId}, enterTime=${sessionData.enterTime}`);
+  sessionData.adId = adId || sessionData.adId || "unknown-ad"; // Ensure adId is set
+  console.log(`[WS] Session started: sessionId=${sessionId}, adId=${sessionData.adId}, enterTime=${sessionData.enterTime}`);
 
   // Additional Logging: Log initial session data
   console.log(`[WS] Initial session data:`, sessionData);

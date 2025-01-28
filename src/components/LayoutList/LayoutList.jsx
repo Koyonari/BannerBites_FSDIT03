@@ -12,7 +12,8 @@ import LayoutViewer from "../AdViewer/LayoutViewer";
 import CalibrationComponent from "../AdAnalytics/CalibrationComponent";
 import GazeTrackingComponent from "../AdAnalytics/GazeTrackingComponent";
 import GazeVisualizer from "../AdAnalytics/GazeVisualizer";
-import HeatmapOverlay from "../AdAnalytics/HeatmapOverlay"; // Import HeatmapOverlay
+import HeatmapOverlay from "../AdAnalytics/HeatmapOverlay";
+import ErrorBoundary from "../ErrorBoundary";
 
 // Utils
 import WebGazerSingleton from "../../utils/WebGazerSingleton";
@@ -690,13 +691,14 @@ const LayoutList = () => {
                     Select a layout to preview
                   </div>
                 )}
-
-                {/* Heatmap Overlay */}
-                {showHeatmap && selectedLayout && (
-                  <HeatmapOverlay
-                    layoutRef={layoutContainerRef}
-                    adIds={selectedLayout.adIds || []} // Pass adIds
-                  />
+                {/* Wrap HeatmapOverlay with ErrorBoundary */}
+                {selectedLayout && selectedLayout.adIds.length > 0 && (
+                  <ErrorBoundary>
+                    <HeatmapOverlay
+                      layoutRef={layoutContainerRef}
+                      adIds={selectedLayout.adIds}
+                    />
+                  </ErrorBoundary>
                 )}
               </div>
             </div>

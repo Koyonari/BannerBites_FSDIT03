@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 // Middleware to parse JSON data
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json());
 
 // Routes
 app.use("/api/layouts", layoutRoutes);
