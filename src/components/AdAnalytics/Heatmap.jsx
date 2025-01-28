@@ -1,10 +1,11 @@
+// src/components/AdAnalytics/Heatmap.jsx
+
 import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
 import PropTypes from "prop-types";
 
 const Heatmap = ({ data, width, height, title }) => {
   const svgRef = useRef(null);
-  const tooltipRef = useRef(null);
 
   useEffect(() => {
     if (!data || data.length === 0) {
@@ -12,6 +13,7 @@ const Heatmap = ({ data, width, height, title }) => {
       return;
     }
 
+    // Clear previous SVG content
     d3.select(svgRef.current).selectAll("*").remove();
 
     const margin = { top: 50, right: 100, bottom: 50, left: 100 };
@@ -21,45 +23,45 @@ const Heatmap = ({ data, width, height, title }) => {
     const svg = d3
       .select(svgRef.current)
       .attr("width", width)
-      .attr("height", height);
+      .attr("height", height)
+      .style("position", "absolute")
+      .style("top", 0)
+      .style("left", 0);
 
     const g = svg
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const xValues = Array.from(new Set(data.map((d) => d.x)));
-    const yValues = Array.from(new Set(data.map((d) => d.y)));
+    // Determine the extent of the data
+    const xExtent = d3.extent(data, (d) => d.x);
+    const yExtent = d3.extent(data, (d) => d.y);
 
-    const xScale = d3
-      .scaleBand()
-      .domain(xValues)
-      .range([0, innerWidth])
-      .padding(0.05);
+    // Create linear scales based on data extent
+    const xScale = d3.scaleLinear().domain(xExtent).range([0, innerWidth]);
+    const yScale = d3.scaleLinear().domain(yExtent).range([0, innerHeight]);
 
-    const yScale = d3
-      .scaleBand()
-      .domain(yValues)
-      .range([0, innerHeight])
-      .padding(0.05);
-
+    // Create a color scale
     const maxValue = d3.max(data, (d) => d.value) || 1;
-
     const colorScale = d3
       .scaleSequential()
       .interpolator(d3.interpolateInferno)
       .domain([0, maxValue]);
 
-    g.selectAll("rect")
+    // Add circles to represent gaze points
+    g.selectAll("circle")
       .data(data)
       .enter()
-      .append("rect")
-      .attr("x", (d) => xScale(d.x))
-      .attr("y", (d) => yScale(d.y))
-      .attr("width", xScale.bandwidth())
-      .attr("height", yScale.bandwidth())
+      .append("circle")
+      .attr("cx", (d) => xScale(d.x))
+      .attr("cy", (d) => yScale(d.y))
+      .attr("r", 10) // Adjust radius as needed
       .style("fill", (d) => colorScale(d.value))
-      .style("stroke", "#fff");
+      .style("opacity", 0.6)
+      .style("stroke", "#fff")
+      .style("stroke-width", 1)
+      .style("pointer-events", "none"); // Allow interactions to pass through
 
+    // Add title
     svg
       .append("text")
       .attr("x", width / 2)

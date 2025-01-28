@@ -15,6 +15,9 @@ import GazeVisualizer from "../AdAnalytics/GazeVisualizer";
 import HeatmapOverlay from "../AdAnalytics/HeatmapOverlay";
 import ErrorBoundary from "../ErrorBoundary";
 
+// Services
+import { fetchSessionDataByAdIds } from "../../services/heatmapService";
+
 // Utils
 import WebGazerSingleton from "../../utils/WebGazerSingleton";
 import { getPermissionsFromToken } from "../../utils/permissionsUtils";
@@ -74,6 +77,7 @@ const LayoutList = () => {
   // ===== Heatmap Toggle =====
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [heatmapData, setHeatmapData] = useState([]);
+  const [layoutDimensions, setLayoutDimensions] = useState({ width: 0, height: 0 });
 
   // Ref for the layout container to align heatmap
   const layoutContainerRef = useRef(null);
@@ -147,11 +151,14 @@ const LayoutList = () => {
       if (websocketRef.current) {
         websocketRef.current.close();
       }
+      if (gazeSamplingIntervalRef.current) {
+        clearInterval(gazeSamplingIntervalRef.current);
+      }
     };
   }, []);
 
   // ---------------------------------------------
-  // 5) Fetch Layouts & Establish WebSocket
+  // 5) Fetch Layouts
   // ---------------------------------------------
   const fetchLayouts = async () => {
     try {
@@ -166,69 +173,9 @@ const LayoutList = () => {
     }
   };
 
-  const establishWebSocketConnection = (layoutId, adIds) => {
-    websocketRef.current = new WebSocket("ws://localhost:5000");
-
-    websocketRef.current.onopen = () => {
-      // Subscribe to layout updates
-      websocketRef.current.send(
-        JSON.stringify({ type: "subscribe", layoutId }),
-      );
-
-      // Subscribe to heatmap for all extracted adIds
-      if (adIds.length > 0) {
-        websocketRef.current.send(
-          JSON.stringify({ type: "subscribeHeatmap", adIds }),
-        );
-        console.log("Subscribed to heatmap updates for adIds:", adIds);
-      }
-    };
-
-    websocketRef.current.onmessage = (event) => {
-      try {
-        const parsedData = JSON.parse(event.data);
-
-        console.log("[Frontend] WebSocket message received:", parsedData);
-
-        // Check the type of the message
-        if (
-          parsedData.type === "layoutUpdate" &&
-          parsedData.data.layoutId === layoutId
-        ) {
-          setSelectedLayout(parsedData.data);
-          console.log("[Frontend] Layout update received:", parsedData.data);
-        }
-
-        if (parsedData.type === "heatmapUpdate") {
-          const heatmapPoints = (parsedData.data || []).map((point) => ({
-            x: point.x || 0,
-            y: point.y || 0,
-            value: point.value || 1,
-          }));
-          setHeatmapData(heatmapPoints);
-          console.log("[Frontend] Heatmap data received:", heatmapPoints);
-        }
-      } catch (e) {
-        console.error("[Frontend] WebSocket message parse error:", e);
-      }
-    };
-
-    websocketRef.current.onclose = () => {
-      console.warn("WebSocket connection closed.");
-      if (
-        pendingLayoutIdRef.current === layoutId &&
-        reconnectAttemptsRef.current < 5
-      ) {
-        reconnectAttemptsRef.current += 1;
-        setTimeout(() => establishWebSocketConnection(layoutId, adIds), 5000);
-      }
-    };
-
-    websocketRef.current.onerror = (error) => {
-      console.error("[LayoutList] WebSocket error:", error);
-    };
-  };
-
+  // ---------------------------------------------
+  // 6) Select Layout and Fetch Heatmap Data
+  // ---------------------------------------------
   const handleLayoutSelect = async (layoutId) => {
     if (pendingLayoutIdRef.current === layoutId) return;
     pendingLayoutIdRef.current = layoutId;
@@ -261,11 +208,16 @@ const LayoutList = () => {
 
       setSelectedLayout({ ...layoutData, adIds }); // Include adIds in the state
 
-      establishWebSocketConnection(layoutId, adIds);
+      // Establish WebSocket connection if needed
+      // establishWebSocketConnection(layoutId, adIds); // Uncomment if using WebSockets for heatmap
+
       console.log(
-        "Layout selected and WebSocket connection established:",
+        "Layout selected and heatmap data fetching initiated:",
         layoutId,
       );
+
+      // Fetch heatmap data for the selected layout
+      await fetchHeatmapData(adIds);
     } catch (err) {
       setError(err.response?.data?.message || err.message);
       console.error("Error selecting layout:", err);
@@ -276,7 +228,49 @@ const LayoutList = () => {
   };
 
   // ---------------------------------------------
-  // 6) Bounding Box Logic
+  // 7) Fetch Heatmap Data
+  // ---------------------------------------------
+  const fetchHeatmapData = async (adIds) => {
+    if (!adIds || adIds.length === 0) return;
+    try {
+      const response = await fetchSessionDataByAdIds(adIds);
+      if (response && response.sessions) {
+        const points = response.sessions.flatMap((session) =>
+          session.gazeSamples.map((sample) => ({
+            x: sample.x,
+            y: sample.y,
+            value: sample.value || 1,
+          }))
+        );
+        setHeatmapData(points);
+        console.log("Heatmap data fetched:", points);
+      }
+    } catch (error) {
+      console.error("Error fetching heatmap data:", error);
+    }
+  };
+
+  // ---------------------------------------------
+  // 8) Layout Dimensions Handling
+  // ---------------------------------------------
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (layoutContainerRef.current) {
+        const { width, height } = layoutContainerRef.current.getBoundingClientRect();
+        setLayoutDimensions({ width, height });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+
+    return () => {
+      window.removeEventListener("resize", updateDimensions);
+    };
+  }, [selectedLayout]);
+
+  // ---------------------------------------------
+  // 9) Bounding Box Logic
   // ---------------------------------------------
   const updateAdBoundingBoxes = useCallback(() => {
     const boxes = [];
@@ -294,15 +288,17 @@ const LayoutList = () => {
   }, []);
 
   useEffect(() => {
-    updateAdBoundingBoxes();
-    window.addEventListener("resize", updateAdBoundingBoxes);
+    if (selectedLayout) {
+      updateAdBoundingBoxes();
+      window.addEventListener("resize", updateAdBoundingBoxes);
+    }
     return () => window.removeEventListener("resize", updateAdBoundingBoxes);
   }, [updateAdBoundingBoxes, selectedLayout]);
 
   const toggleBorders = () => setShowBorders((prev) => !prev);
 
   // ---------------------------------------------
-  // 7) Ad Session Handling (Enter/Exit, Gaze Samples)
+  // 10) Ad Session Handling (Enter/Exit, Gaze Samples)
   // ---------------------------------------------
   const startAdSession = useCallback((adId) => {
     const now = Date.now();
@@ -356,17 +352,13 @@ const LayoutList = () => {
       };
       websocketRef.current.send(JSON.stringify(payload));
       console.log("[LayoutList] Sent adSessionComplete:", payload);
-      console.log(
-        "[Client] Sending adSessionComplete:",
-        JSON.stringify(payload, null, 2),
-      );
     } else {
       console.warn("WebSocket not open; cannot send session data.");
     }
   };
 
   // ---------------------------------------------
-  // 8) Gaze Event Handling
+  // 11) Gaze Event Handling
   // ---------------------------------------------
   const handleGazeAtAd = useCallback(
     ({ x, y }) => {
@@ -421,7 +413,7 @@ const LayoutList = () => {
   );
 
   // ---------------------------------------------
-  // 9) Calibration / Tracking Handlers
+  // 12) Calibration / Tracking Handlers
   // ---------------------------------------------
   const handleStartCalibration = () => {
     if (!isModelReady) {
@@ -452,7 +444,7 @@ const LayoutList = () => {
   };
 
   // ---------------------------------------------
-  // 10) Start / Resume / End Eye Tracking
+  // 13) Start / Resume / End Eye Tracking
   // ---------------------------------------------
   const handleStartTracking = async () => {
     console.log("[LayoutList] Start Eye Tracking clicked.");
@@ -515,7 +507,7 @@ const LayoutList = () => {
   };
 
   // ---------------------------------------------
-  // 11) UI Toggles
+  // 14) UI Toggles
   // ---------------------------------------------
   const handleToggleCamera = () => {
     const newVal = !showCamera;
@@ -548,7 +540,7 @@ const LayoutList = () => {
   };
 
   // ---------------------------------------------
-  // 12) Layouts Display Logic
+  // 15) Layouts Display Logic
   // ---------------------------------------------
   const visibleLayouts =
     isMobile && !showAllLayouts
@@ -691,12 +683,12 @@ const LayoutList = () => {
                     Select a layout to preview
                   </div>
                 )}
-                {/* Wrap HeatmapOverlay with ErrorBoundary */}
-                {selectedLayout && selectedLayout.adIds.length > 0 && (
+                {/* Heatmap Overlay */}
+                {selectedLayout && showHeatmap && heatmapData.length > 0 && layoutDimensions.width > 0 && layoutDimensions.height > 0 && (
                   <ErrorBoundary>
                     <HeatmapOverlay
-                      layoutRef={layoutContainerRef}
-                      adIds={selectedLayout.adIds}
+                      heatmapData={heatmapData}
+                      layoutDimensions={layoutDimensions}
                     />
                   </ErrorBoundary>
                 )}
