@@ -150,9 +150,9 @@ const CollapsibleSidebar = ({
                   <ChevronUp className="h-6 w-6 text-text-dark" />
                 )
               ) : isOpen ? (
-                <ChevronLeft className="h-6 w-6 dark:text-text-dark" />
+                <ChevronLeft className="h-6 w-6 text-text-dark" />
               ) : (
-                <ChevronRight className="h-6 w-6 dark:text-text-dark" />
+                <ChevronRight className="h-6 w-6 text-text-dark" />
               )}
             </button>
 
@@ -180,10 +180,16 @@ const CollapsibleSidebar = ({
                   className={`rounded-lg p-2 hover:scale-[1.05] ${
                     activeSection === "layouts"
                       ? "bg-bg-accent text-text-light"
-                      : "text-placeholder-light hover:bg-bg-accent hover:text-text-light dark:text-placeholder-dark"
+                      : "text-text-light hover:bg-bg-accent hover:text-text-dark"
                   }`}
                 >
-                  <LayoutGrid className="h-6 w-6 text-text-dark" />
+                  <LayoutGrid
+                    className={`h-6 w-6 ${
+                      activeSection === "layouts"
+                        ? "text-text-dark"
+                        : "text-text-light hover:text-text-dark dark:text-text-dark"
+                    }`}
+                  />
                 </button>
                 <button
                   onClick={() =>
@@ -192,10 +198,16 @@ const CollapsibleSidebar = ({
                   className={`rounded-lg p-2 hover:scale-[1.05] ${
                     activeSection === "ads"
                       ? "bg-bg-accent text-text-light"
-                      : "text-placeholder-light hover:bg-bg-accent hover:text-text-light dark:text-placeholder-dark"
+                      : "text-text-light hover:bg-bg-accent hover:text-text-dark"
                   }`}
                 >
-                  <ImagePlus className="h-6 w-6 text-text-dark" />
+                  <ImagePlus
+                    className={`h-6 w-6 ${
+                      activeSection === "ads"
+                        ? "text-text-dark"
+                        : "text-text-light hover:text-text-dark dark:text-text-dark"
+                    }`}
+                  />
                 </button>
               </div>
 
