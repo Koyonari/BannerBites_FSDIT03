@@ -15,7 +15,7 @@ import DeleteConfirmationModal from "../Modal/DeleteConfirmationModal";
 
 import { getPermissionsFromToken } from "../../utils/permissionsUtils";
 import Cookies from "js-cookie";
-import { toast } from 'react-toastify'; // Example: Using react-toastify
+//import { toast } from 'react-toastify'; // Example: Using react-toastify
 
 
 const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -1403,7 +1403,7 @@ const AdCanvas = () => {
           />
         ) : (
           (() => {
-            toast.error("You do not have the necessary permissions to edit this advertisement.");
+            alert("You do not have the necessary permissions to edit this advertisement.");
             setIsEditing(false);
             setCurrentAd(null);
           })()
