@@ -39,82 +39,96 @@ const HeatmapModel = {
     }
   },
 
- /**
- * Fetches session data for a specific adId.
- * @param {string} adId - The adId to filter.
- * @returns {Promise<Object>} - Object containing fetched items.
- */
-getSessionDataByAdId: async function (adId) {
-  try {
-    console.log(`Fetching session data for adId: ${adId}`);
-
-    // Step 1: Fetch session IDs and adIds using Query
-    const sessions = await this.getSessionIdsForAdId(adId);
-
-    if (!sessions || sessions.length === 0) {
-      console.log(`No sessions found for adId: ${adId}`);
-      return { items: [] };
+  /**
+   * Fetches session data for a specific adId.
+   * @param {string} adId - The adId to filter.
+   * @returns {Promise<Object>} - Object containing fetched items.
+   */
+  getSessionDataByAdId: async function (adId) {
+    try {
+      console.log(`Fetching session data for adId: ${adId}`);
+      const sessions = await this.fetchSessionDataInBatches(adId);
+      console.log(`Fetched ${sessions.length} sessions for adId: ${adId}`);
+      return { items: sessions };
+    } catch (error) {
+      console.error(`Error fetching session data for adId: ${adId}`, error);
+      throw error;
     }
-
-    // Log the sessions
-    console.log(`Retrieved sessions for adId ${adId}:`, sessions);
-
-    // Step 2: Use BatchGetCommand to fetch session data
-    const MAX_BATCH_SIZE = 100;
-    const allSessions = [];
-
-    for (let i = 0; i < sessions.length; i += MAX_BATCH_SIZE) {
-      const chunk = sessions.slice(i, i + MAX_BATCH_SIZE);
-      console.log(`Processing sessionId batch:`, chunk);
-
-      const params = {
-        RequestItems: {
-          [AdAnalyticsTable]: {
-            Keys: chunk.map((session) => ({
-              sessionId: session.sessionId,
-              adId: session.adId, // Both keys as per schema
-            })),
-          },
-        },
-      };
-
-      console.log("BatchGetCommand params:", JSON.stringify(params, null, 2));
-
-      const command = new BatchGetCommand(params);
-      const data = await dynamoDb.send(command);
-
-      console.log("BatchGetCommand response:", JSON.stringify(data, null, 2));
-
-      if (data.Responses && data.Responses[AdAnalyticsTable]) {
-        allSessions.push(...data.Responses[AdAnalyticsTable]);
-      }
-
-      // Optionally, handle UnprocessedKeys
-      if (data.UnprocessedKeys && Object.keys(data.UnprocessedKeys).length > 0) {
-        console.warn("Unprocessed keys:", data.UnprocessedKeys);
-        // Implement retry logic if necessary
-      }
-    }
-
-    console.log(`Fetched ${allSessions.length} sessions for adId: ${adId}`);
-    return { items: allSessions };
-  } catch (error) {
-    console.error(`Error fetching session data by adId: ${adId}`, error);
-    throw error;
-  }
-},
+  },
 
   /**
+   * Fetches session data in batches for a specific adId.
+   * @param {string} adId - The adId to filter.
+   * @param {number} batchSize - Number of items to fetch in each batch.
+   * @returns {Promise<Array>} - Array of session data.
+   */
+  fetchSessionDataInBatches: async function (adId, batchSize = 25) {
+    try {
+      console.log(`Fetching session data in batches for adId: ${adId}`);
+      const sessions = await this.getSessionIdsForAdId(adId); // Fetch session IDs
+      const allData = [];
+  
+      for (let i = 0; i < sessions.length; i += batchSize) {
+        const batch = sessions.slice(i, i + batchSize);
+        try {
+          const data = await Promise.all(
+            batch.map((session) =>
+              dynamoDb.send(
+                new BatchGetCommand({
+                  RequestItems: {
+                    [AdAnalyticsTable]: {
+                      Keys: [{ sessionId: session.sessionId, adId: session.adId }],
+                      ProjectionExpression: "sessionId, dwellTime, gazeSamples, adId",
+                    },
+                  },
+                })
+              )
+            )
+          );
+  
+          // Parse and clean each session
+          data.forEach((batchResult) => {
+            const items = batchResult.Responses[AdAnalyticsTable];
+            if (items) {
+              items.forEach((item) => {
+                // Remove the `type` field from gazeSamples
+                const cleanedGazeSamples = item.gazeSamples
+                  ? JSON.parse(item.gazeSamples).map(({ type, ...rest }) => rest) // Remove 'type'
+                  : [];
+  
+                allData.push({
+                  sessionId: item.sessionId,
+                  dwellTime: item.dwellTime,
+                  gazeSamples: cleanedGazeSamples,
+                  adId: item.adId || adId,
+                });
+              });
+            }
+          });
+        } catch (error) {
+          console.error("Error processing batch:", error);
+        }
+      }
+  
+      console.log(`Fetched ${allData.length} total session records for adId: ${adId}`);
+      return allData;
+    } catch (error) {
+      console.error(`Error in fetchSessionDataInBatches for adId: ${adId}`, error);
+      throw error;
+    }
+  },
+
+   /**
    * Fetches all sessionIds associated with a specific adId by scanning the table.
    * @param {string} adId - The adId to filter.
    * @returns {Promise<Array<{sessionId: string, adId: string}>>} - Array of session objects.
    */
-  getSessionIdsForAdId: async function (adId) {
+   getSessionIdsForAdId: async function (adId) {
     try {
       console.log(`Fetching sessionIds for adId: ${adId}`);
       const sessions = [];
       let lastEvaluatedKey = null;
-  
+
       do {
         const params = {
           TableName: AdAnalyticsTable,
@@ -126,20 +140,20 @@ getSessionDataByAdId: async function (adId) {
           Limit: 50,
           ExclusiveStartKey: lastEvaluatedKey || undefined,
         };
-  
+
         const command = new ScanCommand(params);
-        const data = await exponentialBackoff(5, () => dynamoDb.send(command)); // Add backoff
-  
+        const data = await dynamoDb.send(command);
+
         if (data.Items) {
           sessions.push(...data.Items.map((item) => ({
             sessionId: item.sessionId,
             adId: item.adId,
           })));
         }
-  
+
         lastEvaluatedKey = data.LastEvaluatedKey || undefined;
       } while (lastEvaluatedKey);
-  
+
       console.log(`Found ${sessions.length} sessions for adId: ${adId}`);
       return sessions;
     } catch (error) {
@@ -182,7 +196,7 @@ getSessionDataByAdId: async function (adId) {
  * @param {Function} fn - The function to retry.
  * @returns {Promise<any>} - The resolved value of the function.
  */
-async function exponentialBackoff(retries, fn) {
+async function exponentialBackoff(retries, fn, baseDelay = 200) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       return await fn();
@@ -190,13 +204,14 @@ async function exponentialBackoff(retries, fn) {
       if (error.name !== "ProvisionedThroughputExceededException") {
         throw error; // Rethrow for non-throttling errors
       }
-      const delay = Math.pow(2, attempt) * 100; // Exponential backoff: 100ms, 200ms, 400ms, ...
+      const delay = Math.pow(2, attempt) * baseDelay;
       console.warn(`Retrying after ${delay}ms due to ProvisionedThroughputExceededException...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
   throw new Error("Exponential backoff retries exhausted");
 }
+
 // Log the methods to confirm
 console.log("HeatmapModel loaded with methods:", Object.keys(HeatmapModel));
 

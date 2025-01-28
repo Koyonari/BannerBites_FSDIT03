@@ -1,5 +1,3 @@
-// src/components/AdAnalytics/Heatmap.jsx
-
 import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
 import PropTypes from "prop-types";
@@ -10,31 +8,25 @@ const Heatmap = ({ data, width, height, title }) => {
 
   useEffect(() => {
     if (!data || data.length === 0) {
-      // If there's no data, clear the SVG and return
       d3.select(svgRef.current).selectAll("*").remove();
       return;
     }
 
-    // Clear any existing content
     d3.select(svgRef.current).selectAll("*").remove();
 
-    // Define margins
     const margin = { top: 50, right: 100, bottom: 50, left: 100 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
-    // Create SVG container
     const svg = d3
       .select(svgRef.current)
       .attr("width", width)
       .attr("height", height);
 
-    // Create group element for margins
     const g = svg
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Define scales
     const xValues = Array.from(new Set(data.map((d) => d.x)));
     const yValues = Array.from(new Set(data.map((d) => d.y)));
 
@@ -57,7 +49,6 @@ const Heatmap = ({ data, width, height, title }) => {
       .interpolator(d3.interpolateInferno)
       .domain([0, maxValue]);
 
-    // Add X axis
     g.append("g")
       .attr("transform", `translate(0, ${innerHeight})`)
       .call(d3.axisBottom(xScale))
@@ -65,10 +56,8 @@ const Heatmap = ({ data, width, height, title }) => {
       .attr("transform", "rotate(-45)")
       .style("text-anchor", "end");
 
-    // Add Y axis
     g.append("g").call(d3.axisLeft(yScale));
 
-    // Add title
     svg
       .append("text")
       .attr("x", width / 2)
@@ -77,7 +66,6 @@ const Heatmap = ({ data, width, height, title }) => {
       .style("font-size", "20px")
       .text(title || "Heatmap");
 
-    // Create tooltip
     const tooltip = d3
       .select(tooltipRef.current)
       .style("position", "absolute")
@@ -89,22 +77,6 @@ const Heatmap = ({ data, width, height, title }) => {
       .style("pointer-events", "none")
       .style("font-size", "12px");
 
-    // Define zoom behavior
-    const zoom = d3
-      .zoom()
-      .scaleExtent([1, 10]) // Define the scale extent
-      .translateExtent([
-        [0, 0],
-        [innerWidth, innerHeight],
-      ]) // Define the translate extent
-      .on("zoom", (event) => {
-        g.attr("transform", event.transform);
-      });
-
-    // Apply zoom to the SVG
-    svg.call(zoom);
-
-    // Add heatmap rectangles
     g.selectAll("rect")
       .data(data, (d) => `${d.x}:${d.y}`)
       .enter()
@@ -132,7 +104,6 @@ const Heatmap = ({ data, width, height, title }) => {
         tooltip.style("visibility", "hidden");
       });
 
-    // Add color legend
     const legendWidth = 20;
     const legendHeight = innerHeight;
 
@@ -143,7 +114,6 @@ const Heatmap = ({ data, width, height, title }) => {
         `translate(${width - margin.right + 20}, ${margin.top})`
       );
 
-    // Define gradient
     const defs = svg.append("defs");
 
     const linearGradient = defs
@@ -154,7 +124,6 @@ const Heatmap = ({ data, width, height, title }) => {
       .attr("x2", "0%")
       .attr("y2", "100%");
 
-    // Define gradient stops
     linearGradient
       .selectAll("stop")
       .data(
@@ -168,20 +137,17 @@ const Heatmap = ({ data, width, height, title }) => {
       .attr("offset", (d) => d.offset)
       .attr("stop-color", (d) => d.color);
 
-    // Draw the rectangle and fill with gradient
     legend
       .append("rect")
       .attr("width", legendWidth)
       .attr("height", legendHeight)
       .style("fill", "url(#linear-gradient)");
 
-    // Define scale for legend
     const legendScale = d3
       .scaleLinear()
       .domain(colorScale.domain())
       .range([legendHeight, 0]);
 
-    // Add legend axis
     const legendAxis = d3
       .axisRight(legendScale)
       .ticks(5)
