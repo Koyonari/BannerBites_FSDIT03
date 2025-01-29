@@ -1,15 +1,15 @@
-// utils/WebGazerSingleton.js
+// src/utils/WebGazerSingleton.js
 import Cookies from "js-cookie";
 
 class WebGazerSingleton {
   static instance = null;
   static modelPreloaded = false;
   static trackingStarted = false;
-  static initializing = false; // To prevent concurrent initializations
+  static initializing = null; // Promise to prevent concurrent initializations
+  static listeners = []; // Array to hold multiple gaze listeners
 
   /**
    * Preloads the WebGazer model.
-   * Pulls any calibration data from the cookie => localStorage => used by WebGazer.
    */
   static async preload() {
     if (this.modelPreloaded) {
@@ -18,7 +18,6 @@ class WebGazerSingleton {
     }
 
     try {
-      // Prevent concurrent preload calls
       if (this.initializing) {
         console.log("[WebGazerSingleton] Preload already in progress.");
         await this.initializing;
@@ -26,64 +25,66 @@ class WebGazerSingleton {
       }
 
       this.initializing = (async () => {
-        // 1) Read cookie data, if any, and copy to localStorage
+        // 1) Read calibration data from cookie and transfer to localStorage
         const cookieData = Cookies.get("webgazerCalib");
         if (cookieData) {
           localStorage.setItem("webgazerGlobalData", cookieData);
-          console.log("[WebGazer] Restored calibration from cookie → localStorage");
+          console.log("[WebGazerSingleton] Restored calibration from cookie to localStorage.");
         }
 
-        // 2) Load WebGazer script dynamically
+        // 2) Dynamically import WebGazer
         const { default: webgazer } = await import("webgazer");
+
+        // 3) Configure WebGazer
         webgazer
           .setRegression("weightedRidge")
           .setTracker("TFFacemesh")
-          .saveDataAcrossSessions(true); // Store calibration in localStorage
+          .saveDataAcrossSessions(true);
 
         this.instance = webgazer;
         this.modelPreloaded = true;
         console.log("[WebGazerSingleton] Model preloaded.");
 
-        // **Disable WebGazer's default visualizations by default**
-        webgazer.showPredictionPoints(false); // Hides the red dot
-        webgazer.showFaceOverlay(false); // Hides the face overlay
-        webgazer.showVideo(true); // **Enable the video feed**
-        console.log("[WebGazerSingleton] Default WebGazer visualizations adjusted.");
-        
-        // **Adjust Video Element Styling**
-        // Delay to ensure the video element is added to the DOM
+        // 4) Disable default visualizations
+        webgazer.showPredictionPoints(false);
+        webgazer.showFaceOverlay(false);
+        webgazer.showVideo(true);
+        console.log("[WebGazerSingleton] Default WebGazer visualizations disabled.");
+
+        // 5) Style the video feed
         setTimeout(() => {
-          const videoElement = document.getElementById('webgazerVideoFeed');
+          const videoElement = document.getElementById("webgazerVideoFeed");
           if (videoElement) {
-            videoElement.style.position = 'fixed';
-            videoElement.style.top = '60px'; // Adjust based on navbar height
-            videoElement.style.left = '10px'; // Adjust as needed
-            videoElement.style.width = '150px'; // Set desired width
-            videoElement.style.height = '100px'; // Set desired height
-            videoElement.style.zIndex = '1001'; // Higher than other content but lower than navbar
-            videoElement.style.borderRadius = '8px'; // Optional: Rounded corners
-            videoElement.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)'; // Optional: Shadow
-            videoElement.style.pointerEvents = 'none'; // Allow clicks to pass through
-            console.log("[WebGazerSingleton] Video element styled to prevent navbar overlap.");
+            videoElement.style.position = "fixed";
+            videoElement.style.top = "60px"; // Adjust based on navbar height
+            videoElement.style.left = "10px"; // Adjust as needed
+            videoElement.style.width = "150px"; // Desired width
+            videoElement.style.height = "100px"; // Desired height
+            videoElement.style.zIndex = "1001"; // Above content but below navbar
+            videoElement.style.borderRadius = "8px"; // Rounded corners
+            videoElement.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)"; // Shadow
+            videoElement.style.pointerEvents = "none"; // Click-through
+            console.log("[WebGazerSingleton] Video element styled.");
           } else {
             console.warn("[WebGazerSingleton] Video element not found for styling.");
           }
-        }, 1000); // 1-second delay; adjust if necessary
+        }, 1000); // Delay to ensure DOM is updated
+
+        this.initializing = null; // Reset initializing flag
       })();
 
       await this.initializing;
-      this.initializing = false;
     } catch (error) {
       console.error("[WebGazerSingleton] Preload error:", error);
-      this.initializing = false;
+      this.initializing = null;
       throw error;
     }
   }
 
   /**
-   * Initialize WebGazer, start camera, attach a gaze listener if provided
-   * @param {Function} onGazeListener - Callback to handle gaze data
-   * @returns {Promise<object>} - WebGazer instance
+   * Initialize WebGazer and set up gaze listeners.
+   * @param {Function} onGazeListener - Callback to handle gaze data.
+   * @returns {Promise<object>} - WebGazer instance.
    */
   static async initialize(onGazeListener = null) {
     if (!this.modelPreloaded) {
@@ -93,31 +94,24 @@ class WebGazerSingleton {
 
     if (this.instance && this.trackingStarted) {
       console.log("[WebGazerSingleton] WebGazer already tracking.");
-      // Update the gaze listener if provided
       if (onGazeListener) {
-        this.instance.setGazeListener((data, elapsedTime) => {
-          if (data) onGazeListener(data, elapsedTime);
-        });
+        this.addGazeListener(onGazeListener);
       }
       return this.instance;
     }
 
     try {
-      // Prevent concurrent initializations
       if (this.initializing) {
         console.log("[WebGazerSingleton] Initialization already in progress.");
         await this.initializing;
         if (this.instance && this.trackingStarted) {
           if (onGazeListener) {
-            this.instance.setGazeListener((data, elapsedTime) => {
-              if (data) onGazeListener(data, elapsedTime);
-            });
+            this.addGazeListener(onGazeListener);
           }
           return this.instance;
         }
       }
 
-      // Initialize WebGazer if not already done
       if (!this.instance) {
         const { default: webgazer } = await import("webgazer");
         this.instance = webgazer
@@ -126,44 +120,39 @@ class WebGazerSingleton {
           .saveDataAcrossSessions(true);
         console.log("[WebGazerSingleton] WebGazer instance created.");
 
-        // **Disable WebGazer's default visualizations upon instance creation**
-        this.instance.showPredictionPoints(false); // Hides the red dot
-        this.instance.showFaceOverlay(false); // Hides the face overlay
-        this.instance.showVideo(true); // **Enable the video feed**
-        console.log("[WebGazerSingleton] Default WebGazer visualizations adjusted.");
+        // Disable default visualizations
+        this.instance.showPredictionPoints(false);
+        this.instance.showFaceOverlay(false);
+        this.instance.showVideo(true);
+        console.log("[WebGazerSingleton] Default WebGazer visualizations disabled.");
 
-        // **Adjust Video Element Styling**
+        // Style the video feed
         setTimeout(() => {
-          const videoElement = document.getElementById('webgazerVideoFeed');
+          const videoElement = document.getElementById("webgazerVideoFeed");
           if (videoElement) {
-            videoElement.style.position = 'fixed';
-            videoElement.style.top = '60px'; // Adjust based on navbar height
-            videoElement.style.left = '10px'; // Adjust as needed
-            videoElement.style.width = '150px'; // Set desired width
-            videoElement.style.height = '100px'; // Set desired height
-            videoElement.style.zIndex = '1001'; // Higher than other content but lower than navbar
-            videoElement.style.borderRadius = '8px'; // Optional: Rounded corners
-            videoElement.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)'; // Optional: Shadow
-            videoElement.style.pointerEvents = 'none'; // Allow clicks to pass through
-            console.log("[WebGazerSingleton] Video element styled to prevent navbar overlap.");
+            videoElement.style.position = "fixed";
+            videoElement.style.top = "60px"; // Adjust based on navbar height
+            videoElement.style.left = "10px"; // Adjust as needed
+            videoElement.style.width = "150px"; // Desired width
+            videoElement.style.height = "100px"; // Desired height
+            videoElement.style.zIndex = "1001"; // Above content but below navbar
+            videoElement.style.borderRadius = "8px"; // Rounded corners
+            videoElement.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)"; // Shadow
+            videoElement.style.pointerEvents = "none"; // Click-through
+            console.log("[WebGazerSingleton] Video element styled.");
           } else {
             console.warn("[WebGazerSingleton] Video element not found for styling.");
           }
-        }, 1000); // 1-second delay; adjust if necessary
+        }, 1000); // Delay to ensure DOM is updated
       }
 
-      // Set gaze listener if provided
-      if (onGazeListener) {
-        this.instance.setGazeListener((data, elapsedTime) => {
-          if (data) onGazeListener(data, elapsedTime);
-        });
-        console.log("[WebGazerSingleton] Gaze listener attached.");
-      }
+      this.addGazeListener(onGazeListener);
 
       // Begin WebGazer tracking
       await this.instance.begin();
       this.trackingStarted = true;
       console.log("[WebGazerSingleton] Tracking started.");
+
       return this.instance;
     } catch (error) {
       console.error("[WebGazerSingleton] Initialization error:", error);
@@ -172,8 +161,37 @@ class WebGazerSingleton {
   }
 
   /**
+   * Add a gaze listener.
+   * @param {Function} listener - Callback to handle gaze data.
+   */
+  static addGazeListener(listener) {
+    if (listener && typeof listener === "function") {
+      this.listeners.push(listener);
+      this.instance.setGazeListener((data, elapsedTime) => {
+        if (data) {
+          this.listeners.forEach((cb) => cb(data, elapsedTime));
+        }
+      });
+      console.log("[WebGazerSingleton] Gaze listener added.");
+    } else {
+      console.warn("[WebGazerSingleton] Invalid gaze listener.");
+    }
+  }
+
+  /**
+   * Remove a specific gaze listener.
+   * @param {Function} listener - Callback to remove.
+   */
+  static removeGazeListener(listener) {
+    this.listeners = this.listeners.filter((cb) => cb !== listener);
+    if (this.listeners.length === 0 && this.instance) {
+      this.instance.clearGazeListener();
+      console.log("[WebGazerSingleton] All gaze listeners removed.");
+    }
+  }
+
+  /**
    * End tracking session gracefully.
-   * Prevents multiple calls from causing errors.
    */
   static async end() {
     if (this.initializing) {
@@ -198,7 +216,7 @@ class WebGazerSingleton {
   }
 
   /**
-   * Check if localStorage has calibration data
+   * Check if localStorage has calibration data.
    * @returns {boolean}
    */
   static hasSavedCalibration() {
@@ -208,7 +226,7 @@ class WebGazerSingleton {
   }
 
   /**
-   * Reset localStorage & cookie, clearing calibration
+   * Reset localStorage & cookie, clearing calibration.
    */
   static resetCalibrationData() {
     localStorage.removeItem("webgazerGlobalData");
@@ -217,7 +235,7 @@ class WebGazerSingleton {
   }
 
   /**
-   * Copy the calibration data from localStorage into a cookie (webgazerCalib).
+   * Save calibration data from localStorage into a cookie.
    */
   static saveCalibrationDataToCookie() {
     const data = localStorage.getItem("webgazerGlobalData");
@@ -228,14 +246,14 @@ class WebGazerSingleton {
     Cookies.set("webgazerCalib", data, {
       path: "/",
       sameSite: "lax",
-      // secure: true, // only if you're on https
+      // secure: true, // Enable if using HTTPS
       expires: 365,
     });
     console.log("[WebGazerSingleton] Calibration data saved to cookie.");
   }
 
   /**
-   * Show/hide the camera feed
+   * Set camera visibility.
    * @param {boolean} visible
    */
   static setCameraVisibility(visible) {
@@ -249,7 +267,7 @@ class WebGazerSingleton {
   }
 
   /**
-   * Show or hide WebGazer's default prediction points (red dot)
+   * Show or hide prediction points (red dot).
    * @param {boolean} show
    */
   static showPredictionPoints(show) {
@@ -262,7 +280,7 @@ class WebGazerSingleton {
   }
 
   /**
-   * Show or hide WebGazer's face overlay
+   * Show or hide face overlay.
    * @param {boolean} show
    */
   static showFaceOverlay(show) {
@@ -275,7 +293,7 @@ class WebGazerSingleton {
   }
 
   /**
-   * Show or hide WebGazer's video feed
+   * Show or hide video feed.
    * @param {boolean} show
    */
   static showVideo(show) {
