@@ -942,73 +942,85 @@ const LayoutList = () => {
         {selectedLayout && (
           <div className="mt-8 rounded-lg bg-white p-6 shadow primary-text dark:bg-gray-800 dark:secondary-text">
             <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
-            <p className="mb-2">
-              <strong>Retention Time:</strong> {retentionTime} seconds
-            </p>
-            <p>
-              <strong>Looking at Ad:</strong>{" "}
-              {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
-            </p>
 
-            {calibrationCompleted && (
-              <div className="mt-4 rounded-lg bg-green-100 p-4 dark:bg-green-900">
-                <p className="text-green-700 dark:text-green-200">
-                  Calibration was successfully completed.
+            {!calibrationCompleted &&
+            !WebGazerSingleton.hasSavedCalibration() ? (
+              <div className="rounded-lg bg-blue-100 p-4 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                Complete Calibration to view user analytics
+              </div>
+            ) : (
+              <>
+                <p className="mb-2">
+                  <strong>Retention Time:</strong> {retentionTime} seconds
                 </p>
-              </div>
-            )}
+                <p>
+                  <strong>Looking at Ad:</strong>{" "}
+                  {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
+                </p>
 
-            {/* Show aggregator info for all ads */}
-            {aggregateData?.length > 0 && (
-              <div className="mt-6 rounded-md bg-gray-100 p-4 dark:bg-gray-700">
-                <h3 className="mb-2 text-lg font-semibold">Ad Aggregates</h3>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {aggregateData.map((agg) => (
-                    <div
-                      key={agg.adId}
-                      className="rounded-lg border border-gray-300 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800"
-                    >
-                      <p className="mb-1 text-sm font-medium text-gray-500 dark:text-gray-300">
-                        Ad ID
-                      </p>
-                      <p className="break-all text-base font-bold text-gray-800 dark:text-gray-100">
-                        {agg.adId}
-                      </p>
+                {calibrationCompleted && (
+                  <div className="mt-4 rounded-lg bg-green-100 p-4 dark:bg-green-900">
+                    <p className="text-green-700 dark:text-green-200">
+                      Calibration was successfully completed.
+                    </p>
+                  </div>
+                )}
 
-                      <hr className="my-2 border-gray-200 dark:border-gray-600" />
+                {/* Show aggregator info for all ads */}
+                {aggregateData?.length > 0 && (
+                  <div className="mt-6 rounded-md bg-gray-100 p-4 dark:bg-gray-700">
+                    <h3 className="mb-2 text-lg font-semibold">
+                      Ad Aggregates
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {aggregateData.map((agg) => (
+                        <div
+                          key={agg.adId}
+                          className="rounded-lg border border-gray-300 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800"
+                        >
+                          <p className="mb-1 text-sm font-medium text-gray-500 dark:text-gray-300">
+                            Ad ID
+                          </p>
+                          <p className="break-all text-base font-bold text-gray-800 dark:text-gray-100">
+                            {agg.adId}
+                          </p>
 
-                      <div className="flex flex-col space-y-1">
-                        <div>
-                          <span className="text-sm text-gray-500 dark:text-gray-300">
-                            Total Sessions:
-                          </span>
-                          <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
-                            {agg.totalSessions}
-                          </span>
+                          <hr className="my-2 border-gray-200 dark:border-gray-600" />
+
+                          <div className="flex flex-col space-y-1">
+                            <div>
+                              <span className="text-sm text-gray-500 dark:text-gray-300">
+                                Total Sessions:
+                              </span>
+                              <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
+                                {agg.totalSessions}
+                              </span>
+                            </div>
+
+                            <div>
+                              <span className="text-sm text-gray-500 dark:text-gray-300">
+                                Total Dwell Time:
+                              </span>
+                              <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
+                                {agg.totalDwellTime}
+                              </span>
+                            </div>
+
+                            <div>
+                              <span className="text-sm text-gray-500 dark:text-gray-300">
+                                Total Gaze Samples:
+                              </span>
+                              <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
+                                {agg.totalGazeSamples}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-
-                        <div>
-                          <span className="text-sm text-gray-500 dark:text-gray-300">
-                            Total Dwell Time:
-                          </span>
-                          <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
-                            {agg.totalDwellTime}
-                          </span>
-                        </div>
-
-                        <div>
-                          <span className="text-sm text-gray-500 dark:text-gray-300">
-                            Total Gaze Samples:
-                          </span>
-                          <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
-                            {agg.totalGazeSamples}
-                          </span>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
