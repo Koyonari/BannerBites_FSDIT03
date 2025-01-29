@@ -113,18 +113,14 @@ const LayoutList = () => {
 
         // If the user had previously saved calibration, set the flag
         if (WebGazerSingleton.hasSavedCalibration()) {
-          console.log(
-            "[LayoutList] Found saved calibration data in localStorage.",
-          );
+          console.log("[LayoutList] Found saved calibration data in localStorage.");
           setCalibrationCompleted(true);
         }
       })
       .catch((err) => {
         console.error("[LayoutList] Preload error:", err);
       });
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   //---------------------------------------
@@ -161,6 +157,9 @@ const LayoutList = () => {
       if (gazeSamplingIntervalRef.current) {
         clearInterval(gazeSamplingIntervalRef.current);
       }
+  
+      // **Ensure WebGazer's red dot is hidden on unmount**
+      WebGazerSingleton.showPredictionPoints(false);
     };
   }, []);
 
@@ -286,30 +285,30 @@ const LayoutList = () => {
   const establishHeatmapWebSocketConnection = (adIds) => {
     if (!adIds || adIds.length === 0) return;
     console.log("[LayoutList] Opening heatmap WebSocket...");
-
+  
     const ws = new WebSocket("ws://localhost:5000");
     websocketRef.current = ws;
-
+  
     ws.onopen = () => {
       console.log("[LayoutList] Heatmap WebSocket connected.");
-
+  
       // 1) Subscribe to heatmap updates
       ws.send(
         JSON.stringify({
           type: "subscribeHeatmap",
           adIds,
-        }),
+        })
       );
-
+  
       // 2) Also subscribe to aggregator updates for these same adIds
       ws.send(
         JSON.stringify({
           type: "subscribeAdAggregates",
           adIds,
-        }),
+        })
       );
     };
-
+  
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
@@ -317,10 +316,7 @@ const LayoutList = () => {
         switch (msg.type) {
           case "heatmapUpdate": {
             const { updatedAdIds, points, dwellTime } = msg.data || {};
-            console.log(
-              "[LayoutList] Received partial heatmap update for:",
-              updatedAdIds,
-            );
+            console.log("[LayoutList] Received partial heatmap update for:", updatedAdIds);
             if (Array.isArray(points) && points.length > 0) {
               setHeatmapData((prev) => [...prev, ...points]);
             }
@@ -329,10 +325,9 @@ const LayoutList = () => {
             }
             break;
           }
-
+  
           case "aggregatesUpdate": {
-            const { adId, totalSessions, totalDwellTime, totalGazeSamples } =
-              msg.data;
+            const { adId, totalSessions, totalDwellTime, totalGazeSamples } = msg.data;
             setAggregateData((prevAggs) => {
               let found = false;
               const updated = prevAggs.map((agg) => {
@@ -360,7 +355,7 @@ const LayoutList = () => {
             });
             break;
           }
-
+  
           default:
             console.warn("[LayoutList] Unhandled WS message type:", msg.type);
         }
@@ -368,12 +363,12 @@ const LayoutList = () => {
         console.error("[LayoutList] Error parsing WS message:", err);
       }
     };
-
+  
     ws.onclose = () => {
       console.warn("[LayoutList] Heatmap WebSocket closed.");
       websocketRef.current = null;
     };
-
+  
     ws.onerror = (err) => {
       console.error("[LayoutList] Heatmap WebSocket error:", err);
     };
@@ -553,16 +548,21 @@ const LayoutList = () => {
     setIsCalibrating(true);
     setCalibrationCompleted(false);
     console.log("Calibration started");
+
+    // **Show WebGazer's red dot during calibration**
+    WebGazerSingleton.showPredictionPoints(true);
   };
 
   const handleCalibrationComplete = () => {
     setIsCalibrating(false);
     setCalibrationCompleted(true);
 
-    // Save to localStorage (WebGazer does this automatically if .saveDataAcrossSessions(true))
-    // Then copy it to a cookie:
+    // Save calibration data
     WebGazerSingleton.saveCalibrationDataToCookie();
     console.log("[LayoutList] Calibration completed and data saved to cookie");
+
+    // **Hide WebGazer's red dot after calibration**
+    WebGazerSingleton.showPredictionPoints(false);
 
     // Optionally, start tracking immediately
     setIsTracking(true);
@@ -590,6 +590,9 @@ const LayoutList = () => {
       });
       setIsTracking(true);
       WebGazerSingleton.setCameraVisibility(showCamera);
+  
+      // **Ensure red dot is hidden when tracking starts**
+      WebGazerSingleton.showPredictionPoints(false);
     } catch (err) {
       console.error("Failed to start tracking:", err);
     }
@@ -604,7 +607,7 @@ const LayoutList = () => {
       alert("You must calibrate first.");
       return;
     }
-
+  
     try {
       await WebGazerSingleton.initialize((data) => {
         if (data) handleGazeAtAd(data);
@@ -612,6 +615,9 @@ const LayoutList = () => {
       setIsTracking(true);
       console.log("[LayoutList] Eye Tracking resumed.");
       WebGazerSingleton.setCameraVisibility(showCamera);
+  
+      // **Ensure red dot is hidden when tracking resumes**
+      WebGazerSingleton.showPredictionPoints(false);
     } catch (err) {
       console.error("Failed to resume tracking:", err);
     }
@@ -623,12 +629,15 @@ const LayoutList = () => {
     }
     WebGazerSingleton.end();
     setIsTracking(false);
-
+  
     setRetentionTime(0);
     setIsLookingAtAd(false);
     setGazedAdId(null);
     setCurrentGazeData(null);
     console.log("WebGazer tracking ended.");
+  
+    // **Ensure red dot is hidden when tracking ends**
+    WebGazerSingleton.showPredictionPoints(false);
   };
 
   //---------------------------------------
@@ -740,7 +749,7 @@ const LayoutList = () => {
                   )}
                 </div>
               ) : (
-                <div className="font-medium alert2-text">
+                <div className="font-medium text-red-500">
                   You don't have permission to view this content.
                 </div>
               )}
@@ -772,13 +781,13 @@ const LayoutList = () => {
               )}
               <div
                 ref={previewRef}
-                className={`h-full w-full overflow-hidden rounded-lg bg-white ${
+                className={`h-full w-full overflow-hidden rounded-lg light-bg ${
                   isFullscreen ? "flex items-center justify-center" : ""
                 }`}
               >
                 {/* Render the layout or "Loading..." */}
                 {loading && selectedLayout && (
-                  <div className="flex h-full items-center justify-center p-4 light-bg">
+                  <div className="flex h-full items-center justify-center p-4 neutral-bg">
                     <svg
                       className="mr-2 h-5 w-5 animate-spin"
                       viewBox="0 0 24 24"
@@ -923,10 +932,8 @@ const LayoutList = () => {
 
         {/* ===== Viewer Analytics & Aggregates ===== */}
         {selectedLayout && (
-          <div className="mt-8 rounded-lg bg-white p-6 shadow primary-text dark:bg-gray-800 dark:secondary-text">
-            <h2 className="mb-4 text-xl font-bold primary-text dark:secondary-text">
-              Viewer Analytics
-            </h2>
+          <div className="mt-8 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+            <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
             <p className="mb-2">
               <strong>Retention Time:</strong> {retentionTime} seconds
             </p>
