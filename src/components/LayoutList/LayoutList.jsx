@@ -282,55 +282,84 @@ const LayoutList = () => {
   const establishHeatmapWebSocketConnection = (adIds) => {
     if (!adIds || adIds.length === 0) return;
     console.log("[LayoutList] Opening heatmap WebSocket...");
-
+  
     const ws = new WebSocket("ws://localhost:5000");
     websocketRef.current = ws;
-
+  
     ws.onopen = () => {
       console.log("[LayoutList] Heatmap WebSocket connected.");
+  
+      // 1) Subscribe to heatmap updates
       ws.send(
         JSON.stringify({
           type: "subscribeHeatmap",
           adIds,
-        }),
+        })
+      );
+  
+      // 2) Also subscribe to aggregator updates for these same adIds
+      ws.send(
+        JSON.stringify({
+          type: "subscribeAdAggregates",
+          adIds,
+        })
       );
     };
-
+  
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
-        if (msg.type === "heatmapUpdate") {
-          const { updatedAdIds, points, dwellTime } = msg.data || {};
-          console.log(
-            "[LayoutList] Received partial update for:",
-            updatedAdIds,
-          );
-
-          if (Array.isArray(points) && points.length > 0) {
-            // Append new points
-            setHeatmapData((prev) => [...prev, ...points]);
-          } else {
-            console.log(
-              "[LayoutList] No new points or invalid points array for:",
-              updatedAdIds,
-            );
+        // We'll handle heatmap vs. aggregator in a switch statement:
+        switch (msg.type) {
+          case "heatmapUpdate": {
+            const { updatedAdIds, points, dwellTime } = msg.data || {};
+            console.log("[LayoutList] Received partial heatmap update for:", updatedAdIds);
+            if (Array.isArray(points) && points.length > 0) {
+              setHeatmapData((prev) => [...prev, ...points]);
+            }
+            if (dwellTime) {
+              console.log("Latest dwellTime:", dwellTime);
+            }
+            break;
           }
-
-          // If needed, dwellTime, etc
-          if (dwellTime) {
-            console.log("Latest dwellTime:", dwellTime);
+  
+          case "aggregatesUpdate": {
+            // E.g. msg.data = { adId, totalSessions, totalDwellTime, totalGazeSamples }
+            console.log("[LayoutList] Received aggregator update:", msg.data);
+            const { adId, totalSessions, totalDwellTime, totalGazeSamples } = msg.data;
+            
+            // Update the aggregator info in state
+            setAggregateData((prevAggs) => {
+              // If there's already an aggregate for this adId, update it
+              const updated = prevAggs.map((agg) => {
+                if (agg.adId === adId) {
+                  return {
+                    ...agg,
+                    totalSessions,
+                    totalDwellTime,
+                    totalGazeSamples,
+                  };
+                }
+                return agg;
+              });
+              return updated;
+            });
+            break;
           }
+  
+          default:
+            console.warn("[LayoutList] Unhandled WS message type:", msg.type);
         }
       } catch (err) {
         console.error("[LayoutList] Error parsing WS message:", err);
       }
     };
-
+  
     ws.onclose = () => {
       console.warn("[LayoutList] Heatmap WebSocket closed.");
       websocketRef.current = null;
     };
-
+  
     ws.onerror = (err) => {
       console.error("[LayoutList] Heatmap WebSocket error:", err);
     };

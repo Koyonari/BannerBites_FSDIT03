@@ -47,7 +47,7 @@ const Heatmap = ({ data, width, height, title }) => {
 
     const colorScale = d3
       .scaleSequential()
-      .interpolator(d3.interpolateYlOrBr) // warm yellow → brown
+      .interpolator(d3.interpolateTurbo) // warm yellow → brown
       .domain([0, maxValue]);
 
     const opacityScale = d3
@@ -66,7 +66,7 @@ const Heatmap = ({ data, width, height, title }) => {
     .style("fill", (d) => colorScale(d.value))
     .style("opacity", (d) => opacityScale(d.value) * 0.6) // or just .style("opacity", 0.4)
     .style("stroke", "none"); // remove the outline completely
-  
+
     // 8) Add a title at the top
     svg
       .append("text")
