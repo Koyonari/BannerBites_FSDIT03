@@ -38,8 +38,8 @@ const pollHeatmapStream = async (shardIterator, tableName) => {
           const newImage = record.dynamodb?.NewImage;
           if (!newImage) return; // no new data in the record
 
-          const newItem = unmarshall(newImage);
-          const { adId, gazeSamples } = newItem;
+          const newItem = unmarshall(record.dynamodb.NewImage);
+          const { adId, gazeSamples, dwellTime } = newItem;
 
           // If it’s from the AdAnalytics table
           if (tableName === process.env.DYNAMODB_TABLE_AD_ANALYTICS) {
@@ -48,15 +48,19 @@ const pollHeatmapStream = async (shardIterator, tableName) => {
               
               // Transform gazeSamples into points
               const points = Array.isArray(gazeSamples)
-                ? gazeSamples.map((s) => ({
-                    x: s.x,
-                    y: s.y,
-                    value: s.value || 1,
-                  }))
-                : [];
+              ? gazeSamples.map(s => ({
+                  x: s.x,
+                  y: s.y,
+                  value: s.value || 1,
+                }))
+              : [];
               
               // Broadcast to all clients subscribed to this adId
-              broadcastHeatmapUpdate([adId], points);
+              broadcastHeatmapUpdate([adId], {
+                updatedAdIds: [adId],
+                points,
+                dwellTime: dwellTime || 0,
+              });
             }
           }
 

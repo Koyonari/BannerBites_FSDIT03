@@ -12,17 +12,21 @@ const heatmapClients = new Map();
  * @param {Array<string>} adIds - Ad IDs that have updated heatmap data.
  * @param {Array} heatmapData - Heatmap data to send to clients.
  */
-function broadcastHeatmapUpdate(adIds, heatmapData) {
+function broadcastHeatmapUpdate(adIds, { updatedAdIds, points, dwellTime }) {
   heatmapClients.forEach(({ adIds: clientAdIds }, ws) => {
-    // If this client has any matching adId in the passed list, broadcast
-    const hasMatchingAd = clientAdIds.some((id) => adIds.includes(id));
-    if (hasMatchingAd && ws.readyState === WebSocket.OPEN) {
+    // Check if this client is subscribed to any of the changed adIds
+    const interested = clientAdIds.some((id) => adIds.includes(id));
+    if (interested && ws.readyState === WebSocket.OPEN) {
       const payload = {
         type: "heatmapUpdate",
-        data: heatmapData,
+        data: {
+          updatedAdIds, // e.g. ["9df2c425-c2f9-4235-9a85-647b934b54b4"]
+          points,       // e.g. array of new or updated gaze samples
+          dwellTime,    // optional
+        },
       };
       ws.send(JSON.stringify(payload));
-      console.log("[Backend] Sent heatmap update to client:", payload);
+      console.log("[Backend] Sent partial heatmap update:", payload);
     }
   });
 }

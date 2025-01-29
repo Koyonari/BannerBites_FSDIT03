@@ -255,10 +255,10 @@ const LayoutList = () => {
   const establishHeatmapWebSocketConnection = (adIds) => {
     if (!adIds || adIds.length === 0) return;
     console.log("[LayoutList] Opening heatmap WebSocket...");
-
+  
     const ws = new WebSocket("ws://localhost:5000"); // or wss:// if secure
     websocketRef.current = ws;
-
+  
     ws.onopen = () => {
       console.log("[LayoutList] Heatmap WebSocket connected.");
       // Subscribe to these adIds
@@ -269,38 +269,39 @@ const LayoutList = () => {
         })
       );
     };
-
+  
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === "heatmapUpdate") {
-          // The server notifies that new gaze data was inserted or updated for one or more adIds
-          const { updatedAdIds, points } = msg.data;
-          console.log("[LayoutList] Received heatmapUpdate for:", updatedAdIds);
-
-          // For a simple approach, you can:
-          // 1) Append new points, or 
-          // 2) Merge them more intelligently (avoid duplicates), or
-          // 3) Re-fetch from the server. 
-          // Below, we’re just appending to the existing array:
-
-          setHeatmapData((prev) => [...prev, ...points]);
-
-          // If you want to completely refresh from DB, you’d do:
-          // fetchHeatmapData(adIds);
+          const { updatedAdIds, points, dwellTime } = msg.data || {};
+          console.log("[LayoutList] Received partial update for:", updatedAdIds);
+    
+          // 1) Safely check if `points` is an array
+          if (Array.isArray(points) && points.length > 0) {
+            // 2) Just append them to the existing local array
+            setHeatmapData((prev) => [...prev, ...points]);
+          } else {
+            console.log("[LayoutList] No new points or invalid points array for:", updatedAdIds);
+          }
+    
+          // If you also want to do something with dwellTime or sessionId, you have that too:
+          if (dwellTime) {
+            console.log("Latest dwellTime:", dwellTime);
+          }
         }
       } catch (err) {
         console.error("[LayoutList] Error parsing WS message:", err);
       }
     };
-
+  
     // Optionally handle close/reconnect logic
     ws.onclose = () => {
       console.warn("[LayoutList] Heatmap WebSocket closed.");
       websocketRef.current = null;
-      // If you want auto-reconnect, implement here
+      // If you want auto-reconnect, implement it here
     };
-
+  
     ws.onerror = (err) => {
       console.error("[LayoutList] Heatmap WebSocket error:", err);
     };
