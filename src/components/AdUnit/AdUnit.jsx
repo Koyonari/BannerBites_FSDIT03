@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Navbar from "../Navbar";
-import { Search, Trash2, Upload, X } from "lucide-react";
-
+import { Search, Trash2, Upload, X, Edit2 } from "lucide-react";
 import { getPermissionsFromToken } from "../../utils/permissionsUtils";
 import Cookies from "js-cookie";
 
@@ -20,6 +19,10 @@ const AdUnit = () => {
   const [isUploadPopupVisible, setIsUploadPopupVisible] = useState(false);
   const [isDeletePopupVisible, setIsDeletePopupVisible] = useState(false);
   const [adToDelete, setAdToDelete] = useState(null);
+  const [isEditPopupVisible, setIsEditPopupVisible] = useState(false);
+  const [editingAd, setEditingAd] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [notification, setNotification] = useState({
     isVisible: false,
     message: "",
@@ -113,6 +116,30 @@ const AdUnit = () => {
     } catch (error) {
       console.error("Error deleting ad:", error);
       showNotification("Failed to delete ad.", true);
+    }
+  };
+
+  const handleEditClick = (ad) => {
+    setEditingAd(ad);
+    setEditTitle(ad.content?.title || "");
+    setEditDescription(ad.content?.description || "");
+    setIsEditPopupVisible(true);
+  };
+
+  const handleUpdateAd = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.put(`${apiUrl}/api/ads/update/${editingAd.adId}`, {
+        title: editTitle,
+        description: editDescription,
+      });
+
+      setIsEditPopupVisible(false);
+      fetchAds();
+      showNotification("Ad updated successfully!");
+    } catch (error) {
+      console.error("Error updating ad:", error);
+      showNotification("Failed to update ad.", true);
     }
   };
 
@@ -251,6 +278,64 @@ const AdUnit = () => {
         </div>
       )}
 
+      {/* Edit Popup */}
+      {isEditPopupVisible && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-96 rounded-lg p-6 shadow-xl light-bg dark:dark-bg">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold primary-text dark:secondary-text">
+                Edit Media Details
+              </h2>
+              <button
+                onClick={() => setIsEditPopupVisible(false)}
+                className="rounded-full p-1 hover:neutral-bg dark:hover:bg-base-grey"
+              >
+                <X className="h-5 w-5 neutral-text" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateAd} className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium primary-text dark:secondary-text">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full rounded-lg border px-3 py-2 text-sm primary-border primary-text dark:bg-bg-dark dark:secondary-border dark:secondary-text"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium primary-text dark:secondary-text">
+                  Description
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full rounded-lg border px-3 py-2 text-sm primary-border primary-text dark:bg-bg-dark dark:secondary-border dark:secondary-text"
+                  rows={3}
+                />
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditPopupVisible(false)}
+                  className="rounded-lg px-4 py-2 text-sm font-medium neutral-bg neutral-text hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg px-4 py-2 text-sm font-medium primary-bg secondary-text hover:secondary-bg"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Popup */}
       {isDeletePopupVisible && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black bg-opacity-50">
@@ -300,9 +385,8 @@ const AdUnit = () => {
         </div>
       )}
 
-      {/* Display Ads Grid */}
+      {/* Updated Display Ads Grid */}
       <div className="p-4 sm:p-6 lg:p-8">
-        {/* Display Ads */}
         <div className="px-4 py-6">
           {filteredAds.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -311,16 +395,8 @@ const AdUnit = () => {
                   key={ad.adId}
                   className="group relative overflow-hidden rounded-lg border shadow-sm transition-all duration-300 primary-border light-bg hover:-translate-y-1 hover:shadow-lg dark:secondary-border dark:dark-bg"
                 >
-                  <button
-                    onClick={() => {
-                      setAdToDelete(ad.adId);
-                      setIsDeletePopupVisible(true);
-                    }}
-                    className="absolute right-3 top-3 rounded-full bg-red-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-red-600 group-hover:opacity-100"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                  <div className="aspect-video overflow-hidden">
+                  {/* Media Display */}
+                  <div className="relative aspect-video overflow-hidden">
                     {ad.type.toLowerCase() === "image" ? (
                       <img
                         src={ad.content?.src}
@@ -331,10 +407,35 @@ const AdUnit = () => {
                       <video
                         controls
                         src={ad.content?.src}
-                        className="h-full w-full"
+                        className="h-full w-full object-cover"
                       />
                     )}
+
+                    {/* Edit Button */}
+                    {permissions?.edit &&(
+                    <button
+                      onClick={() => handleEditClick(ad)}
+                      className="absolute right-12 top-3 z-10 rounded-full bg-blue-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-blue-600 group-hover:opacity-100"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    )}
+
+                    {/* Delete Button */}
+                    {permissions?.edit &&(
+                    <button
+                      onClick={() => {
+                        setAdToDelete(ad.adId);
+                        setIsDeletePopupVisible(true);
+                      }}
+                      className="absolute right-3 top-3 z-10 rounded-full bg-red-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-red-600 group-hover:opacity-100"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    )}
                   </div>
+
+                  {/* Media Info */}
                   <div className="p-4">
                     <h3 className="mb-2 text-lg font-semibold primary-text dark:secondary-text">
                       {ad.content?.title || "Untitled"}
