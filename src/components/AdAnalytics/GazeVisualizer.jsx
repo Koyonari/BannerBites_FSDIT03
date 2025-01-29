@@ -1,26 +1,34 @@
-// src/components/GazeVisualizer.jsx
-import React from "react";
-import AnimatedGazeDot from "../AdAnalytics/AnimatedGazeDot"; // adjust path if needed
+// src/components/AdAnalytics/GazeVisualizer.jsx
 
-const GazeVisualizer = ({ gazeData, boundingBoxes, showBorders }) => {
+import React from "react";
+import AnimatedGazeDot from "../AdAnalytics/AnimatedGazeDot"; // Adjust path if needed
+
+const GazeVisualizer = ({ gazeData, boundingBoxes = [], showBorders = true }) => {
   return (
     <>
-      {/* Gaze Dot via AnimatedGazeDot */}
+      {/* Ensure the gaze dot is correctly positioned */}
       {gazeData && (
-        <AnimatedGazeDot x={gazeData.x} y={gazeData.y} />
+        <AnimatedGazeDot
+          x={gazeData.x}
+          y={gazeData.y}
+          size={40} // Example: Increased to 40px
+          color="cyan" // Example: Changed to cyan
+        />
       )}
 
-      {/* Bounding Boxes (unchanged) */}
+      {/* Ensure bounding boxes are visible */}
       {showBorders &&
+        boundingBoxes.length > 0 && // Prevent unnecessary rendering
         boundingBoxes.map((box, index) => (
           <div
             key={index}
             className="pointer-events-none absolute border-2 border-red-500"
             style={{
-              top: box.top,
-              left: box.left,
-              width: box.width,
-              height: box.height,
+              top: box.top + "px",
+              left: box.left + "px",
+              width: box.width + "px",
+              height: box.height + "px",
+              position: "absolute",
               zIndex: 9999,
             }}
           />

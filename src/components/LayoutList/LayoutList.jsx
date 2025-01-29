@@ -157,6 +157,9 @@ const LayoutList = () => {
       if (gazeSamplingIntervalRef.current) {
         clearInterval(gazeSamplingIntervalRef.current);
       }
+  
+      // **Ensure WebGazer's red dot is hidden on unmount**
+      WebGazerSingleton.showPredictionPoints(false);
     };
   }, []);
 
@@ -545,17 +548,22 @@ const LayoutList = () => {
     setIsCalibrating(true);
     setCalibrationCompleted(false);
     console.log("Calibration started");
+
+    // **Show WebGazer's red dot during calibration**
+    WebGazerSingleton.showPredictionPoints(true);
   };
 
   const handleCalibrationComplete = () => {
     setIsCalibrating(false);
     setCalibrationCompleted(true);
-  
-    // Save to localStorage (WebGazer does this automatically if .saveDataAcrossSessions(true))
-    // Then copy it to a cookie:
+
+    // Save calibration data
     WebGazerSingleton.saveCalibrationDataToCookie();
     console.log("[LayoutList] Calibration completed and data saved to cookie");
-  
+
+    // **Hide WebGazer's red dot after calibration**
+    WebGazerSingleton.showPredictionPoints(false);
+
     // Optionally, start tracking immediately
     setIsTracking(true);
   };
@@ -582,6 +590,9 @@ const LayoutList = () => {
       });
       setIsTracking(true);
       WebGazerSingleton.setCameraVisibility(showCamera);
+  
+      // **Ensure red dot is hidden when tracking starts**
+      WebGazerSingleton.showPredictionPoints(false);
     } catch (err) {
       console.error("Failed to start tracking:", err);
     }
@@ -596,7 +607,7 @@ const LayoutList = () => {
       alert("You must calibrate first.");
       return;
     }
-
+  
     try {
       await WebGazerSingleton.initialize((data) => {
         if (data) handleGazeAtAd(data);
@@ -604,6 +615,9 @@ const LayoutList = () => {
       setIsTracking(true);
       console.log("[LayoutList] Eye Tracking resumed.");
       WebGazerSingleton.setCameraVisibility(showCamera);
+  
+      // **Ensure red dot is hidden when tracking resumes**
+      WebGazerSingleton.showPredictionPoints(false);
     } catch (err) {
       console.error("Failed to resume tracking:", err);
     }
@@ -615,12 +629,15 @@ const LayoutList = () => {
     }
     WebGazerSingleton.end();
     setIsTracking(false);
-
+  
     setRetentionTime(0);
     setIsLookingAtAd(false);
     setGazedAdId(null);
     setCurrentGazeData(null);
     console.log("WebGazer tracking ended.");
+  
+    // **Ensure red dot is hidden when tracking ends**
+    WebGazerSingleton.showPredictionPoints(false);
   };
 
   //---------------------------------------
