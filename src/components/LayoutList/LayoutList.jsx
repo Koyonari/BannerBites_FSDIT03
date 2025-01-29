@@ -64,7 +64,7 @@ const LayoutList = () => {
   const [showVisualizer, setShowVisualizer] = useState(true);
 
   // ===== WebSocket References =====
-  const websocketRef = useRef(null);
+  const websocketRef = useRef(null);            // Holds the active Heatmap WebSocket
   const pendingLayoutIdRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
 
@@ -74,9 +74,9 @@ const LayoutList = () => {
   // ===== Permissions =====
   const [permissions, setPermissions] = useState({});
 
-  // ===== Heatmap Toggle =====
+  // ===== Heatmap Toggle & Data =====
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const [heatmapData, setHeatmapData] = useState([]);
+  const [heatmapData, setHeatmapData] = useState([]); // Entire local heatmap
   const [layoutDimensions, setLayoutDimensions] = useState({ width: 0, height: 0 });
 
   // Ref for the layout container to align heatmap
@@ -145,8 +145,8 @@ const LayoutList = () => {
     fetchLayouts();
   }, []);
 
+  // Cleanup on unmount
   useEffect(() => {
-    // Cleanup on unmount
     return () => {
       if (websocketRef.current) {
         websocketRef.current.close();
@@ -158,7 +158,7 @@ const LayoutList = () => {
   }, []);
 
   // ---------------------------------------------
-  // 5) Fetch Layouts
+  // 5) Fetch Layouts (HTTP)
   // ---------------------------------------------
   const fetchLayouts = async () => {
     try {
@@ -174,7 +174,7 @@ const LayoutList = () => {
   };
 
   // ---------------------------------------------
-  // 6) Select Layout and Fetch Heatmap Data
+  // 6) Select Layout & Prepare Heatmap
   // ---------------------------------------------
   const handleLayoutSelect = async (layoutId) => {
     if (pendingLayoutIdRef.current === layoutId) return;
@@ -186,18 +186,18 @@ const LayoutList = () => {
       setError(null);
       setSelectedLayout(null);
 
+      // If we had an active WebSocket for another layout, close it
       if (websocketRef.current) {
         websocketRef.current.onclose = null;
         websocketRef.current.close();
         websocketRef.current = null;
       }
 
-      const response = await axios.get(
-        `http://localhost:5000/api/layouts/${layoutId}`,
-      );
+      // 1) Fetch layout info
+      const response = await axios.get(`http://localhost:5000/api/layouts/${layoutId}`);
       const layoutData = response.data;
 
-      // Extract nested `adId`s from `gridItems`
+      // 2) Extract all adIds from gridItems
       const adIdsSet = new Set();
       layoutData.gridItems.forEach((item) => {
         item.scheduledAds.forEach((scheduledAd) => {
@@ -206,18 +206,16 @@ const LayoutList = () => {
       });
       const adIds = Array.from(adIdsSet);
 
-      setSelectedLayout({ ...layoutData, adIds }); // Include adIds in the state
+      // 3) Update local state with the new layout
+      setSelectedLayout({ ...layoutData, adIds });
 
-      // Establish WebSocket connection if needed
-      // establishWebSocketConnection(layoutId, adIds); // Uncomment if using WebSockets for heatmap
-
-      console.log(
-        "Layout selected and heatmap data fetching initiated:",
-        layoutId,
-      );
-
-      // Fetch heatmap data for the selected layout
+      // 4) Fetch static heatmap data via API (initial load)
       await fetchHeatmapData(adIds);
+
+      // 5) Establish WebSocket for real-time updates
+      establishHeatmapWebSocketConnection(adIds);
+
+      console.log("Layout selected and heatmap data fetching initiated:", layoutId);
     } catch (err) {
       setError(err.response?.data?.message || err.message);
       console.error("Error selecting layout:", err);
@@ -228,7 +226,7 @@ const LayoutList = () => {
   };
 
   // ---------------------------------------------
-  // 7) Fetch Heatmap Data
+  // 7) Fetch Heatmap Data (HTTP)
   // ---------------------------------------------
   const fetchHeatmapData = async (adIds) => {
     if (!adIds || adIds.length === 0) return;
@@ -242,12 +240,70 @@ const LayoutList = () => {
             value: sample.value || 1,
           }))
         );
-        setHeatmapData(points);
+        setHeatmapData(points); // Replace the entire heatmap data
         console.log("Heatmap data fetched:", points);
       }
     } catch (error) {
       console.error("Error fetching heatmap data:", error);
     }
+  };
+
+  // ---------------------------------------------
+  // 7.1) Establish Heatmap WebSocket 
+  //      => Only update if server broadcasts changes
+  // ---------------------------------------------
+  const establishHeatmapWebSocketConnection = (adIds) => {
+    if (!adIds || adIds.length === 0) return;
+    console.log("[LayoutList] Opening heatmap WebSocket...");
+
+    const ws = new WebSocket("ws://localhost:5000"); // or wss:// if secure
+    websocketRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("[LayoutList] Heatmap WebSocket connected.");
+      // Subscribe to these adIds
+      ws.send(
+        JSON.stringify({
+          type: "subscribeHeatmap",
+          adIds,
+        })
+      );
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "heatmapUpdate") {
+          // The server notifies that new gaze data was inserted or updated for one or more adIds
+          const { updatedAdIds, points } = msg.data;
+          console.log("[LayoutList] Received heatmapUpdate for:", updatedAdIds);
+
+          // For a simple approach, you can:
+          // 1) Append new points, or 
+          // 2) Merge them more intelligently (avoid duplicates), or
+          // 3) Re-fetch from the server. 
+          // Below, we’re just appending to the existing array:
+
+          setHeatmapData((prev) => [...prev, ...points]);
+
+          // If you want to completely refresh from DB, you’d do:
+          // fetchHeatmapData(adIds);
+        }
+      } catch (err) {
+        console.error("[LayoutList] Error parsing WS message:", err);
+      }
+    };
+
+    // Optionally handle close/reconnect logic
+    ws.onclose = () => {
+      console.warn("[LayoutList] Heatmap WebSocket closed.");
+      websocketRef.current = null;
+      // If you want auto-reconnect, implement here
+    };
+
+    ws.onerror = (err) => {
+      console.error("[LayoutList] Heatmap WebSocket error:", err);
+    };
   };
 
   // ---------------------------------------------
@@ -338,10 +394,8 @@ const LayoutList = () => {
   }, []);
 
   const sendAdSessionToServer = (session) => {
-    if (
-      websocketRef.current &&
-      websocketRef.current.readyState === WebSocket.OPEN
-    ) {
+    // If your server is set up to handle "adSessionComplete" messages
+    if (websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
       const payload = {
         type: "adSessionComplete",
         data: {
@@ -369,12 +423,7 @@ const LayoutList = () => {
       const adElements = document.querySelectorAll(".ad-item");
       adElements.forEach((adElement) => {
         const rect = adElement.getBoundingClientRect();
-        if (
-          x >= rect.left &&
-          x <= rect.right &&
-          y >= rect.top &&
-          y <= rect.bottom
-        ) {
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
           foundAdId = adElement.getAttribute("data-ad-id");
         }
       });
@@ -409,7 +458,7 @@ const LayoutList = () => {
       // Update the state so the GazeVisualizer can render
       setCurrentGazeData({ x, y });
     },
-    [gazedAdId, endAdSession, startAdSession],
+    [gazedAdId, endAdSession, startAdSession]
   );
 
   // ---------------------------------------------
@@ -542,10 +591,10 @@ const LayoutList = () => {
   // ---------------------------------------------
   // 15) Layouts Display Logic
   // ---------------------------------------------
-  const visibleLayouts =
-    isMobile && !showAllLayouts
-      ? layouts.slice(0, MOBILE_DISPLAY_LIMIT)
-      : layouts;
+  const visibleLayouts = isMobile && !showAllLayouts
+    ? layouts.slice(0, MOBILE_DISPLAY_LIMIT)
+    : layouts;
+
   const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
 
   return (
@@ -683,15 +732,17 @@ const LayoutList = () => {
                     Select a layout to preview
                   </div>
                 )}
+
                 {/* Heatmap Overlay */}
-                {selectedLayout && showHeatmap && heatmapData.length > 0 && layoutDimensions.width > 0 && layoutDimensions.height > 0 && (
-                  <ErrorBoundary>
-                    <HeatmapOverlay
-                      heatmapData={heatmapData}
-                      layoutDimensions={layoutDimensions}
-                    />
-                  </ErrorBoundary>
-                )}
+                {selectedLayout && showHeatmap && heatmapData.length > 0 &&
+                  layoutDimensions.width > 0 && layoutDimensions.height > 0 && (
+                    <ErrorBoundary>
+                      <HeatmapOverlay
+                        heatmapData={heatmapData}
+                        layoutDimensions={layoutDimensions}
+                      />
+                    </ErrorBoundary>
+                  )}
               </div>
             </div>
           </div>
@@ -726,10 +777,7 @@ const LayoutList = () => {
               className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
               disabled={
                 !selectedLayout ||
-                !(
-                  WebGazerSingleton.hasSavedCalibration() ||
-                  calibrationCompleted
-                )
+                !(WebGazerSingleton.hasSavedCalibration() || calibrationCompleted)
               }
             >
               Start Eye Tracking
@@ -814,9 +862,7 @@ const LayoutList = () => {
 
       {/* ===== Calibration Overlay ===== */}
       {isCalibrating && (
-        <CalibrationComponent
-          onCalibrationComplete={handleCalibrationComplete}
-        />
+        <CalibrationComponent onCalibrationComplete={handleCalibrationComplete} />
       )}
 
       {/* ===== Gaze Tracking ===== */}
