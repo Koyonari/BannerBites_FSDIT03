@@ -57,6 +57,7 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
           return 0;
         } else {
           onCalibrationComplete && onCalibrationComplete();
+          console.log("[CalibrationComponent] Calibration done for all points");
         }
       }
       return newCount;

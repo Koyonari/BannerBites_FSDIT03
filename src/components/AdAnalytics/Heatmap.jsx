@@ -8,18 +8,21 @@ const Heatmap = ({ data, width, height, title }) => {
   const svgRef = useRef(null);
 
   useEffect(() => {
+    // If no data, clear out any previous drawing
     if (!data || data.length === 0) {
       d3.select(svgRef.current).selectAll("*").remove();
       return;
     }
 
-    // Clear previous SVG content
+    // 1) Clear previous SVG content
     d3.select(svgRef.current).selectAll("*").remove();
 
+    // 2) Set up container dimensions
     const margin = { top: 50, right: 100, bottom: 50, left: 100 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
+    // 3) Create the base SVG, position it absolutely over the layout
     const svg = d3
       .select(svgRef.current)
       .attr("width", width)
@@ -28,40 +31,43 @@ const Heatmap = ({ data, width, height, title }) => {
       .style("top", 0)
       .style("left", 0);
 
+    // 4) Append a <g> element for margins
     const g = svg
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Determine the extent of the data
+    // 5) Compute the extents and create scales
     const xExtent = d3.extent(data, (d) => d.x);
     const yExtent = d3.extent(data, (d) => d.y);
-
-    // Create linear scales based on data extent
     const xScale = d3.scaleLinear().domain(xExtent).range([0, innerWidth]);
     const yScale = d3.scaleLinear().domain(yExtent).range([0, innerHeight]);
 
-    // Create a color scale
+    // 6) Color & opacity scales based on `d.value`
     const maxValue = d3.max(data, (d) => d.value) || 1;
+
     const colorScale = d3
       .scaleSequential()
-      .interpolator(d3.interpolateInferno)
+      .interpolator(d3.interpolateYlOrBr) // warm yellow → brown
       .domain([0, maxValue]);
 
-    // Add circles to represent gaze points
-    g.selectAll("circle")
-      .data(data)
-      .enter()
-      .append("circle")
-      .attr("cx", (d) => xScale(d.x))
-      .attr("cy", (d) => yScale(d.y))
-      .attr("r", 10) // Adjust radius as needed
-      .style("fill", (d) => colorScale(d.value))
-      .style("opacity", 0.6)
-      .style("stroke", "#fff")
-      .style("stroke-width", 1)
-      .style("pointer-events", "none"); // Allow interactions to pass through
+    const opacityScale = d3
+      .scaleLinear()
+      .domain([0, maxValue])
+      .range([0.2, 1]); // circles with lower value are more transparent
 
-    // Add title
+    // 7) Draw circles for each point
+    g.selectAll("circle")
+    .data(data)
+    .enter()
+    .append("circle")
+    .attr("cx", (d) => xScale(d.x))
+    .attr("cy", (d) => yScale(d.y))
+    .attr("r", 10)
+    .style("fill", (d) => colorScale(d.value))
+    .style("opacity", (d) => opacityScale(d.value) * 0.6) // or just .style("opacity", 0.4)
+    .style("stroke", "none"); // remove the outline completely
+  
+    // 8) Add a title at the top
     svg
       .append("text")
       .attr("x", width / 2)
@@ -69,6 +75,7 @@ const Heatmap = ({ data, width, height, title }) => {
       .attr("text-anchor", "middle")
       .style("font-size", "20px")
       .text(title || "Heatmap");
+
   }, [data, width, height, title]);
 
   return <svg ref={svgRef}></svg>;

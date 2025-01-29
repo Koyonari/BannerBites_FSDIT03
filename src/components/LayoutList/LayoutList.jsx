@@ -103,6 +103,7 @@ const LayoutList = () => {
   // 2) Preload WebGazer Model
   //---------------------------------------
   useEffect(() => {
+    // Preload the model as soon as possible
     let mounted = true;
     WebGazerSingleton.preload()
       .then(() => {
@@ -110,18 +111,16 @@ const LayoutList = () => {
         setIsModelReady(true);
         console.log("[LayoutList] WebGazer model preloaded");
 
+        // If the user had previously saved calibration, set the flag
         if (WebGazerSingleton.hasSavedCalibration()) {
-          console.log("[LayoutList] Found saved calibration data.");
+          console.log("[LayoutList] Found saved calibration data in localStorage.");
           setCalibrationCompleted(true);
         }
       })
       .catch((err) => {
         console.error("[LayoutList] Preload error:", err);
       });
-
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   //---------------------------------------

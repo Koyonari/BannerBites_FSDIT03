@@ -13,32 +13,35 @@ class WebGazerSingleton {
    */
   static async preload() {
     if (this.modelPreloaded) {
-      console.log("Model already preloaded.");
+      console.log("[WebGazerSingleton] Model is already preloaded.");
       return;
     }
 
     // 1) Attempt to restore calibration data from cookie before WebGazer loads
     const cookieData = Cookies.get("webgazerCalib");
     if (cookieData) {
-      // Write to localStorage so WebGazer sees it
       localStorage.setItem("webgazerGlobalData", cookieData);
-      console.log("Restored calibration data from cookie to localStorage");
+      console.log("[WebGazerSingleton] Restored calibration from cookie → localStorage");
     } else {
-      console.log("No calibration data found in cookies");
+      console.log("[WebGazerSingleton] No calibration cookie found.");
     }
 
-    // 2) Now load the WebGazer script
+    // 2) Now load the WebGazer script & configure baseline settings
     try {
       const { default: webgazer } = await import("webgazer");
       webgazer
-        .setRegression("weightedRidge") // e.g., "ridge" or "weightedRidge"
-        .setTracker("TFFacemesh")       // or other tracker
-        .saveDataAcrossSessions(true);  // ensures WebGazer uses localStorage
+        .setRegression("weightedRidge")
+        .setTracker("TFFacemesh")
+        .saveDataAcrossSessions(true)   // Store to localStorage automatically
+        .showVideo(true)                // You can override visibility later
+        .showFaceOverlay(true);
+
       this.instance = webgazer;
       this.modelPreloaded = true;
-      console.log("WebGazer model preloaded.");
+
+      console.log("[WebGazerSingleton] WebGazer script loaded & configured.");
     } catch (error) {
-      console.error("Preload error:", error);
+      console.error("[WebGazerSingleton] Preload error:", error);
       throw new Error("Failed to preload WebGazer model.");
     }
   }
@@ -48,7 +51,7 @@ class WebGazerSingleton {
    * @param {function} onGazeListener - A callback that receives (data, elapsedTime).
    */
   static async initialize(onGazeListener = null) {
-    // If we already have an instance and have started tracking, just update the gaze listener
+    // If already active, just update the gaze listener
     if (this.instance && this.trackingStarted) {
       if (onGazeListener) {
         this.instance.setGazeListener((data, elapsedTime) => {
@@ -65,29 +68,30 @@ class WebGazerSingleton {
 
     try {
       const { default: webgazer } = await import("webgazer");
+
+      // Create or reuse the instance
       if (!this.instance) {
-        // Create a new WebGazer instance
-        this.instance = webgazer;
-        this.instance
+        this.instance = webgazer
           .setRegression("weightedRidge")
           .setTracker("TFFacemesh")
           .saveDataAcrossSessions(true);
       }
 
-      // If provided, attach the user's gaze listener
+      // Add your gaze callback
       if (onGazeListener) {
         this.instance.setGazeListener((data, elapsedTime) => {
           if (data) onGazeListener(data, elapsedTime);
         });
       }
 
-      // Begin the WebGazer tracking
+      // Start streaming and tracking
       await this.instance.begin();
       this.trackingStarted = true;
-      console.log("WebGazer tracking started.");
+      console.log("[WebGazerSingleton] Tracking has begun.");
+
       return this.instance;
     } catch (error) {
-      console.error("Initialization error:", error);
+      console.error("[WebGazerSingleton] Initialization error:", error);
       throw new Error("Failed to initialize WebGazer.");
     }
   }
@@ -101,15 +105,15 @@ class WebGazerSingleton {
       this.instance.end();
       this.instance = null;
       this.trackingStarted = false;
-      console.log("WebGazer tracking ended successfully.");
+      console.log("[WebGazerSingleton] Tracking ended.");
     } else {
-      console.warn("No active WebGazer instance to end.");
+      console.warn("[WebGazerSingleton] No active instance to end.");
     }
   }
 
   /**
-   * Checks if calibration data exists in localStorage
-   * (the default place where WebGazer stores data).
+   * Checks if calibration data exists in localStorage (the default place
+   * where WebGazer stores data).
    */
   static hasSavedCalibration() {
     return !!window.localStorage.getItem("webgazerGlobalData");
@@ -122,19 +126,15 @@ class WebGazerSingleton {
   static resetCalibrationData() {
     if (window.localStorage.getItem("webgazerGlobalData")) {
       window.localStorage.removeItem("webgazerGlobalData");
-      console.log("Cleared saved calibration data from localStorage.");
+      console.log("[WebGazerSingleton] Cleared calibration from localStorage.");
     }
-
-    // Also remove cookie if you want to fully discard old data
     Cookies.remove("webgazerCalib");
-    console.log("Removed 'webgazerCalib' cookie as well.");
+    console.log("[WebGazerSingleton] Removed 'webgazerCalib' cookie.");
 
-    // If a WebGazer instance is active, clear the model's in-memory data
-    if (this.instance) {
-      if (typeof this.instance.clearData === "function") {
-        this.instance.clearData();
-      }
-      console.log("Cleared in-memory calibration data from WebGazer instance.");
+    // Also clear in-memory data, if possible
+    if (this.instance && typeof this.instance.clearData === "function") {
+      this.instance.clearData();
+      console.log("[WebGazerSingleton] Cleared in-memory calibration data.");
     }
   }
 
@@ -145,26 +145,29 @@ class WebGazerSingleton {
   static saveCalibrationDataToCookie() {
     const data = localStorage.getItem("webgazerGlobalData");
     if (data) {
-      Cookies.set("webgazerCalib", data, { expires: 365, path: "/" });
-      console.log("Calibration data saved to cookie (webgazerCalib).");
+      // sameSite: "lax" (or "none" with secure: true if you’re on HTTPS)
+      Cookies.set("webgazerCalib", data, {
+        expires: 365,
+        path: "/",
+        sameSite: "lax",  
+      });
+      console.log("[WebGazerSingleton] Saved calibration to cookie (webgazerCalib).");
     } else {
-      console.log("No calibration data in localStorage to save to cookie.");
+      console.log("[WebGazerSingleton] No calibration data in localStorage.");
     }
   }
 
   /**
    * Show/hide the camera feed and face overlay.
-   * Call this any time after WebGazer has begun tracking.
-   * @param {boolean} visible - Whether to show or hide the camera.
    */
   static setCameraVisibility(visible) {
     if (!this.instance) {
-      console.warn("No WebGazer instance to set camera visibility on.");
+      console.warn("[WebGazerSingleton] No instance to set camera visibility on.");
       return;
     }
-    console.log(`Setting camera visibility to ${visible}`);
     this.instance.showVideo(visible);
     this.instance.showFaceOverlay(visible);
+    console.log(`[WebGazerSingleton] Camera visibility set to: ${visible}`);
   }
 }
 
