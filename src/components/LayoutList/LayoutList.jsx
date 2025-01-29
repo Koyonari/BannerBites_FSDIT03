@@ -923,8 +923,10 @@ const LayoutList = () => {
 
         {/* ===== Viewer Analytics & Aggregates ===== */}
         {selectedLayout && (
-          <div className="mt-8 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-            <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
+          <div className="mt-8 rounded-lg bg-white p-6 shadow primary-text dark:bg-gray-800 dark:secondary-text">
+            <h2 className="mb-4 text-xl font-bold primary-text dark:secondary-text">
+              Viewer Analytics
+            </h2>
             <p className="mb-2">
               <strong>Retention Time:</strong> {retentionTime} seconds
             </p>
