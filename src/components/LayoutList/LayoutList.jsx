@@ -324,15 +324,12 @@ const LayoutList = () => {
           }
   
           case "aggregatesUpdate": {
-            // E.g. msg.data = { adId, totalSessions, totalDwellTime, totalGazeSamples }
-            console.log("[LayoutList] Received aggregator update:", msg.data);
             const { adId, totalSessions, totalDwellTime, totalGazeSamples } = msg.data;
-            
-            // Update the aggregator info in state
             setAggregateData((prevAggs) => {
-              // If there's already an aggregate for this adId, update it
+              let found = false;
               const updated = prevAggs.map((agg) => {
                 if (agg.adId === adId) {
+                  found = true;
                   return {
                     ...agg,
                     totalSessions,
@@ -342,6 +339,15 @@ const LayoutList = () => {
                 }
                 return agg;
               });
+              // If we never found that adId, insert a new entry
+              if (!found) {
+                updated.push({
+                  adId,
+                  totalSessions,
+                  totalDwellTime,
+                  totalGazeSamples,
+                });
+              }
               return updated;
             });
             break;
@@ -544,11 +550,14 @@ const LayoutList = () => {
   const handleCalibrationComplete = () => {
     setIsCalibrating(false);
     setCalibrationCompleted(true);
-    setIsTracking(true);
-
-    // Save calibration
+  
+    // Save to localStorage (WebGazer does this automatically if .saveDataAcrossSessions(true))
+    // Then copy it to a cookie:
     WebGazerSingleton.saveCalibrationDataToCookie();
-    console.log("Calibration completed and data saved to cookie");
+    console.log("[LayoutList] Calibration completed and data saved to cookie");
+  
+    // Optionally, start tracking immediately
+    setIsTracking(true);
   };
 
   const handleRecalibrate = () => {

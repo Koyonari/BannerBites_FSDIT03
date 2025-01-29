@@ -19,6 +19,7 @@ const { layoutUpdatesCache, addClient, removeClient, broadcastToClients } = requ
 const { generatePresignedUrlController, fetchLayoutById } = require("./controllers/layoutController");
 const { listenToDynamoDbStreams } = require("./middleware/layoutListener");
 const { listenToHeatmapStreams } = require("./middleware/heatmapListener");
+const { listenToAggregateStream } = require("./middleware/aggregateListener");
 
 dotenv.config();
 
@@ -73,7 +74,9 @@ server.listen(PORT, () => {
     // Start listening to layout update streams
     await listenToDynamoDbStreams();
     console.log("[LAYOUT] DynamoDB stream listener for layouts initialized.");
-
+    // Start listening to aggregate streams
+    await listenToAggregateStream();
+    console.log("[AGGREGATE] DynamoDB stream listener for aggregates initialized.");
     // Start listening to heatmap update streams
     await listenToHeatmapStreams();
     console.log("[HEATMAP] DynamoDB stream listener for heatmaps initialized.");

@@ -1,22 +1,33 @@
 // state/aggregatesState.js
-const aggregateClients = new Map(); 
-// e.g. Map<WebSocket, { adIds: string[] }>
+
+const Clients = new Map(); // Map of adId to Set of WebSocket clients
 
 function addAggregateClient(ws, adIds) {
-  aggregateClients.set(ws, { adIds });
-  console.log("[Aggregates] Client subscribed to adIds:", adIds);
+  adIds.forEach((adId) => {
+    if (!Clients.has(adId)) {
+      Clients.set(adId, new Set());
+    }
+    Clients.get(adId).add(ws);
+  });
 }
 
-function removeAggregateClient(ws) {
-  aggregateClients.delete(ws);
+function removeAggregateClient(ws, adIds) {
+  adIds.forEach((adId) => {
+    if (Clients.has(adId)) {
+      Clients.get(adId).delete(ws);
+      if (Clients.get(adId).size === 0) {
+        Clients.delete(adId);
+      }
+    }
+  });
 }
 
 function broadcastAggregateUpdate(adId, newAggregateData) {
-  // Send an “aggregatesUpdate” message only to clients subscribed to this adId
-  for (const [clientWs, { adIds }] of aggregateClients.entries()) {
-    if (adIds.includes(adId) && clientWs.readyState === 1) {
+  if (!Clients.has(adId)) return;
+  for (const clientWs of Clients.get(adId)) {
+    if (clientWs.readyState === 1) {
       const payload = {
-        type: "aggregatesUpdate",
+        type: "aggregatesUpdate", // Ensure this is 'aggregatesUpdate'
         data: {
           adId,
           ...newAggregateData,
