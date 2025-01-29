@@ -37,30 +37,60 @@ const pollHeatmapStream = async (shardIterator, tableName) => {
           const eventName = record.eventName;
           const newImage = record.dynamodb.NewImage;
           if (!newImage) return;
-        
+
           const newItem = unmarshall(newImage);
-          const { adId, gazeSamples, dwellTime } = newItem;
-        
+          const { adId, dwellTime } = newItem;
+          let { gazeSamples } = newItem; // Use 'let' to allow reassignment
+
           if ((eventName === "INSERT" || eventName === "MODIFY") && adId) {
             console.log(`[HEATMAP] Detected new AdAnalytics entry/modify for adId: ${adId}`);
-        
-            const points = Array.isArray(gazeSamples)
-              ? gazeSamples.map((s) => ({
-                  x: s.x,
-                  y: s.y,
-                  value: s.value || 1,
-                }))
-              : [];
-        
+
+            let points = [];
+
+            // Parse 'gazeSamples' if it's a string
+            if (typeof gazeSamples === "string") {
+              try {
+                gazeSamples = JSON.parse(gazeSamples); // Convert string to array
+              } catch (error) {
+                console.error(`[HEATMAP] Error parsing gazeSamples for adId: ${adId}`, error);
+                gazeSamples = []; // Default to empty array if parsing fails
+              }
+            }
+
+            // Ensure 'gazeSamples' is an array
+            if (Array.isArray(gazeSamples)) {
+              points = gazeSamples.map((s, index) => {
+                if (typeof s !== 'object' || s === null) {
+                  console.warn(`[HEATMAP] Invalid gazeSample at index ${index} for adId: ${adId}`, s);
+                  return null; // Skip invalid entries
+                }
+                const { x, y, value } = s;
+                return {
+                  x: typeof x === 'number' ? x : 0, // Default to 0 if invalid
+                  y: typeof y === 'number' ? y : 0, // Default to 0 if invalid
+                  value: typeof value === 'number' ? value : 1, // Default to 1 if invalid
+                };
+              }).filter(point => point !== null); // Remove any null entries
+
+              console.log(`[HEATMAP] Processed ${points.length} gaze points for adId: ${adId}`);
+            } else {
+              console.warn(`[HEATMAP] gazeSamples is not an array for adId: ${adId}`, gazeSamples);
+              points = [];
+            }
+
+            // Ensure 'dwellTime' is a valid number
+            const validDwellTime = typeof dwellTime === 'number' && !isNaN(dwellTime) ? dwellTime : 0;
+
             broadcastHeatmapUpdate([adId], {
               updatedAdIds: [adId],
               points,
-              dwellTime
+              dwellTime: validDwellTime, // Ensure dwellTime is never undefined
             });
-          }
-          // Optionally do the same logic for AdAggregates table
+          } 
+          // Optional: Handle updates for AdAggregates table
           else if (tableName === process.env.DYNAMODB_TABLE_AD_AGGREGATES) {
-            // handle updates that might contain gaze data
+            console.log(`[HEATMAP] AdAggregates update detected for adId: ${adId}`);
+            // Implement similar logic if needed
           }
         });
       }
@@ -70,13 +100,13 @@ const pollHeatmapStream = async (shardIterator, tableName) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
       console.error(`[HEATMAP] Error polling DynamoDB Streams for table ${tableName}:`, error);
-      break;
+      break; // Exit the loop on error to prevent infinite retries
     }
   }
 };
 
 /**
- * Sets up stream listeners for AdAnalytics/AdAggregates tables (if needed),
+ * Sets up stream listeners for AdAnalytics and AdAggregates tables,
  * fetches shards, and starts polling each shard for new records.
  */
 const listenToHeatmapStreams = async () => {
@@ -93,7 +123,7 @@ const listenToHeatmapStreams = async () => {
 
     try {
       console.log(`[HEATMAP] Listening to DynamoDB Stream for table: ${tableName}`);
-      
+
       // 1) Describe the table to get the StreamArn
       const describeTableCommand = new DescribeTableCommand({ TableName: tableName });
       const data = await dynamoDbClient.send(describeTableCommand);
@@ -113,12 +143,12 @@ const listenToHeatmapStreams = async () => {
         continue;
       }
 
-      // 3) For each shard, get an iterator and poll
+      // 3) For each shard, get an iterator and start polling
       for (const shard of shards) {
         const getShardIteratorCommand = new GetShardIteratorCommand({
           StreamArn: streamArn,
           ShardId: shard.ShardId,
-          ShardIteratorType: "LATEST", // or TRIM_HORIZON if you want from the beginning
+          ShardIteratorType: "LATEST", // Use LATEST to get recent updates
         });
         const shardIteratorResponse = await dynamoDbStreamsClient.send(getShardIteratorCommand);
         const shardIterator = shardIteratorResponse.ShardIterator;
