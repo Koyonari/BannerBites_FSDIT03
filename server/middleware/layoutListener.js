@@ -12,7 +12,7 @@ const {
 } = require("@aws-sdk/client-dynamodb-streams");
 const { unmarshall } = require("@aws-sdk/util-dynamodb");
 const debounce = require("lodash.debounce");
-const { layoutUpdatesCache, clients } = require("../state");
+const { layoutUpdatesCache, clients } = require("../state/websocketState");
 const { fetchLayoutById, getLayoutsByAdId } = require("../services/layoutService");
 const WebSocket = require("ws");
 
