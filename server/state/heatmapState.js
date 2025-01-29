@@ -2,63 +2,64 @@
 
 const WebSocket = require("ws");
 
-// WebSocket clients list for heatmap updates
+// Store each ws -> { adIds: [] }
 const heatmapClients = new Map();
-
-// // Mock Heatmap Data Broadcasting
-// setInterval(() => {
-//   // Generate mock heatmap data
-//   const mockHeatmapData = Array.from({ length: 10 }, () => ({
-//     x: Math.random() * 500, // Random x-coordinate
-//     y: Math.random() * 500, // Random y-coordinate
-//     value: Math.random() * 10, // Random value for heat intensity
-//   }));
-
-//   // Broadcast mock data to all subscribed clients for this adId
-//   const mockAdIds = ["8a104d1e-d704-44a0-9a9d-c4c35662fce4"]; // Replace with real or multiple IDs
-//   console.log("[Backend] Broadcasting mock heatmap data:", mockHeatmapData);
-
-//   broadcastHeatmapUpdate(mockAdIds, mockHeatmapData); // Ensure `broadcastHeatmapUpdate` works
-// }, 5000); // Broadcast every 5 seconds
 
 /**
  * Broadcast heatmap data to subscribed WebSocket clients.
- * @param {Array} adIds - List of ad IDs to broadcast the update for.
+ * If a client is watching *any* of the adIds passed in, it receives the update.
+ *
+ * @param {Array<string>} adIds - Ad IDs that have updated heatmap data.
  * @param {Array} heatmapData - Heatmap data to send to clients.
  */
-function broadcastHeatmapUpdate(adIds, heatmapData) {
-  heatmapClients.forEach((client, ws) => {
-    if (client.adIds && client.adIds.some((adId) => adIds.includes(adId))) {
+function broadcastHeatmapUpdate(adIds, { updatedAdIds, points, dwellTime }) {
+  heatmapClients.forEach(({ adIds: clientAdIds }, ws) => {
+    // Check if this client is subscribed to any of the changed adIds
+    const interested = clientAdIds.some((id) => adIds.includes(id));
+    if (interested && ws.readyState === WebSocket.OPEN) {
       const payload = {
         type: "heatmapUpdate",
-        data: heatmapData,
+        data: {
+          updatedAdIds, // e.g. ["9df2c425-c2f9-4235-9a85-647b934b54b4"]
+          points,       // e.g. array of new or updated gaze samples
+          dwellTime,    // optional
+        },
       };
       ws.send(JSON.stringify(payload));
-      console.log("[Backend] Sent heatmap update to client:", payload);
+      console.log("[Backend] Sent partial heatmap update:", payload);
     }
   });
 }
 
 /**
- * Adds a new WebSocket client to the heatmap clients list.
+ * Adds a new WebSocket client or updates an existing one with multiple adIds.
  * @param {WebSocket} ws - The WebSocket connection.
- * @param {string} adId - The ad ID that the client is subscribing to.
+ * @param {Array<string>} newAdIds - The array of Ad IDs the client wants to subscribe to.
  */
-function addHeatmapClient(ws, adId) { // Changed parameter from layoutId to adId
-  heatmapClients.set(ws, { adId }); // Set adId instead of layoutId
-  console.log(`[HEATMAP] Client subscribed with adId: ${adId}`);
+function addHeatmapClient(ws, newAdIds) {
+  // If the client already exists, merge adIds
+  const existing = heatmapClients.get(ws);
+  if (existing) {
+    // Combine any existing adIds with the newly subscribed adIds
+    const mergedAdIds = [...new Set([...existing.adIds, ...newAdIds])];
+    heatmapClients.set(ws, { adIds: mergedAdIds });
+    console.log("[HEATMAP] Updated client subscription with adIds:", mergedAdIds);
+  } else {
+    heatmapClients.set(ws, { adIds: newAdIds });
+    console.log(`[HEATMAP] Client subscribed with adIds: ${newAdIds}`);
+  }
 }
 
 /**
  * Removes a WebSocket client from the heatmap clients list.
- * @param {WebSocket} ws - The WebSocket connection.
+ * @param {WebSocket} ws
  */
 function removeHeatmapClient(ws) {
   heatmapClients.delete(ws);
   console.log("[HEATMAP] Client removed from heatmapClients.");
 }
 
-// Periodically clear disconnected clients
+// Periodically remove any disconnected clients
 setInterval(() => {
   heatmapClients.forEach((_, clientWs) => {
     if (clientWs.readyState !== WebSocket.OPEN) {
@@ -66,11 +67,11 @@ setInterval(() => {
       heatmapClients.delete(clientWs);
     }
   });
-}, 30000); // Run every 30 seconds
+}, 30000);
 
 module.exports = {
   broadcastHeatmapUpdate,
-  heatmapClients, // Export heatmapClients for direct access if needed
+  heatmapClients,
   addHeatmapClient,
   removeHeatmapClient,
 };
