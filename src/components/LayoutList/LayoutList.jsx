@@ -2,7 +2,20 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { Maximize2, Minimize2 } from "lucide-react";
+import {
+  Maximize2,
+  Minimize2,
+  Settings,
+  Eye,
+  Camera,
+  Grid,
+  Activity,
+  RefreshCw,
+  PlayCircle,
+  StopCircle,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 import Cookies from "js-cookie";
 import axios from "axios";
 
@@ -33,6 +46,7 @@ const LayoutList = () => {
   const [showAllLayouts, setShowAllLayouts] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isHovering, setIsHovering] = useState(false); // For fullscreen button
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   // ===== Fullscreen Logic =====
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -690,8 +704,188 @@ const LayoutList = () => {
       : layouts;
   const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
 
+  //---------------------------------------
+  // 16) Webgazer and Analytics Controls (ys here dont flame me)
+  //---------------------------------------
+  const controlGroups = [
+    {
+      title: "Calibration",
+      controls: [
+        {
+          show: !isCalibrating && !calibrationCompleted,
+          component: (
+            <button
+              onClick={handleStartCalibration}
+              className="flex w-full items-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-white transition hover:bg-blue-600 disabled:opacity-50"
+              disabled={isCalibrating || isTracking || !selectedLayout}
+            >
+              <Eye className="h-4 w-4" />
+              Start Calibration
+            </button>
+          ),
+        },
+        {
+          show: true,
+          component: (
+            <button
+              onClick={handleRecalibrate}
+              className="flex w-full items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2.5 text-white transition hover:bg-yellow-600 disabled:opacity-50"
+              disabled={!selectedLayout}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Recalibrate
+            </button>
+          ),
+        },
+      ],
+    },
+    {
+      title: "Tracking",
+      controls: [
+        {
+          show: !isTracking,
+          component: (
+            <button
+              onClick={handleStartTracking}
+              className="flex w-full items-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-white transition hover:bg-blue-600 disabled:opacity-50"
+              disabled={
+                !isModelReady ||
+                !(
+                  WebGazerSingleton.hasSavedCalibration() ||
+                  calibrationCompleted
+                )
+              }
+            >
+              <PlayCircle className="h-4 w-4" />
+              Start Eye Tracking
+            </button>
+          ),
+        },
+        {
+          show: isTracking,
+          component: (
+            <button
+              onClick={handleEndTracking}
+              className="flex w-full items-center gap-2 rounded-lg bg-red-500 px-4 py-2.5 text-white transition hover:bg-red-600"
+            >
+              <StopCircle className="h-4 w-4" />
+              End Tracking
+            </button>
+          ),
+        },
+        {
+          show: !isTracking && calibrationCompleted,
+          component: (
+            <button
+              onClick={handleResumeTracking}
+              className="flex w-full items-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-white transition hover:bg-blue-600 disabled:opacity-50"
+              disabled={!selectedLayout}
+            >
+              <PlayCircle className="h-4 w-4" />
+              Resume Eye Tracking
+            </button>
+          ),
+        },
+      ],
+    },
+    {
+      title: "Visualization",
+      controls: [
+        {
+          show: true,
+          component: (
+            <button
+              onClick={toggleBorders}
+              className="flex w-full items-center gap-2 rounded-lg bg-gray-500 px-4 py-2.5 text-white transition hover:bg-gray-600"
+            >
+              <Grid className="h-4 w-4" />
+              {showBorders ? "Hide Borders" : "Show Borders"}
+            </button>
+          ),
+        },
+        {
+          show: true,
+          component: (
+            <button
+              onClick={handleToggleCamera}
+              className="flex w-full items-center gap-2 rounded-lg bg-gray-500 px-4 py-2.5 text-white transition hover:bg-gray-600"
+            >
+              <Camera className="h-4 w-4" />
+              {showCamera ? "Hide Camera" : "Show Camera"}
+            </button>
+          ),
+        },
+        {
+          show: true,
+          component: (
+            <button
+              onClick={handleToggleVisualizer}
+              className="flex w-full items-center gap-2 rounded-lg bg-gray-500 px-4 py-2.5 text-white transition hover:bg-gray-600"
+            >
+              <Eye className="h-4 w-4" />
+              {showVisualizer ? "Hide Gaze Dot" : "Show Gaze Dot"}
+            </button>
+          ),
+        },
+        {
+          show: true,
+          component: (
+            <button
+              onClick={() => setShowHeatmap((prev) => !prev)}
+              className="flex w-full items-center gap-2 rounded-lg bg-green-500 px-4 py-2.5 text-white transition hover:bg-green-600"
+            >
+              <Activity className="h-4 w-4" />
+              {showHeatmap ? "Hide Heatmap" : "Show Heatmap"}
+            </button>
+          ),
+        },
+      ],
+    },
+  ];
+
   return (
     <div className="relative min-h-screen dark:dark-bg">
+      {/* Panel Toggle Button */}
+      <button
+        onClick={() => setIsPanelOpen(!isPanelOpen)}
+        className="fixed bottom-0 left-1/2 z-50 -translate-x-1/2 rounded-t-lg bg-gray-800 px-4 py-2 text-white shadow-lg transition-transform hover:bg-gray-700"
+      >
+        <div className="flex items-center gap-2">
+          <Settings className="h-4 w-4" />
+          Controls
+          {isPanelOpen ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronUp className="h-4 w-4" />
+          )}
+        </div>
+      </button>
+
+      {/* Bottom Controls Panel */}
+      <div
+        className={`fixed bottom-0 left-0 z-40 w-full transform bg-white shadow-xl transition-transform duration-300 ease-in-out dark:bg-gray-800 ${
+          isPanelOpen ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="mx-auto max-w-7xl p-4">
+          <div className="grid grid-cols-3 gap-8">
+            {controlGroups.map((group, index) => (
+              <div key={index} className="space-y-3">
+                <h3 className="font-semibold text-gray-500 dark:text-gray-400">
+                  {group.title}
+                </h3>
+                <div className="flex flex-col gap-2">
+                  {group.controls.map((control, controlIndex) => (
+                    <div key={controlIndex}>
+                      {control.show && control.component}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
       <Navbar />
 
       <div className="container mx-auto w-full p-4 md:p-12">
@@ -843,99 +1037,6 @@ const LayoutList = () => {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* ===== Calibration & Tracking Controls ===== */}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3 px-4">
-          {/* Start Calibration */}
-          {!isCalibrating && !calibrationCompleted && (
-            <button
-              onClick={handleStartCalibration}
-              className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
-              disabled={isCalibrating || isTracking || !selectedLayout}
-            >
-              Start Calibration
-            </button>
-          )}
-
-          {/* Recalibrate */}
-          <button
-            onClick={handleRecalibrate}
-            className="rounded-lg bg-yellow-500 px-6 py-2.5 text-white transition hover:bg-yellow-600"
-            disabled={!selectedLayout}
-          >
-            Recalibrate
-          </button>
-
-          {/* Start Eye Tracking */}
-          {!isTracking && (
-            <button
-              onClick={handleStartTracking}
-              className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
-              disabled={
-                !isModelReady ||
-                !(
-                  WebGazerSingleton.hasSavedCalibration() ||
-                  calibrationCompleted
-                )
-              }
-            >
-              Start Eye Tracking
-            </button>
-          )}
-
-          {/* End Tracking */}
-          {isTracking && (
-            <button
-              onClick={handleEndTracking}
-              className="rounded-lg bg-red-500 px-6 py-2.5 text-white transition hover:bg-red-600"
-            >
-              End Tracking
-            </button>
-          )}
-
-          {/* Resume Tracking */}
-          {!isTracking && calibrationCompleted && (
-            <button
-              onClick={handleResumeTracking}
-              className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
-              disabled={!selectedLayout}
-            >
-              Resume Eye Tracking
-            </button>
-          )}
-
-          {/* Toggle Bounding Box Borders */}
-          <button
-            onClick={toggleBorders}
-            className="rounded-lg bg-gray-500 px-6 py-2.5 text-white transition hover:bg-gray-600"
-          >
-            {showBorders ? "Hide Borders" : "Show Borders"}
-          </button>
-
-          {/* Toggle Camera Feed */}
-          <button
-            onClick={handleToggleCamera}
-            className="rounded-lg bg-gray-500 px-6 py-2.5 text-white transition hover:bg-gray-600"
-          >
-            {showCamera ? "Hide Camera" : "Show Camera"}
-          </button>
-
-          {/* Toggle Gaze Visualizer */}
-          <button
-            onClick={handleToggleVisualizer}
-            className="rounded-lg bg-gray-500 px-6 py-2.5 text-white transition hover:bg-gray-600"
-          >
-            {showVisualizer ? "Hide Gaze Dot" : "Show Gaze Dot"}
-          </button>
-
-          {/* Toggle Heatmap */}
-          <button
-            onClick={() => setShowHeatmap((prev) => !prev)}
-            className="rounded-lg bg-green-500 px-6 py-2.5 text-white transition hover:bg-green-600"
-          >
-            {showHeatmap ? "Hide Heatmap" : "Show Heatmap"}
-          </button>
         </div>
 
         {/* ===== Viewer Analytics & Aggregates ===== */}
