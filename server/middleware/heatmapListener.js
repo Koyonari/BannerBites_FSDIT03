@@ -34,36 +34,30 @@ const pollHeatmapStream = async (shardIterator, tableName) => {
 
       if (Records && Records.length > 0) {
         Records.forEach((record) => {
-          const eventName = record.eventName; // e.g. INSERT, MODIFY, REMOVE
-          const newImage = record.dynamodb?.NewImage;
-          if (!newImage) return; // no new data in the record
-
-          const newItem = unmarshall(record.dynamodb.NewImage);
+          const eventName = record.eventName;
+          const newImage = record.dynamodb.NewImage;
+          if (!newImage) return;
+        
+          const newItem = unmarshall(newImage);
           const { adId, gazeSamples, dwellTime } = newItem;
-
-          // If it’s from the AdAnalytics table
-          if (tableName === process.env.DYNAMODB_TABLE_AD_ANALYTICS) {
-            if ((eventName === "INSERT" || eventName === "MODIFY") && adId) {
-              console.log(`[HEATMAP] Detected new AdAnalytics entry/modify for adId: ${adId}`);
-              
-              // Transform gazeSamples into points
-              const points = Array.isArray(gazeSamples)
-              ? gazeSamples.map(s => ({
+        
+          if ((eventName === "INSERT" || eventName === "MODIFY") && adId) {
+            console.log(`[HEATMAP] Detected new AdAnalytics entry/modify for adId: ${adId}`);
+        
+            const points = Array.isArray(gazeSamples)
+              ? gazeSamples.map((s) => ({
                   x: s.x,
                   y: s.y,
                   value: s.value || 1,
                 }))
               : [];
-              
-              // Broadcast to all clients subscribed to this adId
-              broadcastHeatmapUpdate([adId], {
-                updatedAdIds: [adId],
-                points,
-                dwellTime: dwellTime || 0,
-              });
-            }
+        
+            broadcastHeatmapUpdate([adId], {
+              updatedAdIds: [adId],
+              points,
+              dwellTime
+            });
           }
-
           // Optionally do the same logic for AdAggregates table
           else if (tableName === process.env.DYNAMODB_TABLE_AD_AGGREGATES) {
             // handle updates that might contain gaze data

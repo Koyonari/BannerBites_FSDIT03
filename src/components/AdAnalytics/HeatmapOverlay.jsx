@@ -23,7 +23,7 @@ const HeatmapOverlay = ({ heatmapData, layoutDimensions }) => {
       data={heatmapData}
       width={layoutDimensions.width}
       height={layoutDimensions.height}
-      title="User Gaze Heatmap"
+      title=" "
     />
   );
 };

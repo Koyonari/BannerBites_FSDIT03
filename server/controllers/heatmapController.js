@@ -117,6 +117,26 @@ const HeatmapController = {
       res.status(500).json({ message: "Internal server error." });
     }
   },
+
+  // Fetch aggregate data by adId
+  getAggregateDataByAdId: async (req, res) => {
+    try {
+      const { adId } = req.params;
+      if (!adId) {
+        return res.status(400).json({ message: "adId is required." });
+      }
+      // Call the model
+      const aggregateRecord = await HeatmapModel.getAggregateDataByAdId(adId);
+      if (!aggregateRecord) {
+        return res.status(404).json({ message: `No aggregates found for adId: ${adId}` });
+      }
+      // Return it as JSON
+      res.status(200).json(aggregateRecord);
+    } catch (error) {
+      console.error("Error in getAggregateDataByAdId:", error);
+      res.status(500).json({ message: "Internal server error." });
+    }
+  },
 };
 
 module.exports = HeatmapController;
