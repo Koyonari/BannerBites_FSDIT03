@@ -64,6 +64,10 @@ async function persistSessionToDynamo(sessionData) {
  * @param {number} gazeSamplesCount
  */
 async function updateAdAggregates(adId, dwellTime, gazeSamplesCount) {
+  // Ensure dwellTime and gazeSamplesCount are valid numbers
+  const validDwellTime = typeof dwellTime === 'number' ? dwellTime : 0;
+  const validGazeSamplesCount = typeof gazeSamplesCount === 'number' ? gazeSamplesCount : 0;
+
   const params = {
     TableName: AD_AGGREGATES_TABLE,
     Key: {
@@ -72,9 +76,9 @@ async function updateAdAggregates(adId, dwellTime, gazeSamplesCount) {
     UpdateExpression:
       "ADD totalDwellTime :tdw, totalSessions :ts, totalGazeSamples :tgs SET lastUpdated = :lu",
     ExpressionAttributeValues: {
-      ":tdw": { N: dwellTime.toString() },
+      ":tdw": { N: validDwellTime.toString() },
       ":ts": { N: "1" },
-      ":tgs": { N: gazeSamplesCount.toString() },
+      ":tgs": { N: validGazeSamplesCount.toString() },
       ":lu": { S: new Date().toISOString() },
     },
   };

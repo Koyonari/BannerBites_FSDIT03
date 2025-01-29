@@ -63,7 +63,7 @@ const LayoutList = () => {
   const [showCamera, setShowCamera] = useState(true);
   const [showVisualizer, setShowVisualizer] = useState(true);
 
-  // ===== WebSocket References =====
+  // ===== WebSocket & Refs =====
   const websocketRef = useRef(null);
   const pendingLayoutIdRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
@@ -74,17 +74,21 @@ const LayoutList = () => {
   // ===== Permissions =====
   const [permissions, setPermissions] = useState({});
 
-  // ===== Heatmap Toggle =====
+  // ===== Heatmap & Aggregates =====
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [heatmapData, setHeatmapData] = useState([]);
-  const [layoutDimensions, setLayoutDimensions] = useState({ width: 0, height: 0 });
-
-  // Ref for the layout container to align heatmap
+  const [layoutDimensions, setLayoutDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
   const layoutContainerRef = useRef(null);
 
-  // ---------------------------------------------
+  // The aggregator data array for all ads in the layout
+  const [aggregateData, setAggregateData] = useState(null);
+
+  //---------------------------------------
   // 1) Fetch User Permissions
-  // ---------------------------------------------
+  //---------------------------------------
   useEffect(() => {
     const token = Cookies.get("authToken");
     if (token) {
@@ -95,10 +99,11 @@ const LayoutList = () => {
     }
   }, []);
 
-  // ---------------------------------------------
+  //---------------------------------------
   // 2) Preload WebGazer Model
-  // ---------------------------------------------
+  //---------------------------------------
   useEffect(() => {
+    // Preload the model as soon as possible
     let mounted = true;
     WebGazerSingleton.preload()
       .then(() => {
@@ -106,23 +111,21 @@ const LayoutList = () => {
         setIsModelReady(true);
         console.log("[LayoutList] WebGazer model preloaded");
 
+        // If the user had previously saved calibration, set the flag
         if (WebGazerSingleton.hasSavedCalibration()) {
-          console.log("[LayoutList] Found saved calibration data.");
+          console.log("[LayoutList] Found saved calibration data in localStorage.");
           setCalibrationCompleted(true);
         }
       })
       .catch((err) => {
         console.error("[LayoutList] Preload error:", err);
       });
-
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  // ---------------------------------------------
+  //---------------------------------------
   // 3) Handle Window Resize & Fullscreen
-  // ---------------------------------------------
+  //---------------------------------------
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     const handleFullscreenChange = () =>
@@ -138,15 +141,15 @@ const LayoutList = () => {
     };
   }, []);
 
-  // ---------------------------------------------
+  //---------------------------------------
   // 4) Fetch Layouts on Mount
-  // ---------------------------------------------
+  //---------------------------------------
   useEffect(() => {
     fetchLayouts();
   }, []);
 
+  // Cleanup on unmount
   useEffect(() => {
-    // Cleanup on unmount
     return () => {
       if (websocketRef.current) {
         websocketRef.current.close();
@@ -154,12 +157,15 @@ const LayoutList = () => {
       if (gazeSamplingIntervalRef.current) {
         clearInterval(gazeSamplingIntervalRef.current);
       }
+  
+      // **Ensure WebGazer's red dot is hidden on unmount**
+      WebGazerSingleton.showPredictionPoints(false);
     };
   }, []);
 
-  // ---------------------------------------------
-  // 5) Fetch Layouts
-  // ---------------------------------------------
+  //---------------------------------------
+  // 5) Fetch Layouts (HTTP)
+  //---------------------------------------
   const fetchLayouts = async () => {
     try {
       setLoading(true);
@@ -173,9 +179,9 @@ const LayoutList = () => {
     }
   };
 
-  // ---------------------------------------------
-  // 6) Select Layout and Fetch Heatmap Data
-  // ---------------------------------------------
+  //---------------------------------------
+  // 6) Select Layout & Prepare Heatmap
+  //---------------------------------------
   const handleLayoutSelect = async (layoutId) => {
     if (pendingLayoutIdRef.current === layoutId) return;
     pendingLayoutIdRef.current = layoutId;
@@ -186,18 +192,20 @@ const LayoutList = () => {
       setError(null);
       setSelectedLayout(null);
 
+      // If we had an active WebSocket for another layout, close it
       if (websocketRef.current) {
         websocketRef.current.onclose = null;
         websocketRef.current.close();
         websocketRef.current = null;
       }
 
+      // 1) Fetch layout info
       const response = await axios.get(
         `http://localhost:5000/api/layouts/${layoutId}`,
       );
       const layoutData = response.data;
 
-      // Extract nested `adId`s from `gridItems`
+      // 2) Extract all adIds from gridItems
       const adIdsSet = new Set();
       layoutData.gridItems.forEach((item) => {
         item.scheduledAds.forEach((scheduledAd) => {
@@ -206,18 +214,25 @@ const LayoutList = () => {
       });
       const adIds = Array.from(adIdsSet);
 
-      setSelectedLayout({ ...layoutData, adIds }); // Include adIds in the state
+      // 3) Update local state with the new layout
+      setSelectedLayout({ ...layoutData, adIds });
 
-      // Establish WebSocket connection if needed
-      // establishWebSocketConnection(layoutId, adIds); // Uncomment if using WebSockets for heatmap
+      // 4) Fetch static heatmap data for all ads
+      await fetchHeatmapData(adIds);
+
+      // 4.1) Then fetch aggregator data for each adId
+      const aggPromises = adIds.map((id) => fetchAggregateData(id));
+      const results = await Promise.all(aggPromises);
+      const allAggregates = results.filter((item) => item !== null);
+      setAggregateData(allAggregates);
+
+      // 5) Establish WebSocket for real-time updates
+      establishHeatmapWebSocketConnection(adIds);
 
       console.log(
         "Layout selected and heatmap data fetching initiated:",
         layoutId,
       );
-
-      // Fetch heatmap data for the selected layout
-      await fetchHeatmapData(adIds);
     } catch (err) {
       setError(err.response?.data?.message || err.message);
       console.error("Error selecting layout:", err);
@@ -227,9 +242,23 @@ const LayoutList = () => {
     }
   };
 
-  // ---------------------------------------------
-  // 7) Fetch Heatmap Data
-  // ---------------------------------------------
+  // Example function to fetch aggregator data by adId
+  const fetchAggregateData = async (adId) => {
+    try {
+      console.log("[LayoutList] Fetching aggregator for adId:", adId);
+      const res = await axios.get(
+        `http://localhost:5000/api/heatmap/aggregates/${adId}`,
+      );
+      return res.data; // e.g. { adId, totalDwellTime, totalGazeSamples, totalSessions, ... }
+    } catch (error) {
+      console.error("[LayoutList] aggregator fetch error:", error);
+      return null;
+    }
+  };
+
+  //---------------------------------------
+  // 7) Fetch Heatmap Data (HTTP)
+  //---------------------------------------
   const fetchHeatmapData = async (adIds) => {
     if (!adIds || adIds.length === 0) return;
     try {
@@ -240,7 +269,7 @@ const LayoutList = () => {
             x: sample.x,
             y: sample.y,
             value: sample.value || 1,
-          }))
+          })),
         );
         setHeatmapData(points);
         console.log("Heatmap data fetched:", points);
@@ -250,13 +279,109 @@ const LayoutList = () => {
     }
   };
 
-  // ---------------------------------------------
+  //---------------------------------------
+  // 7.1) Establish Heatmap WebSocket
+  //---------------------------------------
+  const establishHeatmapWebSocketConnection = (adIds) => {
+    if (!adIds || adIds.length === 0) return;
+    console.log("[LayoutList] Opening heatmap WebSocket...");
+  
+    const ws = new WebSocket("ws://localhost:5000");
+    websocketRef.current = ws;
+  
+    ws.onopen = () => {
+      console.log("[LayoutList] Heatmap WebSocket connected.");
+  
+      // 1) Subscribe to heatmap updates
+      ws.send(
+        JSON.stringify({
+          type: "subscribeHeatmap",
+          adIds,
+        })
+      );
+  
+      // 2) Also subscribe to aggregator updates for these same adIds
+      ws.send(
+        JSON.stringify({
+          type: "subscribeAdAggregates",
+          adIds,
+        })
+      );
+    };
+  
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        // We'll handle heatmap vs. aggregator in a switch statement:
+        switch (msg.type) {
+          case "heatmapUpdate": {
+            const { updatedAdIds, points, dwellTime } = msg.data || {};
+            console.log("[LayoutList] Received partial heatmap update for:", updatedAdIds);
+            if (Array.isArray(points) && points.length > 0) {
+              setHeatmapData((prev) => [...prev, ...points]);
+            }
+            if (dwellTime) {
+              console.log("Latest dwellTime:", dwellTime);
+            }
+            break;
+          }
+  
+          case "aggregatesUpdate": {
+            const { adId, totalSessions, totalDwellTime, totalGazeSamples } = msg.data;
+            setAggregateData((prevAggs) => {
+              let found = false;
+              const updated = prevAggs.map((agg) => {
+                if (agg.adId === adId) {
+                  found = true;
+                  return {
+                    ...agg,
+                    totalSessions,
+                    totalDwellTime,
+                    totalGazeSamples,
+                  };
+                }
+                return agg;
+              });
+              // If we never found that adId, insert a new entry
+              if (!found) {
+                updated.push({
+                  adId,
+                  totalSessions,
+                  totalDwellTime,
+                  totalGazeSamples,
+                });
+              }
+              return updated;
+            });
+            break;
+          }
+  
+          default:
+            console.warn("[LayoutList] Unhandled WS message type:", msg.type);
+        }
+      } catch (err) {
+        console.error("[LayoutList] Error parsing WS message:", err);
+      }
+    };
+  
+    ws.onclose = () => {
+      console.warn("[LayoutList] Heatmap WebSocket closed.");
+      websocketRef.current = null;
+    };
+  
+    ws.onerror = (err) => {
+      console.error("[LayoutList] Heatmap WebSocket error:", err);
+    };
+  };
+
+  //---------------------------------------
   // 8) Layout Dimensions Handling
-  // ---------------------------------------------
+  //---------------------------------------
   useEffect(() => {
     const updateDimensions = () => {
       if (layoutContainerRef.current) {
-        const { width, height } = layoutContainerRef.current.getBoundingClientRect();
+        const { width, height } =
+          layoutContainerRef.current.getBoundingClientRect();
         setLayoutDimensions({ width, height });
       }
     };
@@ -269,9 +394,9 @@ const LayoutList = () => {
     };
   }, [selectedLayout]);
 
-  // ---------------------------------------------
+  //---------------------------------------
   // 9) Bounding Box Logic
-  // ---------------------------------------------
+  //---------------------------------------
   const updateAdBoundingBoxes = useCallback(() => {
     const boxes = [];
     document.querySelectorAll(".ad-item").forEach((el) => {
@@ -292,14 +417,16 @@ const LayoutList = () => {
       updateAdBoundingBoxes();
       window.addEventListener("resize", updateAdBoundingBoxes);
     }
-    return () => window.removeEventListener("resize", updateAdBoundingBoxes);
+    return () => {
+      window.removeEventListener("resize", updateAdBoundingBoxes);
+    };
   }, [updateAdBoundingBoxes, selectedLayout]);
 
   const toggleBorders = () => setShowBorders((prev) => !prev);
 
-  // ---------------------------------------------
-  // 10) Ad Session Handling (Enter/Exit, Gaze Samples)
-  // ---------------------------------------------
+  //---------------------------------------
+  // 10) Ad Session Handling (Enter/Exit)
+  //---------------------------------------
   const startAdSession = useCallback((adId) => {
     const now = Date.now();
     const newSession = {
@@ -312,7 +439,7 @@ const LayoutList = () => {
     };
     activeAdSessionRef.current = newSession;
 
-    // Sample every 200ms
+    // Collect gaze samples every 200ms
     gazeSamplingIntervalRef.current = setInterval(() => {
       if (!activeAdSessionRef.current) return;
       const { x, y } = lastGazeRef.current;
@@ -357,12 +484,12 @@ const LayoutList = () => {
     }
   };
 
-  // ---------------------------------------------
+  //---------------------------------------
   // 11) Gaze Event Handling
-  // ---------------------------------------------
+  //---------------------------------------
   const handleGazeAtAd = useCallback(
     ({ x, y }) => {
-      // Keep track of the last gaze coordinates
+      // Store last gaze
       lastGazeRef.current = { x, y };
 
       let foundAdId = null;
@@ -382,19 +509,17 @@ const LayoutList = () => {
       const currentSession = activeAdSessionRef.current;
       const currentAdId = currentSession?.adId || null;
 
-      // If the user has switched from one Ad to another or left all ads
+      // Switch session if the user gazes on a different ad
       if (foundAdId !== currentAdId) {
         if (currentSession) {
-          // End the previous ad session
           endAdSession();
         }
         if (foundAdId) {
-          // Start a new ad session for the newly gazed Ad
           startAdSession(foundAdId);
         }
       }
 
-      // Simpler analytics tracking
+      // Simple "retention time" approach
       if (foundAdId !== gazedAdId) {
         setRetentionTime(0);
       }
@@ -406,15 +531,14 @@ const LayoutList = () => {
         setGazedAdId(null);
       }
 
-      // Update the state so the GazeVisualizer can render
       setCurrentGazeData({ x, y });
     },
     [gazedAdId, endAdSession, startAdSession],
   );
 
-  // ---------------------------------------------
+  //---------------------------------------
   // 12) Calibration / Tracking Handlers
-  // ---------------------------------------------
+  //---------------------------------------
   const handleStartCalibration = () => {
     if (!isModelReady) {
       alert("Eye Tracking model is still loading, please wait...");
@@ -424,16 +548,24 @@ const LayoutList = () => {
     setIsCalibrating(true);
     setCalibrationCompleted(false);
     console.log("Calibration started");
+
+    // **Show WebGazer's red dot during calibration**
+    WebGazerSingleton.showPredictionPoints(true);
   };
 
   const handleCalibrationComplete = () => {
     setIsCalibrating(false);
     setCalibrationCompleted(true);
-    setIsTracking(true);
 
-    // Save calibration data (e.g., to cookies)
+    // Save calibration data
     WebGazerSingleton.saveCalibrationDataToCookie();
-    console.log("Calibration completed and data saved to cookie");
+    console.log("[LayoutList] Calibration completed and data saved to cookie");
+
+    // **Hide WebGazer's red dot after calibration**
+    WebGazerSingleton.showPredictionPoints(false);
+
+    // Optionally, start tracking immediately
+    setIsTracking(true);
   };
 
   const handleRecalibrate = () => {
@@ -443,27 +575,24 @@ const LayoutList = () => {
     console.log("Recalibration started");
   };
 
-  // ---------------------------------------------
+  //---------------------------------------
   // 13) Start / Resume / End Eye Tracking
-  // ---------------------------------------------
+  //---------------------------------------
   const handleStartTracking = async () => {
     console.log("[LayoutList] Start Eye Tracking clicked.");
     if (!isModelReady) {
       alert("Model still loading, please wait...");
       return;
     }
-    if (!WebGazerSingleton.hasSavedCalibration() && !calibrationCompleted) {
-      alert("You must calibrate first.");
-      return;
-    }
-
     try {
       await WebGazerSingleton.initialize((data) => {
         if (data) handleGazeAtAd(data);
       });
       setIsTracking(true);
-      console.log("[LayoutList] Eye Tracking started with calibration data.");
       WebGazerSingleton.setCameraVisibility(showCamera);
+  
+      // **Ensure red dot is hidden when tracking starts**
+      WebGazerSingleton.showPredictionPoints(false);
     } catch (err) {
       console.error("Failed to start tracking:", err);
     }
@@ -478,7 +607,7 @@ const LayoutList = () => {
       alert("You must calibrate first.");
       return;
     }
-
+  
     try {
       await WebGazerSingleton.initialize((data) => {
         if (data) handleGazeAtAd(data);
@@ -486,29 +615,34 @@ const LayoutList = () => {
       setIsTracking(true);
       console.log("[LayoutList] Eye Tracking resumed.");
       WebGazerSingleton.setCameraVisibility(showCamera);
+  
+      // **Ensure red dot is hidden when tracking resumes**
+      WebGazerSingleton.showPredictionPoints(false);
     } catch (err) {
       console.error("Failed to resume tracking:", err);
     }
   };
 
   const handleEndTracking = () => {
-    // End any active ad session
     if (activeAdSessionRef.current) {
       endAdSession();
     }
     WebGazerSingleton.end();
     setIsTracking(false);
-
+  
     setRetentionTime(0);
     setIsLookingAtAd(false);
     setGazedAdId(null);
     setCurrentGazeData(null);
     console.log("WebGazer tracking ended.");
+  
+    // **Ensure red dot is hidden when tracking ends**
+    WebGazerSingleton.showPredictionPoints(false);
   };
 
-  // ---------------------------------------------
+  //---------------------------------------
   // 14) UI Toggles
-  // ---------------------------------------------
+  //---------------------------------------
   const handleToggleCamera = () => {
     const newVal = !showCamera;
     setShowCamera(newVal);
@@ -539,9 +673,9 @@ const LayoutList = () => {
     }
   };
 
-  // ---------------------------------------------
+  //---------------------------------------
   // 15) Layouts Display Logic
-  // ---------------------------------------------
+  //---------------------------------------
   const visibleLayouts =
     isMobile && !showAllLayouts
       ? layouts.slice(0, MOBILE_DISPLAY_LIMIT)
@@ -553,7 +687,7 @@ const LayoutList = () => {
       <Navbar />
 
       <div className="container mx-auto w-full p-4 md:p-12">
-        {/* Layout Selection and Preview */}
+        {/* Layout Selection + Preview */}
         <div className="flex flex-col md:min-h-[600px] md:flex-row">
           {/* Sidebar: Available Layouts */}
           <div className="w-full md:w-[300px] md:flex-shrink-0">
@@ -589,6 +723,7 @@ const LayoutList = () => {
                   Error: {error}
                 </div>
               )}
+
               {permissions?.createAds ? (
                 <div className="space-y-2">
                   {visibleLayouts.map((layout) => (
@@ -650,9 +785,9 @@ const LayoutList = () => {
                   isFullscreen ? "flex items-center justify-center" : ""
                 }`}
               >
+                {/* Render the layout or "Loading..." */}
                 {loading && selectedLayout && (
                   <div className="flex h-full items-center justify-center p-4 neutral-bg">
-                    {/* Loading Indicator */}
                     <svg
                       className="mr-2 h-5 w-5 animate-spin"
                       viewBox="0 0 24 24"
@@ -683,15 +818,20 @@ const LayoutList = () => {
                     Select a layout to preview
                   </div>
                 )}
+
                 {/* Heatmap Overlay */}
-                {selectedLayout && showHeatmap && heatmapData.length > 0 && layoutDimensions.width > 0 && layoutDimensions.height > 0 && (
-                  <ErrorBoundary>
-                    <HeatmapOverlay
-                      heatmapData={heatmapData}
-                      layoutDimensions={layoutDimensions}
-                    />
-                  </ErrorBoundary>
-                )}
+                {selectedLayout &&
+                  showHeatmap &&
+                  heatmapData.length > 0 &&
+                  layoutDimensions.width > 0 &&
+                  layoutDimensions.height > 0 && (
+                    <ErrorBoundary>
+                      <HeatmapOverlay
+                        heatmapData={heatmapData}
+                        layoutDimensions={layoutDimensions}
+                      />
+                    </ErrorBoundary>
+                  )}
               </div>
             </div>
           </div>
@@ -725,7 +865,7 @@ const LayoutList = () => {
               onClick={handleStartTracking}
               className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
               disabled={
-                !selectedLayout ||
+                !isModelReady ||
                 !(
                   WebGazerSingleton.hasSavedCalibration() ||
                   calibrationCompleted
@@ -781,7 +921,7 @@ const LayoutList = () => {
             {showVisualizer ? "Hide Gaze Dot" : "Show Gaze Dot"}
           </button>
 
-          {/* Toggle Heatmap Button */}
+          {/* Toggle Heatmap */}
           <button
             onClick={() => setShowHeatmap((prev) => !prev)}
             className="rounded-lg bg-green-500 px-6 py-2.5 text-white transition hover:bg-green-600"
@@ -790,7 +930,7 @@ const LayoutList = () => {
           </button>
         </div>
 
-        {/* ===== Viewer Analytics ===== */}
+        {/* ===== Viewer Analytics & Aggregates ===== */}
         {selectedLayout && (
           <div className="mt-8 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
@@ -801,11 +941,65 @@ const LayoutList = () => {
               <strong>Looking at Ad:</strong>{" "}
               {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
             </p>
+
             {calibrationCompleted && (
               <div className="mt-4 rounded-lg bg-green-100 p-4 dark:bg-green-900">
                 <p className="text-green-700 dark:text-green-200">
                   Calibration was successfully completed.
                 </p>
+              </div>
+            )}
+
+            {/* Show aggregator info for all ads */}
+            {aggregateData?.length > 0 && (
+              <div className="mt-6 rounded-md bg-gray-100 p-4 dark:bg-gray-700">
+                <h3 className="mb-2 text-lg font-semibold">Ad Aggregates</h3>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {aggregateData.map((agg) => (
+                    <div
+                      key={agg.adId}
+                      className="rounded-lg border border-gray-300 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800"
+                    >
+                      <p className="mb-1 text-sm font-medium text-gray-500 dark:text-gray-300">
+                        Ad ID
+                      </p>
+                      <p className="break-all text-base font-bold text-gray-800 dark:text-gray-100">
+                        {agg.adId}
+                      </p>
+
+                      <hr className="my-2 border-gray-200 dark:border-gray-600" />
+
+                      <div className="flex flex-col space-y-1">
+                        <div>
+                          <span className="text-sm text-gray-500 dark:text-gray-300">
+                            Total Sessions:
+                          </span>
+                          <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
+                            {agg.totalSessions}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-sm text-gray-500 dark:text-gray-300">
+                            Total Dwell Time:
+                          </span>
+                          <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
+                            {agg.totalDwellTime}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-sm text-gray-500 dark:text-gray-300">
+                            Total Gaze Samples:
+                          </span>
+                          <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
+                            {agg.totalGazeSamples}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

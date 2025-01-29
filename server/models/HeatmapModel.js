@@ -1,4 +1,4 @@
-const { ScanCommand, BatchGetCommand, QueryCommand } = require("@aws-sdk/lib-dynamodb");
+const { GetCommand, ScanCommand, BatchGetCommand, QueryCommand } = require("@aws-sdk/lib-dynamodb");
 const { dynamoDb } = require("../middleware/awsClients");
 
 const AdAnalyticsTable = process.env.DYNAMODB_TABLE_AD_ANALYTICS;
@@ -172,6 +172,33 @@ const HeatmapModel = {
       return data.Items;
     } catch (error) {
       console.error("Error fetching aggregate data from AdAggregates:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Fetches a single aggregator record by adId.
+   * @param {string} adId - The adId of the aggregator record.
+   * @returns {Promise<Object|null>} - The aggregator item or null if not found.
+   */
+  getAggregateDataByAdId: async function (adId) {
+    try {
+      console.log(`Fetching aggregator record for adId: ${adId}`);
+      const params = {
+        TableName: AdAggregatesTable,
+        Key: { adId }, // Assuming adId is the partition key
+      };
+
+      const data = await dynamoDb.send(new GetCommand(params));
+      if (data.Item) {
+        console.log(`Found aggregator record for adId=${adId}`, data.Item);
+        return data.Item;
+      } else {
+        console.warn(`No aggregator record found for adId=${adId}`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`Error fetching aggregator record for adId=${adId}:`, error);
       throw error;
     }
   },
