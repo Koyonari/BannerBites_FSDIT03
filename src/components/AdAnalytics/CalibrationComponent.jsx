@@ -1,9 +1,8 @@
-// src/components/AdAnalytics/CalibrationComponent.jsx
 import React, { useState, useEffect } from "react";
 import WebGazerSingleton from "../../utils/WebGazerSingleton";
+import { motion } from "framer-motion";
 
 const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => {
-  // Expanded set of calibration points as recommended in the GitHub wiki and usage guides.
   const points = [
     { xPercent: 10, yPercent: 10 },
     { xPercent: 50, yPercent: 10 },
@@ -15,7 +14,7 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
     { xPercent: 50, yPercent: 90 },
     { xPercent: 90, yPercent: 90 },
   ];
-  
+
   const [calibrationPoints] = useState(points);
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
   const [clickCount, setClickCount] = useState(0);
@@ -28,12 +27,11 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
         wg.setStorePoints(true);
       } catch (err) {
         console.error("Calibration initialization error:", err);
-      } 
+      }
     })();
   }, []);
 
   const handleDotClick = async () => {
-    // Provide immediate visual feedback
     setDotFeedback(true);
     setTimeout(() => setDotFeedback(false), 80);
 
@@ -65,29 +63,73 @@ const CalibrationComponent = ({ onCalibrationComplete, requiredClicks = 5 }) => 
   };
 
   const { xPercent, yPercent } = calibrationPoints[currentPointIndex];
+
+  // Animation Variants
+  const dotVariants = {
+    idle: { scale: 1 },
+    feedback: { scale: 1.3, backgroundColor: "lime" },
+  };
+
+  const textVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: { opacity: 1, y: 0 },
+  };
+
+  const overlayVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+  };
+
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-60 z-[9999]">
-      <p className="text-white mb-4 text-lg">Click each dot {requiredClicks} times to calibrate.</p>
-      <div
+    <motion.div
+      className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-60 z-[9999]"
+      initial="hidden"
+      animate="visible"
+      variants={overlayVariants}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.p
+        className="text-white mb-4 text-lg"
+        variants={textVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        Click each dot {requiredClicks} times to calibrate.
+      </motion.p>
+
+      <motion.div
         onClick={handleDotClick}
+        className="absolute cursor-pointer rounded-full border-2 border-white"
+        variants={dotVariants}
+        initial="idle"
+        animate={dotFeedback ? "feedback" : "idle"}
+        transition={{ type: "spring", stiffness: 300, damping: 15 }}
         style={{
-          position: "absolute",
           left: `${xPercent}%`,
           top: `${yPercent}%`,
           transform: "translate(-50%, -50%)",
           width: 40,
           height: 40,
-          borderRadius: "50%",
-          backgroundColor: dotFeedback ? "lime" : "red",
-          border: "2px solid white",
-          cursor: "pointer",
+          backgroundColor: "red",
         }}
       />
-      <p className="mt-4 text-white">
-        Point {currentPointIndex + 1} of {calibrationPoints.length}
-      </p>
-      <p className="text-white">Clicks: {clickCount} / {requiredClicks}</p>
-    </div>
+
+      <motion.div
+        className="mt-4 text-white"
+        variants={textVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <p>
+          Point {currentPointIndex + 1} of {calibrationPoints.length}
+        </p>
+        <p>
+          Clicks: {clickCount} / {requiredClicks}
+        </p>
+      </motion.div>
+    </motion.div>
   );
 };
 
