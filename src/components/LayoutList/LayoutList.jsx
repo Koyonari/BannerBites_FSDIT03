@@ -113,14 +113,18 @@ const LayoutList = () => {
 
         // If the user had previously saved calibration, set the flag
         if (WebGazerSingleton.hasSavedCalibration()) {
-          console.log("[LayoutList] Found saved calibration data in localStorage.");
+          console.log(
+            "[LayoutList] Found saved calibration data in localStorage.",
+          );
           setCalibrationCompleted(true);
         }
       })
       .catch((err) => {
         console.error("[LayoutList] Preload error:", err);
       });
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   //---------------------------------------
@@ -282,30 +286,30 @@ const LayoutList = () => {
   const establishHeatmapWebSocketConnection = (adIds) => {
     if (!adIds || adIds.length === 0) return;
     console.log("[LayoutList] Opening heatmap WebSocket...");
-  
+
     const ws = new WebSocket("ws://localhost:5000");
     websocketRef.current = ws;
-  
+
     ws.onopen = () => {
       console.log("[LayoutList] Heatmap WebSocket connected.");
-  
+
       // 1) Subscribe to heatmap updates
       ws.send(
         JSON.stringify({
           type: "subscribeHeatmap",
           adIds,
-        })
+        }),
       );
-  
+
       // 2) Also subscribe to aggregator updates for these same adIds
       ws.send(
         JSON.stringify({
           type: "subscribeAdAggregates",
           adIds,
-        })
+        }),
       );
     };
-  
+
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
@@ -313,7 +317,10 @@ const LayoutList = () => {
         switch (msg.type) {
           case "heatmapUpdate": {
             const { updatedAdIds, points, dwellTime } = msg.data || {};
-            console.log("[LayoutList] Received partial heatmap update for:", updatedAdIds);
+            console.log(
+              "[LayoutList] Received partial heatmap update for:",
+              updatedAdIds,
+            );
             if (Array.isArray(points) && points.length > 0) {
               setHeatmapData((prev) => [...prev, ...points]);
             }
@@ -322,9 +329,10 @@ const LayoutList = () => {
             }
             break;
           }
-  
+
           case "aggregatesUpdate": {
-            const { adId, totalSessions, totalDwellTime, totalGazeSamples } = msg.data;
+            const { adId, totalSessions, totalDwellTime, totalGazeSamples } =
+              msg.data;
             setAggregateData((prevAggs) => {
               let found = false;
               const updated = prevAggs.map((agg) => {
@@ -352,7 +360,7 @@ const LayoutList = () => {
             });
             break;
           }
-  
+
           default:
             console.warn("[LayoutList] Unhandled WS message type:", msg.type);
         }
@@ -360,12 +368,12 @@ const LayoutList = () => {
         console.error("[LayoutList] Error parsing WS message:", err);
       }
     };
-  
+
     ws.onclose = () => {
       console.warn("[LayoutList] Heatmap WebSocket closed.");
       websocketRef.current = null;
     };
-  
+
     ws.onerror = (err) => {
       console.error("[LayoutList] Heatmap WebSocket error:", err);
     };
@@ -550,12 +558,12 @@ const LayoutList = () => {
   const handleCalibrationComplete = () => {
     setIsCalibrating(false);
     setCalibrationCompleted(true);
-  
+
     // Save to localStorage (WebGazer does this automatically if .saveDataAcrossSessions(true))
     // Then copy it to a cookie:
     WebGazerSingleton.saveCalibrationDataToCookie();
     console.log("[LayoutList] Calibration completed and data saved to cookie");
-  
+
     // Optionally, start tracking immediately
     setIsTracking(true);
   };
@@ -732,7 +740,7 @@ const LayoutList = () => {
                   )}
                 </div>
               ) : (
-                <div className="font-medium text-red-500">
+                <div className="font-medium alert2-text">
                   You don't have permission to view this content.
                 </div>
               )}
@@ -764,13 +772,13 @@ const LayoutList = () => {
               )}
               <div
                 ref={previewRef}
-                className={`h-full w-full overflow-hidden rounded-lg light-bg ${
+                className={`h-full w-full overflow-hidden rounded-lg bg-white ${
                   isFullscreen ? "flex items-center justify-center" : ""
                 }`}
               >
                 {/* Render the layout or "Loading..." */}
                 {loading && selectedLayout && (
-                  <div className="flex h-full items-center justify-center p-4 neutral-bg">
+                  <div className="flex h-full items-center justify-center p-4 light-bg">
                     <svg
                       className="mr-2 h-5 w-5 animate-spin"
                       viewBox="0 0 24 24"
