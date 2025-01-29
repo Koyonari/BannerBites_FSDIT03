@@ -3,13 +3,14 @@ import { HomeIcon, LayoutList, ImagePlus } from "lucide-react";
 import { DarkModeSwitch } from "react-toggle-dark-mode";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
-import { CircleUserRound, UserRoundPen } from "lucide-react";
+import { CircleUserRound, UserRoundPen, ChartColumnBig } from "lucide-react";
 
 const icons = {
   navbar: [
     { href: "/userhome", icon: HomeIcon, label: "Home" },
     { href: "/layouts", icon: LayoutList, label: "LayoutList" },
     { href: "/adunit", icon: ImagePlus, label: "AdUnit" },
+    { href: "/dashboard", icon: ChartColumnBig, label: "Dashboard" },
     { href: "/login", icon: CircleUserRound, label: "Profile" },
     { href: "/customrole", icon: UserRoundPen, label: "CustomRole" },
   ],

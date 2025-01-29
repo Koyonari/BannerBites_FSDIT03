@@ -12,18 +12,13 @@ const verifyPassword = async (password, hashedPassword) => {
 };
 
 // Function to authenticate a user
-const authenticateUser = async (username, password, roles) => {
+const authenticateUser = async (username, password) => {
   const user = await getUserByUsername(username);
 
   // Check if the user exists and verify the password
   if (user && await verifyPassword(password, user.password)) {
-    // Ensure the user has the correct role
-    if (user.roles === roles) {
-      // Issue the token with the correct role
-      return jwt.sign({ username: user.username, role: roles }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    } else {
-      throw new Error('User does not have the correct role');
-    }
+      // Issue the token with the user's role
+      return jwt.sign({ username: user.username, role: user.roles }, process.env.JWT_SECRET, { expiresIn: '1h' });
   } else {
     throw new Error('Invalid credentials');
   }
