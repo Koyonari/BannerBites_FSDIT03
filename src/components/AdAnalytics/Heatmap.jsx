@@ -47,25 +47,22 @@ const Heatmap = ({ data, width, height, title }) => {
 
     const colorScale = d3
       .scaleSequential()
-      .interpolator(d3.interpolateTurbo) // warm yellow → brown
+      .interpolator(d3.interpolateOrRd) // orange → red
       .domain([0, maxValue]);
 
-    const opacityScale = d3
-      .scaleLinear()
-      .domain([0, maxValue])
-      .range([0.2, 1]); // circles with lower value are more transparent
+    const opacityScale = d3.scaleLinear().domain([0, maxValue]).range([0.2, 1]); // circles with lower value are more transparent
 
     // 7) Draw circles for each point
     g.selectAll("circle")
-    .data(data)
-    .enter()
-    .append("circle")
-    .attr("cx", (d) => xScale(d.x))
-    .attr("cy", (d) => yScale(d.y))
-    .attr("r", 10)
-    .style("fill", (d) => colorScale(d.value))
-    .style("opacity", (d) => opacityScale(d.value) * 0.6) // or just .style("opacity", 0.4)
-    .style("stroke", "none"); // remove the outline completely
+      .data(data)
+      .enter()
+      .append("circle")
+      .attr("cx", (d) => xScale(d.x))
+      .attr("cy", (d) => yScale(d.y))
+      .attr("r", 10)
+      .style("fill", (d) => colorScale(d.value))
+      .style("opacity", (d) => opacityScale(d.value) * 0.6) // or just .style("opacity", 0.4)
+      .style("stroke", "none"); // remove the outline completely
 
     // 8) Add a title at the top
     svg
@@ -75,7 +72,6 @@ const Heatmap = ({ data, width, height, title }) => {
       .attr("text-anchor", "middle")
       .style("font-size", "20px")
       .text(title || "Heatmap");
-
   }, [data, width, height, title]);
 
   return <svg ref={svgRef}></svg>;
@@ -87,7 +83,7 @@ Heatmap.propTypes = {
       x: PropTypes.number.isRequired,
       y: PropTypes.number.isRequired,
       value: PropTypes.number.isRequired,
-    })
+    }),
   ).isRequired,
   width: PropTypes.number,
   height: PropTypes.number,
