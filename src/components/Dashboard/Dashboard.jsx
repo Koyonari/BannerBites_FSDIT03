@@ -218,8 +218,6 @@ const Dashboard = () => {
                   data between the table and the charts.
                 </p>
                 <div className="overflow-hidden">
-                  {" "}
-                  {/* Changed from overflow-x-auto to overflow-hidden */}
                   <div
                     className={`transform transition-all duration-300 ease-in-out ${
                       isAnimating
@@ -250,11 +248,21 @@ const Dashboard = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody
+                        className={`transition-all duration-300 ease-in-out ${
+                          isAnimating
+                            ? showAllItems
+                              ? "translate-y-0 opacity-100"
+                              : "translate-y-[-20px] opacity-0"
+                            : "translate-y-0 opacity-100"
+                        }`}
+                      >
                         {displayedAds.map((ad, index) => (
                           <tr
                             key={ad.adId}
-                            className="border-b border-border-light transition-colors duration-150 hover:bg-bg-light dark:border-border-dark dark:hover:bg-bg-dark"
+                            className={`border-b border-border-light transition-all duration-300 ease-in-out ${
+                              isAnimating ? "opacity-0" : "opacity-100"
+                            } dark:border-border-dark dark:hover:bg-bg-dark`}
                           >
                             <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
                               Ad {index + 1}
@@ -355,8 +363,8 @@ const Dashboard = () => {
                       data={createChartData(
                         "Total Sessions",
                         adAggregates.map((ad) => ad.totalSessions),
-                        "rgba(160, 174, 192, 0.6)",
-                        "rgba(160, 174, 192, 1)",
+                        "rgba(   0, 93, 255 , 0.6)",
+                        "rgba(   0, 93, 255 , 1)",
                       )}
                       options={chartOptions}
                     />
