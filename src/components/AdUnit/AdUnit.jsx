@@ -162,23 +162,23 @@ const AdUnit = () => {
       <Navbar />
 
       {/* Header Section */}
-      <div className="mx-auto flex w-full flex-col gap-4 p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto flex w-full flex-col gap-4 p-4 sm:p-6 sm:px-8 md:px-12 lg:p-8 lg:px-16 xl:px-24 2xl:px-32">
         <div
           className={`mx-auto flex w-full flex-col gap-4 sm:flex-row sm:items-center ${permissions?.createAds ? "sm:justify-between" : "sm:justify-center"}`}
         >
           {/* Search Bar */}
           <div
-            className={`w-full ${permissions?.createAds ? "sm:w-3/4" : "sm:w-2/3 md:w-1/2"}`}
+            className={`h-10 w-full rounded-lg border secondary-border lg:h-16 lg:text-lg xl:h-20 xl:text-2xl ${permissions?.createAds ? "sm:w-3/4" : "sm:w-2/3 md:w-1/2"}`}
           >
-            <div className="relative">
+            <div className="relative h-full">
               <input
                 type="text"
                 placeholder="Search advertisements"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="dark:bg-dark-bg h-12 w-full rounded-lg border px-4 pl-10 text-sm transition-colors primary-border primary-text placeholder-primary focus:outline-none focus:ring-2 focus:ring-primary dark:secondary-border dark:secondary-text dark:placeholder-secondary lg:h-14 lg:text-base"
+                className="dark:bg-dark-bg h-full w-full rounded-lg border px-4 pl-10 text-sm transition-colors primary-border primary-text placeholder-primary focus:outline-none focus:ring-2 focus:ring-primary dark:secondary-border dark:secondary-text dark:placeholder-secondary sm:text-base lg:text-lg xl:text-2xl"
               />
-              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform neutral-text" />
+              <Search className="absolute left-3 top-1/2 h-full w-6 -translate-y-1/2 transform neutral-text" />
             </div>
           </div>
 
@@ -186,7 +186,7 @@ const AdUnit = () => {
           {permissions?.createAds && (
             <button
               onClick={() => setIsUploadPopupVisible(true)}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all duration-300 primary-bg secondary-text hover:secondary-bg focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-1/4 lg:h-14 lg:text-base"
+              className="xl:h-2xl lg:x-16 flex h-full w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all duration-300 primary-bg secondary-text hover:secondary-bg focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-1/4 lg:h-14 lg:text-lg xl:h-20"
             >
               <Upload className="h-5 w-5" />
               Upload Media
@@ -401,37 +401,37 @@ const AdUnit = () => {
                       <img
                         src={ad.content?.src}
                         alt={ad.content?.title || "Untitled"}
-                        className="h-full w-full object-cover"
+                        className="flex h-full w-full items-center justify-center object-cover primary-text dark:secondary-text"
                       />
                     ) : (
                       <video
                         controls
                         src={ad.content?.src}
-                        className="h-full w-full object-cover"
+                        className="flex h-full w-full items-center justify-center object-cover primary-text dark:secondary-text"
                       />
                     )}
 
                     {/* Edit Button */}
-                    {permissions?.edit &&(
-                    <button
-                      onClick={() => handleEditClick(ad)}
-                      className="absolute right-12 top-3 z-10 rounded-full bg-blue-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-blue-600 group-hover:opacity-100"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
+                    {permissions?.edit && (
+                      <button
+                        onClick={() => handleEditClick(ad)}
+                        className="absolute right-12 top-3 z-10 rounded-full bg-blue-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-blue-600 group-hover:opacity-100"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
                     )}
 
                     {/* Delete Button */}
-                    {permissions?.edit &&(
-                    <button
-                      onClick={() => {
-                        setAdToDelete(ad.adId);
-                        setIsDeletePopupVisible(true);
-                      }}
-                      className="absolute right-3 top-3 z-10 rounded-full bg-red-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-red-600 group-hover:opacity-100"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {permissions?.edit && (
+                      <button
+                        onClick={() => {
+                          setAdToDelete(ad.adId);
+                          setIsDeletePopupVisible(true);
+                        }}
+                        className="absolute right-3 top-3 z-10 rounded-full bg-red-500 p-2 text-white opacity-0 shadow-sm transition-opacity duration-200 hover:bg-red-600 group-hover:opacity-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     )}
                   </div>
 
