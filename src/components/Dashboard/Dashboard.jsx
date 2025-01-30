@@ -3,6 +3,7 @@ import Cookies from "js-cookie";
 import React, { useEffect, useState } from "react";
 import Navbar from "../Navbar";
 import { Bar } from "react-chartjs-2";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -28,7 +29,13 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // eslint-disable-next-line
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showAllItems, setShowAllItems] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const ITEMS_TO_SHOW = 3;
+
   useEffect(() => {
     // Initial theme check
     const darkModeMediaQuery = window.matchMedia(
@@ -115,6 +122,13 @@ const Dashboard = () => {
     fetchData();
   }, [isAuthenticated]);
 
+  const handleToggleShow = () => {
+    setIsAnimating(true);
+    setShowAllItems(!showAllItems);
+    // Reset animation state after animation completes
+    setTimeout(() => setIsAnimating(false), 300);
+  };
+
   // Format ISO date string to locale string
   const formatDate = (isoString) => new Date(isoString).toLocaleString();
 
@@ -161,6 +175,10 @@ const Dashboard = () => {
     },
   };
 
+  const displayedAds = showAllItems
+    ? adAggregates
+    : adAggregates.slice(0, ITEMS_TO_SHOW);
+
   return (
     <div className="min-h-screen bg-bg-light transition-colors duration-200 dark:bg-bg-dark">
       <Navbar />
@@ -199,58 +217,91 @@ const Dashboard = () => {
                   labels 'Ad 1', 'Ad 2', etc., are used to help correlate the
                   data between the table and the charts.
                 </p>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border-collapse">
-                    <thead>
-                      <tr className="border-b border-border-light bg-bg-light dark:border-border-dark dark:bg-bg-dark">
-                        <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
-                          Ad #
-                        </th>
-                        <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
-                          Ad ID
-                        </th>
-                        <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
-                          Avg Dwell Time (ms)
-                        </th>
-                        <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
-                          Total Gaze Samples
-                        </th>
-                        <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
-                          Total Sessions
-                        </th>
-                        <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
-                          Last Updated
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {adAggregates.map((ad, index) => (
-                        <tr
-                          key={ad.adId}
-                          className="border-b border-border-light transition-colors duration-150 hover:bg-bg-light dark:border-border-dark dark:hover:bg-bg-dark"
-                        >
-                          <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
-                            Ad {index + 1}
-                          </td>
-                          <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
-                            {ad.adId}
-                          </td>
-                          <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
-                            {ad.totalDwellTime}
-                          </td>
-                          <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
-                            {ad.totalGazeSamples}
-                          </td>
-                          <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
-                            {ad.totalSessions}
-                          </td>
-                          <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
-                            {formatDate(ad.lastUpdated)}
-                          </td>
+                <div className="overflow-hidden">
+                  {" "}
+                  {/* Changed from overflow-x-auto to overflow-hidden */}
+                  <div
+                    className={`transform transition-all duration-300 ease-in-out ${
+                      isAnimating
+                        ? "scale-y-95 opacity-90"
+                        : "scale-y-100 opacity-100"
+                    }`}
+                  >
+                    <table className="min-w-full border-collapse">
+                      <thead>
+                        <tr className="border-b border-border-light bg-bg-light dark:border-border-dark dark:bg-bg-dark">
+                          <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
+                            Ad #
+                          </th>
+                          <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
+                            Ad ID
+                          </th>
+                          <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
+                            Avg Dwell Time (ms)
+                          </th>
+                          <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
+                            Total Gaze Samples
+                          </th>
+                          <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
+                            Total Sessions
+                          </th>
+                          <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
+                            Last Updated
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {displayedAds.map((ad, index) => (
+                          <tr
+                            key={ad.adId}
+                            className="border-b border-border-light transition-colors duration-150 hover:bg-bg-light dark:border-border-dark dark:hover:bg-bg-dark"
+                          >
+                            <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
+                              Ad {index + 1}
+                            </td>
+                            <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
+                              {ad.adId}
+                            </td>
+                            <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
+                              {ad.totalDwellTime}
+                            </td>
+                            <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
+                              {ad.totalGazeSamples}
+                            </td>
+                            <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
+                              {ad.totalSessions}
+                            </td>
+                            <td className="px-4 py-3 text-text-sublight dark:text-text-subdark">
+                              {formatDate(ad.lastUpdated)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {adAggregates.length > ITEMS_TO_SHOW && (
+                      <div className="mt-4 flex justify-center">
+                        <button
+                          onClick={handleToggleShow}
+                          className="group flex w-1/12 items-center justify-center rounded-lg p-2 text-white transition-all duration-300 primary-bg hover:bg-blue-600"
+                          disabled={isAnimating}
+                        >
+                          {showAllItems ? (
+                            <ChevronUp
+                              className={`h-6 w-6 transform transition-transform duration-300 ${
+                                isAnimating ? "rotate-180" : ""
+                              }`}
+                            />
+                          ) : (
+                            <ChevronDown
+                              className={`h-6 w-6 transform transition-transform duration-300 ${
+                                isAnimating ? "-rotate-180" : ""
+                              }`}
+                            />
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </section>
