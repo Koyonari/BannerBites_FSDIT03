@@ -19,4 +19,7 @@ router.post("/getSessionIdsForAdId", HeatmapController.getSessionIdsForAdId);
 // Route to fetch aggregate data
 router.get("/aggregateData", HeatmapController.getAggregateData)
 
+// Route to fetch aggregate data for a single adId
+router.get("/aggregates/:adId", HeatmapController.getAggregateDataByAdId);
+
 module.exports = router;

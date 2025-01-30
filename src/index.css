@@ -23,3 +23,7 @@ body {
   scroll-behavior: smooth;
   overflow-x: hidden;
 }
+
+#webgazerVideoContainer {
+  z-index: 1000;
+}

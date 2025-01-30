@@ -11,6 +11,7 @@ const authRoutes = require("./routes/authRoutes");
 const adsRoutes = require("./routes/adsRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const heatmapRoutes = require("./routes/heatmapRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 const { handleWebSocketMessage } = require("./controllers/webSocketController");
 
 
@@ -19,6 +20,7 @@ const { layoutUpdatesCache, addClient, removeClient, broadcastToClients } = requ
 const { generatePresignedUrlController, fetchLayoutById } = require("./controllers/layoutController");
 const { listenToDynamoDbStreams } = require("./middleware/layoutListener");
 const { listenToHeatmapStreams } = require("./middleware/heatmapListener");
+const { listenToAggregateStream } = require("./middleware/aggregateListener");
 
 dotenv.config();
 
@@ -50,6 +52,7 @@ app.post("/generate-presigned-url", generatePresignedUrlController);
 app.use('/api/ads', adsRoutes);
 app.use('/api/roles', roleRoutes);
 app.use("/api/heatmap", heatmapRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // WebSocket Server Handling
 wss.on("connection", (ws) => {
@@ -73,7 +76,9 @@ server.listen(PORT, () => {
     // Start listening to layout update streams
     await listenToDynamoDbStreams();
     console.log("[LAYOUT] DynamoDB stream listener for layouts initialized.");
-
+    // Start listening to aggregate streams
+    await listenToAggregateStream();
+    console.log("[AGGREGATE] DynamoDB stream listener for aggregates initialized.");
     // Start listening to heatmap update streams
     await listenToHeatmapStreams();
     console.log("[HEATMAP] DynamoDB stream listener for heatmaps initialized.");

@@ -7,6 +7,7 @@ const {
 const { persistSessionToDynamo } = require("../services/dynamoService");
 const { layoutUpdatesCache, addClient, removeClient } = require("../state/websocketState");
 const { handleHeatmapWebSocketMessage } = require("./heatmapWebSocketController"); // Import the heatmap handler
+const { addAggregateClient } = require("../state/aggregatesState");
 
 /**
  * Handles incoming WebSocket messages.
@@ -51,6 +52,12 @@ async function handleWebSocketMessage(ws, message) {
         await handleAdSessionComplete(parsedMessage);
         break;
 
+      case "subscribeAdAggregates":
+      if (Array.isArray(parsedMessage.adIds) && parsedMessage.adIds.length > 0) {
+        addAggregateClient(ws, parsedMessage.adIds);
+      }
+
+      break;
       default:
         console.warn("[WS] Unhandled message type:", type);
     }

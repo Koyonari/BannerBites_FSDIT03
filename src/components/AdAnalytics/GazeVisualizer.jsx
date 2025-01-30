@@ -1,38 +1,36 @@
-// src/components/GazeVisualizer.jsx
+// src/components/AdAnalytics/GazeVisualizer.jsx
 
 import React from "react";
-import { motion } from "framer-motion";
+import AnimatedGazeDot from "../AdAnalytics/AnimatedGazeDot"; // Adjust path if needed
 
-const GazeVisualizer = ({ gazeData, boundingBoxes, showBorders }) => {
+const GazeVisualizer = ({ gazeData, boundingBoxes = [], showBorders = true }) => {
   return (
     <>
-      {/* Gaze Dot */}
+      {/* Ensure the gaze dot is correctly positioned */}
       {gazeData && (
-        <motion.div
-          className="absolute z-50 h-6 w-6 rounded-full bg-red-500 pointer-events-none"
-          initial={{ x: gazeData.x, y: gazeData.y }}
-          animate={{ x: gazeData.x, y: gazeData.y }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          style={{ top: gazeData.y, left: gazeData.x, position: "absolute" }}
-          aria-label="Gaze Dot"
+        <AnimatedGazeDot
+          x={gazeData.x}
+          y={gazeData.y}
+          size={40} // Example: Increased to 40px
+          color="cyan" // Example: Changed to cyan
         />
       )}
 
-      {/* Bounding Boxes */}
+      {/* Ensure bounding boxes are visible */}
       {showBorders &&
+        boundingBoxes.length > 0 && // Prevent unnecessary rendering
         boundingBoxes.map((box, index) => (
           <div
             key={index}
-            className="absolute border-2 border-red-500 pointer-events-none"
+            className="pointer-events-none absolute border-2 border-red-500"
             style={{
-              top: box.top,
-              left: box.left,
-              width: box.width,
-              height: box.height,
+              top: box.top + "px",
+              left: box.left + "px",
+              width: box.width + "px",
+              height: box.height + "px",
               position: "absolute",
-              zIndex: 9999  // or a high enough value
+              zIndex: 9999,
             }}
-            aria-label={`Bounding Box ${index + 1}`}
           />
         ))}
     </>
