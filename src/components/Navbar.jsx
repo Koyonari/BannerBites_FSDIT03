@@ -4,6 +4,7 @@ import {
   HomeIcon,
   LayoutList,
   CircleUserRound,
+  ChartColumnBig,
   ImagePlus,
   UserRoundPen,
 } from "lucide-react";
@@ -92,6 +93,10 @@ function Navbar() {
               className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
               onClick={() => navigate("/adunit")}
             />
+            <ChartColumnBig
+              className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
+              onClick={() => navigate("/dashboard")}
+            />
             <CircleUserRound
               className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
               onClick={() => navigate("/login")}
@@ -130,6 +135,7 @@ function Navbar() {
               { Icon: HomeIcon, path: "/userhome" },
               { Icon: LayoutList, path: "/layouts" },
               { Icon: ImagePlus, path: "/adunit" },
+              { Icon: ChartColumnBig, path: "/dashboard" },
               { Icon: CircleUserRound, path: "/login" },
               { Icon: UserRoundPen, path: "/customrole" },
             ].map(({ Icon, path }) => (

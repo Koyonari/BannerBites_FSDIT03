@@ -2,7 +2,20 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { Maximize2, Minimize2 } from "lucide-react";
+import {
+  Maximize2,
+  Minimize2,
+  Settings,
+  Eye,
+  Camera,
+  Grid,
+  Activity,
+  RefreshCw,
+  PlayCircle,
+  StopCircle,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 import Cookies from "js-cookie";
 import axios from "axios";
 
@@ -33,6 +46,7 @@ const LayoutList = () => {
   const [showAllLayouts, setShowAllLayouts] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isHovering, setIsHovering] = useState(false); // For fullscreen button
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   // ===== Fullscreen Logic =====
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -113,14 +127,18 @@ const LayoutList = () => {
 
         // If the user had previously saved calibration, set the flag
         if (WebGazerSingleton.hasSavedCalibration()) {
-          console.log("[LayoutList] Found saved calibration data in localStorage.");
+          console.log(
+            "[LayoutList] Found saved calibration data in localStorage.",
+          );
           setCalibrationCompleted(true);
         }
       })
       .catch((err) => {
         console.error("[LayoutList] Preload error:", err);
       });
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   //---------------------------------------
@@ -157,7 +175,7 @@ const LayoutList = () => {
       if (gazeSamplingIntervalRef.current) {
         clearInterval(gazeSamplingIntervalRef.current);
       }
-  
+
       // **Ensure WebGazer's red dot is hidden on unmount**
       WebGazerSingleton.showPredictionPoints(false);
     };
@@ -285,30 +303,30 @@ const LayoutList = () => {
   const establishHeatmapWebSocketConnection = (adIds) => {
     if (!adIds || adIds.length === 0) return;
     console.log("[LayoutList] Opening heatmap WebSocket...");
-  
+
     const ws = new WebSocket("ws://localhost:5000");
     websocketRef.current = ws;
-  
+
     ws.onopen = () => {
       console.log("[LayoutList] Heatmap WebSocket connected.");
-  
+
       // 1) Subscribe to heatmap updates
       ws.send(
         JSON.stringify({
           type: "subscribeHeatmap",
           adIds,
-        })
+        }),
       );
-  
+
       // 2) Also subscribe to aggregator updates for these same adIds
       ws.send(
         JSON.stringify({
           type: "subscribeAdAggregates",
           adIds,
-        })
+        }),
       );
     };
-  
+
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
@@ -316,7 +334,10 @@ const LayoutList = () => {
         switch (msg.type) {
           case "heatmapUpdate": {
             const { updatedAdIds, points, dwellTime } = msg.data || {};
-            console.log("[LayoutList] Received partial heatmap update for:", updatedAdIds);
+            console.log(
+              "[LayoutList] Received partial heatmap update for:",
+              updatedAdIds,
+            );
             if (Array.isArray(points) && points.length > 0) {
               setHeatmapData((prev) => [...prev, ...points]);
             }
@@ -325,9 +346,10 @@ const LayoutList = () => {
             }
             break;
           }
-  
+
           case "aggregatesUpdate": {
-            const { adId, totalSessions, totalDwellTime, totalGazeSamples } = msg.data;
+            const { adId, totalSessions, totalDwellTime, totalGazeSamples } =
+              msg.data;
             setAggregateData((prevAggs) => {
               let found = false;
               const updated = prevAggs.map((agg) => {
@@ -355,7 +377,7 @@ const LayoutList = () => {
             });
             break;
           }
-  
+
           default:
             console.warn("[LayoutList] Unhandled WS message type:", msg.type);
         }
@@ -363,12 +385,12 @@ const LayoutList = () => {
         console.error("[LayoutList] Error parsing WS message:", err);
       }
     };
-  
+
     ws.onclose = () => {
       console.warn("[LayoutList] Heatmap WebSocket closed.");
       websocketRef.current = null;
     };
-  
+
     ws.onerror = (err) => {
       console.error("[LayoutList] Heatmap WebSocket error:", err);
     };
@@ -590,7 +612,7 @@ const LayoutList = () => {
       });
       setIsTracking(true);
       WebGazerSingleton.setCameraVisibility(showCamera);
-  
+
       // **Ensure red dot is hidden when tracking starts**
       WebGazerSingleton.showPredictionPoints(false);
     } catch (err) {
@@ -607,7 +629,7 @@ const LayoutList = () => {
       alert("You must calibrate first.");
       return;
     }
-  
+
     try {
       await WebGazerSingleton.initialize((data) => {
         if (data) handleGazeAtAd(data);
@@ -615,7 +637,7 @@ const LayoutList = () => {
       setIsTracking(true);
       console.log("[LayoutList] Eye Tracking resumed.");
       WebGazerSingleton.setCameraVisibility(showCamera);
-  
+
       // **Ensure red dot is hidden when tracking resumes**
       WebGazerSingleton.showPredictionPoints(false);
     } catch (err) {
@@ -629,13 +651,13 @@ const LayoutList = () => {
     }
     WebGazerSingleton.end();
     setIsTracking(false);
-  
+
     setRetentionTime(0);
     setIsLookingAtAd(false);
     setGazedAdId(null);
     setCurrentGazeData(null);
     console.log("WebGazer tracking ended.");
-  
+
     // **Ensure red dot is hidden when tracking ends**
     WebGazerSingleton.showPredictionPoints(false);
   };
@@ -682,8 +704,188 @@ const LayoutList = () => {
       : layouts;
   const hasMoreLayouts = isMobile && layouts.length > MOBILE_DISPLAY_LIMIT;
 
+  //---------------------------------------
+  // 16) Webgazer and Analytics Controls (ys here dont flame me)
+  //---------------------------------------
+  const controlGroups = [
+    {
+      title: "Calibration",
+      controls: [
+        {
+          show: !isCalibrating && !calibrationCompleted,
+          component: (
+            <button
+              onClick={handleStartCalibration}
+              className="flex w-full items-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-white transition hover:bg-blue-600 disabled:opacity-50"
+              disabled={isCalibrating || isTracking || !selectedLayout}
+            >
+              <Eye className="h-4 w-4" />
+              Start Calibration
+            </button>
+          ),
+        },
+        {
+          show: true,
+          component: (
+            <button
+              onClick={handleRecalibrate}
+              className="flex w-full items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2.5 text-white transition hover:bg-yellow-600 disabled:opacity-50"
+              disabled={!selectedLayout}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Recalibrate
+            </button>
+          ),
+        },
+      ],
+    },
+    {
+      title: "Tracking",
+      controls: [
+        {
+          show: !isTracking,
+          component: (
+            <button
+              onClick={handleStartTracking}
+              className="flex w-full items-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-white transition hover:bg-blue-600 disabled:opacity-50"
+              disabled={
+                !isModelReady ||
+                !(
+                  WebGazerSingleton.hasSavedCalibration() ||
+                  calibrationCompleted
+                )
+              }
+            >
+              <PlayCircle className="h-4 w-4" />
+              Start Eye Tracking
+            </button>
+          ),
+        },
+        {
+          show: isTracking,
+          component: (
+            <button
+              onClick={handleEndTracking}
+              className="flex w-full items-center gap-2 rounded-lg bg-red-500 px-4 py-2.5 text-white transition hover:bg-red-600"
+            >
+              <StopCircle className="h-4 w-4" />
+              End Tracking
+            </button>
+          ),
+        },
+        {
+          show: !isTracking && calibrationCompleted,
+          component: (
+            <button
+              onClick={handleResumeTracking}
+              className="flex w-full items-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-white transition hover:bg-blue-600 disabled:opacity-50"
+              disabled={!selectedLayout}
+            >
+              <PlayCircle className="h-4 w-4" />
+              Resume Eye Tracking
+            </button>
+          ),
+        },
+      ],
+    },
+    {
+      title: "Visualization",
+      controls: [
+        {
+          show: true,
+          component: (
+            <button
+              onClick={toggleBorders}
+              className="flex w-full items-center gap-2 rounded-lg bg-gray-500 px-4 py-2.5 text-white transition hover:bg-gray-600"
+            >
+              <Grid className="h-4 w-4" />
+              {showBorders ? "Hide Borders" : "Show Borders"}
+            </button>
+          ),
+        },
+        {
+          show: true,
+          component: (
+            <button
+              onClick={handleToggleCamera}
+              className="flex w-full items-center gap-2 rounded-lg bg-gray-500 px-4 py-2.5 text-white transition hover:bg-gray-600"
+            >
+              <Camera className="h-4 w-4" />
+              {showCamera ? "Hide Camera" : "Show Camera"}
+            </button>
+          ),
+        },
+        {
+          show: true,
+          component: (
+            <button
+              onClick={handleToggleVisualizer}
+              className="flex w-full items-center gap-2 rounded-lg bg-gray-500 px-4 py-2.5 text-white transition hover:bg-gray-600"
+            >
+              <Eye className="h-4 w-4" />
+              {showVisualizer ? "Hide Gaze Dot" : "Show Gaze Dot"}
+            </button>
+          ),
+        },
+        {
+          show: true,
+          component: (
+            <button
+              onClick={() => setShowHeatmap((prev) => !prev)}
+              className="flex w-full items-center gap-2 rounded-lg bg-green-500 px-4 py-2.5 text-white transition hover:bg-green-600"
+            >
+              <Activity className="h-4 w-4" />
+              {showHeatmap ? "Hide Heatmap" : "Show Heatmap"}
+            </button>
+          ),
+        },
+      ],
+    },
+  ];
+
   return (
     <div className="relative min-h-screen dark:dark-bg">
+      {/* Panel Toggle Button */}
+      <button
+        onClick={() => setIsPanelOpen(!isPanelOpen)}
+        className="fixed bottom-0 left-1/2 z-50 -translate-x-1/2 rounded-t-lg bg-gray-800 px-4 py-2 text-white shadow-lg transition-transform hover:bg-gray-700"
+      >
+        <div className="flex items-center gap-2">
+          <Settings className="h-4 w-4" />
+          Controls
+          {isPanelOpen ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronUp className="h-4 w-4" />
+          )}
+        </div>
+      </button>
+
+      {/* Bottom Controls Panel */}
+      <div
+        className={`fixed bottom-0 left-0 z-40 w-full transform bg-white shadow-xl transition-transform duration-300 ease-in-out dark:bg-gray-800 ${
+          isPanelOpen ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="mx-auto max-w-7xl p-4">
+          <div className="grid grid-cols-3 gap-8">
+            {controlGroups.map((group, index) => (
+              <div key={index} className="space-y-3">
+                <h3 className="font-semibold text-gray-500 dark:text-gray-400">
+                  {group.title}
+                </h3>
+                <div className="flex flex-col gap-2">
+                  {group.controls.map((control, controlIndex) => (
+                    <div key={controlIndex}>
+                      {control.show && control.component}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
       <Navbar />
 
       <div className="container mx-auto w-full p-4 md:p-12">
@@ -781,7 +983,7 @@ const LayoutList = () => {
               )}
               <div
                 ref={previewRef}
-                className={`h-full w-full overflow-hidden rounded-lg light-bg ${
+                className={`h-full w-full overflow-hidden rounded-lg bg-white ${
                   isFullscreen ? "flex items-center justify-center" : ""
                 }`}
               >
@@ -837,170 +1039,89 @@ const LayoutList = () => {
           </div>
         </div>
 
-        {/* ===== Calibration & Tracking Controls ===== */}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3 px-4">
-          {/* Start Calibration */}
-          {!isCalibrating && !calibrationCompleted && (
-            <button
-              onClick={handleStartCalibration}
-              className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
-              disabled={isCalibrating || isTracking || !selectedLayout}
-            >
-              Start Calibration
-            </button>
-          )}
-
-          {/* Recalibrate */}
-          <button
-            onClick={handleRecalibrate}
-            className="rounded-lg bg-yellow-500 px-6 py-2.5 text-white transition hover:bg-yellow-600"
-            disabled={!selectedLayout}
-          >
-            Recalibrate
-          </button>
-
-          {/* Start Eye Tracking */}
-          {!isTracking && (
-            <button
-              onClick={handleStartTracking}
-              className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
-              disabled={
-                !isModelReady ||
-                !(
-                  WebGazerSingleton.hasSavedCalibration() ||
-                  calibrationCompleted
-                )
-              }
-            >
-              Start Eye Tracking
-            </button>
-          )}
-
-          {/* End Tracking */}
-          {isTracking && (
-            <button
-              onClick={handleEndTracking}
-              className="rounded-lg bg-red-500 px-6 py-2.5 text-white transition hover:bg-red-600"
-            >
-              End Tracking
-            </button>
-          )}
-
-          {/* Resume Tracking */}
-          {!isTracking && calibrationCompleted && (
-            <button
-              onClick={handleResumeTracking}
-              className="rounded-lg bg-blue-500 px-6 py-2.5 text-white transition hover:bg-blue-600"
-              disabled={!selectedLayout}
-            >
-              Resume Eye Tracking
-            </button>
-          )}
-
-          {/* Toggle Bounding Box Borders */}
-          <button
-            onClick={toggleBorders}
-            className="rounded-lg bg-gray-500 px-6 py-2.5 text-white transition hover:bg-gray-600"
-          >
-            {showBorders ? "Hide Borders" : "Show Borders"}
-          </button>
-
-          {/* Toggle Camera Feed */}
-          <button
-            onClick={handleToggleCamera}
-            className="rounded-lg bg-gray-500 px-6 py-2.5 text-white transition hover:bg-gray-600"
-          >
-            {showCamera ? "Hide Camera" : "Show Camera"}
-          </button>
-
-          {/* Toggle Gaze Visualizer */}
-          <button
-            onClick={handleToggleVisualizer}
-            className="rounded-lg bg-gray-500 px-6 py-2.5 text-white transition hover:bg-gray-600"
-          >
-            {showVisualizer ? "Hide Gaze Dot" : "Show Gaze Dot"}
-          </button>
-
-          {/* Toggle Heatmap */}
-          <button
-            onClick={() => setShowHeatmap((prev) => !prev)}
-            className="rounded-lg bg-green-500 px-6 py-2.5 text-white transition hover:bg-green-600"
-          >
-            {showHeatmap ? "Hide Heatmap" : "Show Heatmap"}
-          </button>
-        </div>
-
         {/* ===== Viewer Analytics & Aggregates ===== */}
         {selectedLayout && (
-          <div className="mt-8 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+          <div className="mt-8 rounded-lg bg-white p-6 shadow primary-text dark:bg-gray-800 dark:secondary-text">
             <h2 className="mb-4 text-xl font-bold">Viewer Analytics</h2>
-            <p className="mb-2">
-              <strong>Retention Time:</strong> {retentionTime} seconds
-            </p>
-            <p>
-              <strong>Looking at Ad:</strong>{" "}
-              {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
-            </p>
 
-            {calibrationCompleted && (
-              <div className="mt-4 rounded-lg bg-green-100 p-4 dark:bg-green-900">
-                <p className="text-green-700 dark:text-green-200">
-                  Calibration was successfully completed.
+            {!calibrationCompleted &&
+            !WebGazerSingleton.hasSavedCalibration() ? (
+              <div className="rounded-lg bg-blue-100 p-4 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                Complete Calibration to view user analytics
+              </div>
+            ) : (
+              <>
+                <p className="mb-2">
+                  <strong>Retention Time:</strong> {retentionTime} seconds
                 </p>
-              </div>
-            )}
+                <p>
+                  <strong>Looking at Ad:</strong>{" "}
+                  {isLookingAtAd ? `Yes (Ad ID: ${gazedAdId})` : "No"}
+                </p>
 
-            {/* Show aggregator info for all ads */}
-            {aggregateData?.length > 0 && (
-              <div className="mt-6 rounded-md bg-gray-100 p-4 dark:bg-gray-700">
-                <h3 className="mb-2 text-lg font-semibold">Ad Aggregates</h3>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {aggregateData.map((agg) => (
-                    <div
-                      key={agg.adId}
-                      className="rounded-lg border border-gray-300 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800"
-                    >
-                      <p className="mb-1 text-sm font-medium text-gray-500 dark:text-gray-300">
-                        Ad ID
-                      </p>
-                      <p className="break-all text-base font-bold text-gray-800 dark:text-gray-100">
-                        {agg.adId}
-                      </p>
+                {calibrationCompleted && (
+                  <div className="mt-4 rounded-lg bg-green-100 p-4 dark:bg-green-900">
+                    <p className="text-green-700 dark:text-green-200">
+                      Calibration was successfully completed.
+                    </p>
+                  </div>
+                )}
 
-                      <hr className="my-2 border-gray-200 dark:border-gray-600" />
+                {/* Show aggregator info for all ads */}
+                {aggregateData?.length > 0 && (
+                  <div className="mt-6 rounded-md bg-gray-100 p-4 dark:bg-gray-700">
+                    <h3 className="mb-2 text-lg font-semibold">
+                      Ad Aggregates
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {aggregateData.map((agg) => (
+                        <div
+                          key={agg.adId}
+                          className="rounded-lg border border-gray-300 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-800"
+                        >
+                          <p className="mb-1 text-sm font-medium text-gray-500 dark:text-gray-300">
+                            Ad ID
+                          </p>
+                          <p className="break-all text-base font-bold text-gray-800 dark:text-gray-100">
+                            {agg.adId}
+                          </p>
 
-                      <div className="flex flex-col space-y-1">
-                        <div>
-                          <span className="text-sm text-gray-500 dark:text-gray-300">
-                            Total Sessions:
-                          </span>
-                          <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
-                            {agg.totalSessions}
-                          </span>
+                          <hr className="my-2 border-gray-200 dark:border-gray-600" />
+
+                          <div className="flex flex-col space-y-1">
+                            <div>
+                              <span className="text-sm text-gray-500 dark:text-gray-300">
+                                Total Sessions:
+                              </span>
+                              <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
+                                {agg.totalSessions}
+                              </span>
+                            </div>
+
+                            <div>
+                              <span className="text-sm text-gray-500 dark:text-gray-300">
+                                Total Dwell Time:
+                              </span>
+                              <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
+                                {agg.totalDwellTime}
+                              </span>
+                            </div>
+
+                            <div>
+                              <span className="text-sm text-gray-500 dark:text-gray-300">
+                                Total Gaze Samples:
+                              </span>
+                              <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
+                                {agg.totalGazeSamples}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-
-                        <div>
-                          <span className="text-sm text-gray-500 dark:text-gray-300">
-                            Total Dwell Time:
-                          </span>
-                          <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
-                            {agg.totalDwellTime}
-                          </span>
-                        </div>
-
-                        <div>
-                          <span className="text-sm text-gray-500 dark:text-gray-300">
-                            Total Gaze Samples:
-                          </span>
-                          <span className="ml-1 font-semibold text-gray-800 dark:text-gray-100">
-                            {agg.totalGazeSamples}
-                          </span>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

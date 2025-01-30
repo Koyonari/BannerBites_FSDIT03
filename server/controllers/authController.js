@@ -1,10 +1,10 @@
 const { authenticateUser } = require('../middleware/authMiddleware');
 
 const login = async (req, res) => {
-    const { username, password, roles } = req.body;
+    const { username, password } = req.body;
   
     try {
-      const token = await authenticateUser(username, password, roles); // Pass role to the authenticateUser function
+      const token = await authenticateUser(username, password);
       res.cookie('authToken', token, {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
@@ -13,9 +13,8 @@ const login = async (req, res) => {
   
       res.status(200).json({ message: "Login successful" });
     } catch (error) {
-      res.status(401).json({ message: 'Invalid username, password, or role' });
+      res.status(401).json({ message: 'Invalid username or password' });
     }
   };
   
-
 module.exports = { login };

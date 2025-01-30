@@ -11,6 +11,7 @@ const authRoutes = require("./routes/authRoutes");
 const adsRoutes = require("./routes/adsRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const heatmapRoutes = require("./routes/heatmapRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 const { handleWebSocketMessage } = require("./controllers/webSocketController");
 
 
@@ -51,6 +52,7 @@ app.post("/generate-presigned-url", generatePresignedUrlController);
 app.use('/api/ads', adsRoutes);
 app.use('/api/roles', roleRoutes);
 app.use("/api/heatmap", heatmapRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // WebSocket Server Handling
 wss.on("connection", (ws) => {
