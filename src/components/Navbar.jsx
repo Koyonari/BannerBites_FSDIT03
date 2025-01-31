@@ -11,9 +11,11 @@ import {
 import Hamburger from "hamburger-react";
 import { useNavigate } from "react-router-dom";
 import React from "react";
+import Login from "./Login/Login";
 
 function Navbar() {
   const navigate = useNavigate();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   // Toggle Menu
   const [isOpen, setOpen] = useState(false);
@@ -68,7 +70,12 @@ function Navbar() {
 
     return size;
   };
-
+  const handleLoginClick = () => {
+    setIsLoginOpen(true);
+    if (isOpen) {
+      setOpen(false); // Close mobile menu if open
+    }
+  };
   return (
     <>
       <nav className="fixed left-0 right-0 top-0 z-[999] border-b-2 border-b-black transition-colors duration-500 light-bg dark:border-b-white dark:dark-bg">
@@ -99,7 +106,7 @@ function Navbar() {
             />
             <CircleUserRound
               className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
-              onClick={() => navigate("/login")}
+              onClick={handleLoginClick}
             />
             <UserRoundPen
               className="h-6 w-6 cursor-pointer transition-colors duration-500 primary-text dark:secondary-text xl:h-8 xl:w-8 2xl:h-10 2xl:w-10"
@@ -136,7 +143,7 @@ function Navbar() {
               { Icon: LayoutList, path: "/layouts" },
               { Icon: ImagePlus, path: "/adunit" },
               { Icon: ChartColumnBig, path: "/dashboard" },
-              { Icon: CircleUserRound, path: "/login" },
+              { Icon: CircleUserRound, action: handleLoginClick },
               { Icon: UserRoundPen, path: "/customrole" },
             ].map(({ Icon, path }) => (
               <div
@@ -162,6 +169,9 @@ function Navbar() {
         </div>
       </nav>
       <div className="h-24 light-bg dark:dark-bg xl:h-36"></div>
+
+      {/* Login Popup */}
+      <Login isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </>
   );
 }

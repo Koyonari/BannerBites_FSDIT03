@@ -27,3 +27,9 @@ body {
 #webgazerVideoContainer {
   z-index: 1000;
 }
+
+#webgazerVideoFeed {
+  border: 2.5px solid grey;
+  border-radius: 1rem;
+  background: grey;
+}

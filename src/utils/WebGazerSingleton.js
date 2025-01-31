@@ -29,7 +29,9 @@ class WebGazerSingleton {
         const cookieData = Cookies.get("webgazerCalib");
         if (cookieData) {
           localStorage.setItem("webgazerGlobalData", cookieData);
-          console.log("[WebGazerSingleton] Restored calibration from cookie to localStorage.");
+          console.log(
+            "[WebGazerSingleton] Restored calibration from cookie to localStorage.",
+          );
         }
 
         // 2) Dynamically import WebGazer
@@ -49,7 +51,9 @@ class WebGazerSingleton {
         webgazer.showPredictionPoints(false);
         webgazer.showFaceOverlay(false);
         webgazer.showVideo(true);
-        console.log("[WebGazerSingleton] Default WebGazer visualizations disabled.");
+        console.log(
+          "[WebGazerSingleton] Default WebGazer visualizations disabled.",
+        );
 
         // 5) Style the video feed
         setTimeout(() => {
@@ -66,7 +70,9 @@ class WebGazerSingleton {
             videoElement.style.pointerEvents = "none"; // Click-through
             console.log("[WebGazerSingleton] Video element styled.");
           } else {
-            console.warn("[WebGazerSingleton] Video element not found for styling.");
+            console.warn(
+              "[WebGazerSingleton] Video element not found for styling.",
+            );
           }
         }, 1000); // Delay to ensure DOM is updated
 
@@ -124,7 +130,9 @@ class WebGazerSingleton {
         this.instance.showPredictionPoints(false);
         this.instance.showFaceOverlay(false);
         this.instance.showVideo(true);
-        console.log("[WebGazerSingleton] Default WebGazer visualizations disabled.");
+        console.log(
+          "[WebGazerSingleton] Default WebGazer visualizations disabled.",
+        );
 
         // Style the video feed
         setTimeout(() => {
@@ -141,7 +149,9 @@ class WebGazerSingleton {
             videoElement.style.pointerEvents = "none"; // Click-through
             console.log("[WebGazerSingleton] Video element styled.");
           } else {
-            console.warn("[WebGazerSingleton] Video element not found for styling.");
+            console.warn(
+              "[WebGazerSingleton] Video element not found for styling.",
+            );
           }
         }, 1000); // Delay to ensure DOM is updated
       }
@@ -195,12 +205,16 @@ class WebGazerSingleton {
    */
   static async end() {
     if (this.initializing) {
-      console.log("[WebGazerSingleton] Waiting for initialization to complete before ending.");
+      console.log(
+        "[WebGazerSingleton] Waiting for initialization to complete before ending.",
+      );
       await this.initializing;
     }
 
     if (!this.instance || !this.trackingStarted) {
-      console.warn("[WebGazerSingleton] WebGazer not initialized or already ended.");
+      console.warn(
+        "[WebGazerSingleton] WebGazer not initialized or already ended.",
+      );
       return;
     }
 
@@ -240,7 +254,9 @@ class WebGazerSingleton {
   static saveCalibrationDataToCookie() {
     const data = localStorage.getItem("webgazerGlobalData");
     if (!data) {
-      console.log("[WebGazerSingleton] No calibration data in localStorage to save.");
+      console.log(
+        "[WebGazerSingleton] No calibration data in localStorage to save.",
+      );
       return;
     }
     Cookies.set("webgazerCalib", data, {
@@ -258,7 +274,9 @@ class WebGazerSingleton {
    */
   static setCameraVisibility(visible) {
     if (!this.instance) {
-      console.warn("[WebGazerSingleton] Cannot set camera visibility. WebGazer not initialized.");
+      console.warn(
+        "[WebGazerSingleton] Cannot set camera visibility. WebGazer not initialized.",
+      );
       return;
     }
     this.instance.showVideo(visible);
@@ -272,7 +290,9 @@ class WebGazerSingleton {
    */
   static showPredictionPoints(show) {
     if (!this.instance) {
-      console.warn("[WebGazerSingleton] Cannot set prediction points. WebGazer not initialized.");
+      console.warn(
+        "[WebGazerSingleton] Cannot set prediction points. WebGazer not initialized.",
+      );
       return;
     }
     this.instance.showPredictionPoints(show);
@@ -285,7 +305,9 @@ class WebGazerSingleton {
    */
   static showFaceOverlay(show) {
     if (!this.instance) {
-      console.warn("[WebGazerSingleton] Cannot set face overlay. WebGazer not initialized.");
+      console.warn(
+        "[WebGazerSingleton] Cannot set face overlay. WebGazer not initialized.",
+      );
       return;
     }
     this.instance.showFaceOverlay(show);
@@ -298,7 +320,9 @@ class WebGazerSingleton {
    */
   static showVideo(show) {
     if (!this.instance) {
-      console.warn("[WebGazerSingleton] Cannot set video visibility. WebGazer not initialized.");
+      console.warn(
+        "[WebGazerSingleton] Cannot set video visibility. WebGazer not initialized.",
+      );
       return;
     }
     this.instance.showVideo(show);
