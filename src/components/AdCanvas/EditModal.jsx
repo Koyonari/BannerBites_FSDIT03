@@ -183,62 +183,62 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
 
   return (
     <Modal isOpen={!!ad} onClose={onClose}>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-opacity-50 p-4 dark-bg">
-        <div className="!z-[9999] flex h-[80vh] w-full max-w-2xl flex-col rounded-lg border light-bg dark:white-border dark:dark-bg">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-opacity-50 p-4">
+        <div className="relative h-[80vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-border-light bg-base-white shadow-xl dark:border-border-dark dark:bg-bg-dark">
           {/* Header */}
-          <div className="border-b p-6">
-            <h3 className="text-2xl font-bold dark:secondary-text">
+          <div className="border-b border-border-light p-6 dark:border-border-dark">
+            <h2 className="text-2xl font-bold text-text-light dark:text-base-white">
               Edit {adType.charAt(0).toUpperCase() + adType.slice(1)} Ad
-            </h3>
+            </h2>
           </div>
 
           {/* Content */}
-          <div className="flex h-full flex-col">
+          <div className="flex h-[calc(100%-8rem)] flex-col">
             <div className="flex-1 overflow-y-auto p-6">
               <div className="mx-auto grid max-w-5xl gap-6">
                 {/* Title */}
-                <div>
-                  <label className="neutral-text mb-2 block text-xl dark:secondary-text">
-                    Title
-                  </label>
+                <div className="group relative">
                   <input
                     name="title"
                     type="text"
                     value={formData.content.title}
                     onChange={handleInputChange}
-                    className="neutral-text h-12 w-full rounded-md border p-3"
-                    placeholder="Enter title"
+                    className="peer h-14 w-full rounded-lg border border-border-light bg-transparent px-4 text-text-light outline-none transition-all duration-300 placeholder:text-transparent focus:border-bg-accent focus:ring-2 focus:ring-ring-primary/20 dark:border-border-dark dark:text-text-dark"
+                    placeholder="Title"
                   />
+                  <label className="absolute left-4 top-1/2 z-10 origin-[0] -translate-y-1/2 transform text-text-sublight transition-all duration-300 peer-focus:-translate-y-8 peer-focus:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-8 peer-[:not(:placeholder-shown)]:scale-75 dark:text-text-subdark">
+                    Title
+                  </label>
                 </div>
 
                 {/* Description and Colors Section */}
                 <div className="grid grid-cols-2 gap-6">
                   {/* Description */}
-                  <div>
-                    <label className="neutral-text mb-2 block text-xl dark:secondary-text">
-                      Description
-                    </label>
+                  <div className="group relative">
                     <textarea
                       name="description"
                       value={formData.content.description}
                       onChange={handleInputChange}
-                      className="h-40 w-full resize-none rounded-md border p-3"
-                      placeholder="Enter description"
+                      className="peer h-40 w-full resize-none rounded-lg border border-border-light bg-transparent p-4 text-text-light outline-none transition-all duration-300 placeholder:text-transparent focus:border-bg-accent focus:ring-2 focus:ring-ring-primary/20 dark:border-border-dark dark:text-text-dark"
+                      placeholder="Description"
                     />
+                    <label className="absolute left-4 top-4 z-10 origin-[0] transform text-text-sublight transition-all duration-300 peer-focus:-translate-y-8 peer-focus:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-8 peer-[:not(:placeholder-shown)]:scale-75 dark:text-text-subdark">
+                      Description
+                    </label>
                   </div>
 
                   {/* Colors */}
                   <div className="space-y-6">
                     {isTextBased && (
                       <div className="relative">
-                        <label className="neutral-text mb-2 block text-xl dark:secondary-text">
+                        <label className="mb-2 block text-sm font-medium text-text-sublight dark:text-text-subdark">
                           Text Color
                         </label>
                         <div
                           onClick={() =>
                             setShowTextColorPicker(!showTextColorPicker)
                           }
-                          className="flex h-12 w-full cursor-pointer items-center space-x-2 rounded-md border p-3"
+                          className="flex h-14 w-full cursor-pointer items-center space-x-2 rounded-lg border border-border-light p-4 text-text-light transition-all hover:border-bg-accent dark:border-border-dark dark:text-text-dark"
                         >
                           <div
                             className="h-6 w-6 rounded border"
@@ -266,14 +266,14 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                     )}
 
                     <div className="relative">
-                      <label className="neutral-text mb-2 block text-xl dark:secondary-text">
+                      <label className="mb-2 block text-sm font-medium text-text-sublight dark:text-text-subdark">
                         Border Color
                       </label>
                       <div
                         onClick={() =>
                           setShowBorderColorPicker(!showBorderColorPicker)
                         }
-                        className="flex h-12 w-full cursor-pointer items-center space-x-2 rounded-md border p-3"
+                        className="flex h-14 w-full cursor-pointer items-center space-x-2 rounded-lg border border-border-light p-4 text-text-light transition-all hover:border-bg-accent dark:border-border-dark dark:text-text-dark"
                       >
                         <div
                           className="h-6 w-6 rounded border"
@@ -284,7 +284,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                         <span>{formData.styles.borderColor}</span>
                       </div>
                       {showBorderColorPicker && (
-                        <div className="absolute z-10">
+                        <div className="absolute z-20">
                           <div
                             className="fixed inset-0"
                             onClick={() => setShowBorderColorPicker(false)}
@@ -304,62 +304,62 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                 {/* Font Settings */}
                 {isTextBased && (
                   <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="neutral-text mb-2 block text-xl dark:secondary-text">
-                        Font Family
-                      </label>
+                    <div className="group relative">
                       <input
                         name="font"
                         type="text"
                         value={formData.styles.font}
                         onChange={handleStyleChange}
-                        className="h-12 w-full rounded-md border p-3"
-                        placeholder="Font Family (e.g., Arial)"
+                        className="peer h-14 w-full rounded-lg border border-border-light bg-transparent px-4 text-text-light outline-none transition-all duration-300 placeholder:text-transparent focus:border-bg-accent focus:ring-2 focus:ring-ring-primary/20 dark:border-border-dark dark:text-text-dark"
+                        placeholder="Font Family"
                       />
+                      <label className="absolute left-4 top-1/2 z-10 origin-[0] -translate-y-1/2 transform text-text-sublight transition-all duration-300 peer-focus:-translate-y-8 peer-focus:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-8 peer-[:not(:placeholder-shown)]:scale-75 dark:text-text-subdark">
+                        Font Family
+                      </label>
                     </div>
 
-                    <div>
-                      <label className="neutral-text mb-2 block text-xl dark:secondary-text">
-                        Font Size
-                      </label>
+                    <div className="group relative">
                       <input
                         name="fontSize"
                         type="text"
                         value={formData.styles.fontSize}
                         onChange={handleStyleChange}
-                        className="h-12 w-full rounded-md border p-3"
-                        placeholder="Font Size (e.g., 14px)"
+                        className="peer h-14 w-full rounded-lg border border-border-light bg-transparent px-4 text-text-light outline-none transition-all duration-300 placeholder:text-transparent focus:border-bg-accent focus:ring-2 focus:ring-ring-primary/20 dark:border-border-dark dark:text-text-dark"
+                        placeholder="Font Size"
                       />
+                      <label className="absolute left-4 top-1/2 z-10 origin-[0] -translate-y-1/2 transform text-text-sublight transition-all duration-300 peer-focus:-translate-y-8 peer-focus:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-8 peer-[:not(:placeholder-shown)]:scale-75 dark:text-text-subdark">
+                        Font Size
+                      </label>
                     </div>
                   </div>
                 )}
 
                 {/* Scheduled Time */}
-                <div>
-                  <label className="neutral-text mb-2 block text-xl dark:secondary-text">
-                    Scheduled Time
-                  </label>
+                <div className="group relative">
                   <input
                     type="time"
                     value={scheduledTimeState}
                     onChange={(e) => setScheduledTimeState(e.target.value)}
-                    className="h-12 w-full rounded-md border p-3"
+                    className="peer h-14 w-full rounded-lg border border-border-light bg-transparent px-4 text-text-light outline-none transition-all duration-300 placeholder:text-transparent focus:border-bg-accent focus:ring-2 focus:ring-ring-primary/20 dark:border-border-dark dark:text-text-dark"
                   />
+                  <label className="absolute left-4 top-1/2 z-10 origin-[0] -translate-y-1/2 transform text-text-sublight transition-all duration-300 peer-focus:-translate-y-8 peer-focus:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-8 peer-[:not(:placeholder-shown)]:scale-75 dark:text-text-subdark">
+                    Scheduled Time
+                  </label>
                 </div>
 
                 {/* Media Upload Section */}
                 {(adType === "image" || adType === "video") && (
                   <div className="w-full space-y-4">
-                    <div>
-                      <label className="neutral-text mb-1 block text-xl dark:secondary-text">
-                        Upload {adType}
-                      </label>
+                    <div className="group relative">
                       <input
                         type="file"
                         accept={`${adType}/*`}
                         onChange={handleFileUpload}
-                        className="w-full rounded-md border p-2"
+                        className="peer h-14 w-full rounded-lg border border-border-light bg-transparent px-4 text-text-light outline-none transition-all duration-300 focus:border-bg-accent focus:ring-2 focus:ring-ring-primary/20 dark:border-border-dark dark:text-text-dark"
                       />
+                      <label className="absolute left-4 top-1/2 z-10 origin-[0] -translate-y-1/2 transform text-text-sublight transition-all duration-300 peer-focus:-translate-y-8 peer-focus:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-8 peer-[:not(:placeholder-shown)]:scale-75 dark:text-text-subdark">
+                        Upload {adType}
+                      </label>
                     </div>
 
                     {(file || mediaUrl) && (
@@ -368,10 +368,10 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                           <img
                             src={file ? URL.createObjectURL(file) : mediaUrl}
                             alt="Preview"
-                            className="h-auto max-w-full rounded-md"
+                            className="h-auto max-w-full rounded-lg"
                           />
                         ) : (
-                          <video controls className="w-full rounded-md">
+                          <video controls className="w-full rounded-lg">
                             <source
                               src={file ? URL.createObjectURL(file) : mediaUrl}
                               type={file ? file.type : "video/mp4"}
@@ -387,18 +387,18 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             </div>
 
             {/* Footer */}
-            <div className="neutralalt-bg border-t p-6 dark:dark-bg">
+            <div className="border-t border-border-light bg-base-white p-6 dark:border-border-dark dark:bg-bg-dark">
               <div className="mx-auto flex max-w-5xl justify-end space-x-4">
                 <button
                   onClick={onClose}
-                  className="hover:neutralalt-bg rounded-md border px-6 py-2 dark:light-bg"
+                  className="rounded-lg border border-border-light px-6 py-2 text-text-light transition-all hover:bg-gray-50 dark:border-border-dark dark:text-text-dark dark:hover:bg-gray-800"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="primary-bg hover:secondary-bg rounded-md px-6 py-2 secondary-text"
                   disabled={isUploading}
+                  className="rounded-lg bg-bg-accent px-6 py-2 font-semibold text-base-white shadow-lg shadow-bg-accent/20 transition-all hover:bg-bg-subaccent focus:ring-2 focus:ring-ring-primary focus:ring-offset-2 disabled:opacity-50 dark:shadow-bg-accent/20"
                 >
                   Save Changes
                 </button>
@@ -407,6 +407,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
           </div>
         </div>
       </div>
+
       <StyledAlert
         isOpen={alertConfig.isOpen}
         onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
