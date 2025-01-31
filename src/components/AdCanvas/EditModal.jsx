@@ -350,16 +350,16 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                 {/* Media Upload Section */}
                 {(adType === "image" || adType === "video") && (
                   <div className="w-full space-y-4">
-                    <div className="group relative">
+                    <div>
+                      <label className="blocktext-xl mb-1 neutral-text dark:secondary-text">
+                        Upload {adType}
+                      </label>
                       <input
                         type="file"
                         accept={`${adType}/*`}
                         onChange={handleFileUpload}
-                        className="peer h-14 w-full rounded-lg border border-border-light bg-transparent px-4 text-text-light outline-none transition-all duration-300 focus:border-bg-accent focus:ring-2 focus:ring-ring-primary/20 dark:border-border-dark dark:text-text-dark"
+                        className="w-full rounded-md border border-border-light p-2 primary-text dark:border-border-dark dark:secondary-text"
                       />
-                      <label className="absolute left-4 top-1/2 z-10 origin-[0] -translate-y-1/2 transform text-text-sublight transition-all duration-300 peer-focus:-translate-y-8 peer-focus:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-8 peer-[:not(:placeholder-shown)]:scale-75 dark:text-text-subdark">
-                        Upload {adType}
-                      </label>
                     </div>
 
                     {(file || mediaUrl) && (
@@ -368,10 +368,10 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
                           <img
                             src={file ? URL.createObjectURL(file) : mediaUrl}
                             alt="Preview"
-                            className="h-auto max-w-full rounded-lg"
+                            className="h-auto max-w-full rounded-md"
                           />
                         ) : (
-                          <video controls className="w-full rounded-lg">
+                          <video controls className="w-full rounded-md">
                             <source
                               src={file ? URL.createObjectURL(file) : mediaUrl}
                               type={file ? file.type : "video/mp4"}
@@ -387,7 +387,7 @@ const EditModal = ({ ad, scheduledTime, onSave, onClose }) => {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-border-light bg-base-white p-6 dark:border-border-dark dark:bg-bg-dark">
+            <div className="border-t border-border-light bg-base-white p-6 pb-0 dark:border-border-dark dark:bg-bg-dark">
               <div className="mx-auto flex max-w-5xl justify-end space-x-4">
                 <button
                   onClick={onClose}
