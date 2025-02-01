@@ -300,30 +300,43 @@ const LayoutList = () => {
   //---------------------------------------
   // 7.1) Establish Heatmap WebSocket
   //---------------------------------------
-  const establishHeatmapWebSocketConnection = (adIds) => {
+  const establishHeatmapWebSocketConnection = (layoutId, adIds) => {
+    if (!layoutId) {
+      console.error("[LayoutList] layoutId is undefined. Cannot subscribe for layout updates.");
+      return;
+    }
     if (!adIds || adIds.length === 0) return;
+    
     console.log("[LayoutList] Opening heatmap WebSocket...");
-
+  
     const ws = new WebSocket("ws://localhost:5000");
     websocketRef.current = ws;
-
+  
     ws.onopen = () => {
       console.log("[LayoutList] Heatmap WebSocket connected.");
-
-      // 1) Subscribe to heatmap updates
+  
+      // 1) Subscribe to layout updates using the layoutId.
+      ws.send(
+        JSON.stringify({
+          type: "subscribe",
+          layoutId, // now sending the layoutId to the server
+        })
+      );
+  
+      // 2) Subscribe to heatmap updates for the provided adIds.
       ws.send(
         JSON.stringify({
           type: "subscribeHeatmap",
           adIds,
-        }),
+        })
       );
-
-      // 2) Also subscribe to aggregator updates for these same adIds
+  
+      // 3) Also subscribe to aggregator updates for the same adIds.
       ws.send(
         JSON.stringify({
           type: "subscribeAdAggregates",
           adIds,
-        }),
+        })
       );
     };
 
