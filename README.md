@@ -134,6 +134,99 @@ advertisers to reach audiences through interactive and targeted ads.
 ![Tooltips](./public/screenshots/BannerBites_Tooltips.png)  
 **Description:** Tooltips providing additional guidance and information about features and functionality.
 
+---
+
+### 15. Preset Templates in Collapsible Sidebar
+
+![Tooltips](./public/screenshots/BannerBites_PresetTemplatesSidebar.png)  
+**Description:** Shows list of preset templates in the sidebar for more convenient and efficient methods of editing the advertisement layouts. (eg. for Stadium, Cinema, Digital Billboard, Story, Split, Triple Displays)
+
+---
+
+### 16. Presave Individual Advertisements in Collapsible Sidebar
+
+![Tooltips](./public/screenshots/BannerBites_IndividualAdSidebar.png)  
+**Description:** Shows list of presave individual advertisements in the sidebar that can be dragged and dropped onto the advertisement canvas.
+
+---
+
+### 17. Individual Advertisements
+
+![Tooltips](./public/screenshots/BannerBites_IndividualAds.png)  
+**Description:** List of individual advertisements that are reusable and make the process of creating advertisements more convenient and efficient.
+
+---
+
+### 18. Edit Individual Advertisements Popup
+
+![Tooltips](./public/screenshots/BannerBites_EditIndividualAd.png)  
+**Description:** Edit the corresponding individual advertisement.
+
+---
+
+### 19. Delete Individual Advertisements Popup
+
+![Tooltips](./public/screenshots/BannerBites_DeleteIndividualAd.png)  
+**Description:** Delete the corresponding individual advertisement.
+
+---
+
+### 20. Search Individual Advertisements
+
+![Tooltips](./public/screenshots/BannerBites_SearchIndividualAd.png)  
+**Description:** Search for individual advertisements using its corresponding titles.
+
+---
+
+### 21. Upload Individual Advertisements - Image
+
+![Tooltips](./public/screenshots/BannerBites_UploadIndividualAdPopupImage.png)  
+**Description:** Upload an individual advertisement which can be an image via a popup with title and description.
+
+---
+
+### 22. Upload Individual Advertisements - Video
+
+![Tooltips](./public/screenshots/BannerBites_UploadIndividualAdPopupVideo.png)  
+**Description:** Upload an individual advertisement which can be a video via a popup with title and description.
+
+---
+
+### 23. Analytics Dashboard Top View
+
+![Tooltips](./public/screenshots/BannerBites_Dashboard.png)  
+![Tooltips](./public/screenshots/BannerBites_Dashboard2.png)  
+**Description:** View analytics for advertisements which includes advertisement performance, total dwell time, total gaze samples and total sessions.
+
+---
+
+### 24. LogIn Popup
+
+![Tooltips](./public/screenshots/BannerBites_LogIn.png)  
+**Description:** Popup for users to log in as their corresponding roles.
+
+---
+
+### 25. LogIn Successful Popup
+
+![Tooltips](./public/screenshots/BannerBites_LoginSuccessful.png)  
+**Description:** Log in successful popup.
+
+---
+
+### 26. View & Edit Roles Page
+
+![Tooltips](./public/screenshots/BannerBites_CustomRole.png)
+![Tooltips](./public/screenshots/BannerBites_CustomRole2.png)  
+**Description:** Allows users to logout, view permissions, edit permissions for roles, create new roles and delete roles.
+
+---
+
+### 27. Dark Mode in Advertisement Canvas Example
+
+![Tooltips](./public/screenshots/BannerBites_DarkMode.png)  
+**Description:** Dark mode compatibility for the whole of BannerBites to ease the users' eyes when using this web application during night time or in the dark.
+
 ## NPM Modules Used
 
 ### Back-End Dependencies
