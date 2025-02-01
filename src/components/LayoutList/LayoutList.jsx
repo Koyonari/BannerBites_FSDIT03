@@ -245,7 +245,7 @@ const LayoutList = () => {
       setAggregateData(allAggregates);
 
       // 5) Establish WebSocket for real-time updates
-      establishHeatmapWebSocketConnection(adIds);
+      establishHeatmapWebSocketConnection(adIds, layoutId);
 
       console.log(
         "Layout selected and heatmap data fetching initiated:",
