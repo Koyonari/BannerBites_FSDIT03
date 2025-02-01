@@ -235,7 +235,7 @@ const Dashboard = () => {
                             Ad ID
                           </th>
                           <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
-                            Avg Dwell Time (ms)
+                            Total Dwell Time (ms)
                           </th>
                           <th className="px-4 py-3 text-left text-text-light dark:text-text-dark">
                             Total Gaze Samples
@@ -318,12 +318,12 @@ const Dashboard = () => {
               <section className="rounded-xl border border-border-light bg-base-white shadow-lg transition-colors duration-200 dark:border-border-dark dark:bg-bg-dark">
                 <div className="p-6">
                   <h2 className="mb-4 text-xl font-semibold text-text-light dark:text-text-dark">
-                    Average Dwell Time
+                    Total Dwell Time
                   </h2>
                   <div className="h-80 text-text-light dark:text-text-dark">
                     <Bar
                       data={createChartData(
-                        "Avg Dwell Time (ms)",
+                        "Total Dwell Time (ms)",
                         adAggregates.map((ad) => ad.totalDwellTime),
                         "rgba(30, 154, 255, 0.6)",
                         "rgba(30, 154, 255, 1)",
