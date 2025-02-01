@@ -457,7 +457,16 @@ const LayoutList = () => {
     };
   }, [updateAdBoundingBoxes, selectedLayout]);
 
-  const toggleBorders = () => setShowBorders((prev) => !prev);
+  const toggleBorders = () => {
+    setShowBorders((prev) => {
+      const newVal = !prev;
+      // Optionally, update bounding boxes when toggling
+      if (newVal) {
+        updateAdBoundingBoxes();
+      }
+      return newVal;
+    });
+  };
 
   //---------------------------------------
   // 10) Ad Session Handling (Enter/Exit)
