@@ -17,7 +17,7 @@ const ScheduledAdModel = {
         gridItemId: `${layoutId}#${gridIndex}`,
         id: scheduledAd.id,
         scheduledTime: scheduledAd.scheduledTime,
-        adId: scheduledAd.adId,  // Store adId reference
+        adId: scheduledAd.adId, // Store adId reference
         index: gridIndex,
         layoutId: layoutId,
       },
@@ -26,6 +26,7 @@ const ScheduledAdModel = {
     const command = new PutCommand(params);
     return await dynamoDb.send(command);
   },
+  
   // Function to retrieve all scheduled ads
   getScheduledAdsByGridItemId: async (gridItemId) => {
     const params = {
@@ -59,7 +60,10 @@ const ScheduledAdModel = {
         const data = await dynamoDb.send(command);
         scheduledAds.push(...data.Items);
       } catch (error) {
-        console.error(`Error fetching scheduled ads for gridItemId: ${gridItemId}`, error);
+        console.error(
+          `Error fetching scheduled ads for gridItemId: ${gridItemId}`,
+          error,
+        );
         throw error;
       }
     }
@@ -81,21 +85,23 @@ const ScheduledAdModel = {
     const data = await dynamoDb.send(command);
     return data.Items;
   },
+
   // Function to retrieve all scheduled ads
   getScheduledAdsByAdId: async (adId) => {
     const params = {
       TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
-      FilterExpression: "ad.adId = :adId",
+      FilterExpression: "adId = :adId",
       ExpressionAttributeValues: {
         ":adId": adId,
       },
-      ProjectionExpression: "layoutId, gridItemId, scheduledTime",
+      ProjectionExpression: "layoutId, gridItemId, scheduledTime, adId",
     };
     // Use the ScanCommand to fetch the scheduled ads from DynamoDB
     const command = new ScanCommand(params);
     const data = await dynamoDb.send(command);
     return data.Items;
   },
+
   // Function to delete a scheduled ad
   deleteScheduledAd: async (gridItemId, scheduledTime) => {
     const params = {
@@ -107,13 +113,15 @@ const ScheduledAdModel = {
     };
     // Use the DeleteCommand to delete the scheduled ad from DynamoDB
     const command = new DeleteCommand(params);
-    console.log(`Attempting to delete scheduled ad with params: ${JSON.stringify(params)}`);
+    console.log(
+      `Attempting to delete scheduled ad with params: ${JSON.stringify(params)}`,
+    );
     try {
       const response = await dynamoDb.send(command);
       console.log(
         `Scheduled ad with gridItemId ${gridItemId} and scheduledTime ${scheduledTime} deleted successfully.`,
       );
-      console.log('Deletion response:', response);
+      console.log("Deletion response:", response);
     } catch (error) {
       console.error(
         `Error deleting scheduled ad with gridItemId ${gridItemId} and scheduledTime ${scheduledTime}:`,
@@ -122,6 +130,7 @@ const ScheduledAdModel = {
       throw error;
     }
   },
+
   // Function to delete all scheduled ads by layoutId
   deleteScheduledAdsByLayoutId: async (layoutId) => {
     // Retrieve all scheduled ads by layoutId
@@ -132,6 +141,32 @@ const ScheduledAdModel = {
       await ScheduledAdModel.deleteScheduledAd(ad.gridItemId, ad.scheduledTime);
     }
   },
+
+  deleteScheduledAdsByAdId: async (adId) => {
+    // Scan for scheduled ads with the given adId
+    const scanParams = {
+      TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+      FilterExpression: "adId = :adId",
+      ExpressionAttributeValues: { ":adId": adId },
+    };
+    const scanCommand = new ScanCommand(scanParams);
+    const data = await dynamoDb.send(scanCommand);
+    const scheduledAds = data.Items || [];
+
+    // Delete each scheduled ad found
+    for (const ad of scheduledAds) {
+      const deleteParams = {
+        TableName: process.env.DYNAMODB_TABLE_SCHEDULEDADS,
+        Key: {
+          gridItemId: ad.gridItemId,
+          scheduledTime: ad.scheduledTime,
+        },
+      };
+      const deleteCommand = new DeleteCommand(deleteParams);
+      await dynamoDb.send(deleteCommand);
+    }
+  },
+
   // Function to delete redundant scheduled ads by adId
   deleteOldScheduledAds: async (layoutId, layout) => {
     try {

@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require("uuid"); // Import uuidv4 for generating unique IDs
 const AdModel = require("../models/AdModel");
+const ScheduledAdModel = require("../models/ScheduledAdModel");
 const { generatePresignedUrl } = require("../services/s3Service");
 
 const AdController = {
@@ -95,13 +96,19 @@ const AdController = {
   deleteAd: async (req, res) => {
     try {
       const { adId } = req.params;
-  
       if (!adId) {
         return res.status(400).json({ message: "Ad ID is required." });
       }
-  
+      
+      // Delete the ad from the Ads table
       await AdModel.deleteAdById(adId);
-      res.status(200).json({ message: `Ad with ID ${adId} deleted successfully.` });
+      
+      // Delete any scheduled ad references for this ad
+      await ScheduledAdModel.deleteScheduledAdsByAdId(adId);
+      
+      res
+        .status(200)
+        .json({ message: `Ad with ID ${adId} and its scheduled references deleted successfully.` });
     } catch (error) {
       console.error("Error deleting ad:", error);
       res.status(500).json({ message: "Internal server error." });
