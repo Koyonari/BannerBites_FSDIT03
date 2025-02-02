@@ -1,6 +1,8 @@
 const { v4: uuidv4 } = require("uuid"); // Import uuidv4 for generating unique IDs
 const AdModel = require("../models/AdModel");
 const ScheduledAdModel = require("../models/ScheduledAdModel");
+const AdAnalyticsModel = require("../models/AdAnalyticsModel");
+const AdAggregateModel = require("../models/AdAggregateModel");
 const { generatePresignedUrl } = require("../services/s3Service");
 
 const AdController = {
@@ -99,24 +101,24 @@ const AdController = {
       if (!adId) {
         return res.status(400).json({ message: "Ad ID is required." });
       }
-
+      
       // Delete the ad from the Ads table
       await AdModel.deleteAdById(adId);
-
-      // Delete any scheduled ad references for this ad
+      
+      // Delete scheduled ad references for this ad
       await ScheduledAdModel.deleteScheduledAdsByAdId(adId);
-
-      // Delete aggregate analytics data
-      await HeatmapModel.deleteAggregateDataByAdId(adId);
-
-      // Delete detailed analytics session data
-      await HeatmapModel.deleteAnalyticsDataByAdId(adId);
-
+      
+      // Delete all analytics session records for the ad
+      await AdAnalyticsModel.deleteAnalyticsDataByAdId(adId);
+      
+      // Delete the aggregate analytics record for the ad
+      await AdAggregateModel.deleteAggregateDataByAdId(adId);
+      
       res.status(200).json({
-        message: `Ad with ID ${adId} and its scheduled references deleted successfully.`,
+        message: `Ad with ID ${adId} and all its related analytics data deleted successfully.`,
       });
     } catch (error) {
-      console.error("Error deleting ad:", error);
+      console.error("Error deleting ad and related analytics data:", error);
       res.status(500).json({ message: "Internal server error." });
     }
   },
