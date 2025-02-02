@@ -111,10 +111,6 @@ const AdUnit = () => {
     try {
       // Delete the ad from the Ads table
       await axios.delete(`${apiUrl}/api/ads/delete/${adToDelete}`);
-  
-      // Delete any scheduled ad references for this ad
-      await axios.delete(`${apiUrl}/api/scheduledAds/deleteByAdId/${adToDelete}`);
-  
       setIsDeletePopupVisible(false);
       fetchAds();
       showNotification("Ad and its scheduled references deleted successfully!");
