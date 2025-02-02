@@ -1,12 +1,35 @@
-const { GetCommand, ScanCommand, BatchGetCommand, QueryCommand } = require("@aws-sdk/lib-dynamodb");
+// models/AdAnalyticsModel.js
+const { GetCommand, ScanCommand, BatchGetCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
 const { dynamoDb } = require("../middleware/awsClients");
 
 const AdAnalyticsTable = process.env.DYNAMODB_TABLE_AD_ANALYTICS;
-const AdAggregatesTable = process.env.DYNAMODB_TABLE_AD_AGGREGATES;
 
-const HeatmapModel = {
+/**
+ * Retries a given asynchronous function with exponential backoff.
+ * @param {number} retries - Number of retry attempts.
+ * @param {Function} fn - The function to retry.
+ * @param {number} baseDelay - Base delay in milliseconds for backoff.
+ * @returns {Promise<any>} - The resolved value of the function.
+ */
+async function exponentialBackoff(retries, fn, baseDelay = 500) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.name !== "ProvisionedThroughputExceededException") {
+        throw error;
+      }
+      const delay = Math.pow(2, attempt) * baseDelay;
+      console.warn(`Retrying after ${delay}ms due to ProvisionedThroughputExceededException...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error("Exponential backoff retries exhausted");
+}
+
+const AdAnalyticsModel = {
   /**
-   * Fetches all session data from AdAnalytics table.
+   * Fetches all session data from the AdAnalytics table.
    * @param {Object} lastEvaluatedKey - The key to start scanning from.
    * @returns {Promise<Object>} - Object containing items and lastEvaluatedKey.
    */
@@ -15,7 +38,7 @@ const HeatmapModel = {
       console.log("Fetching all session data from AdAnalytics table.");
       const params = {
         TableName: AdAnalyticsTable,
-        ExclusiveStartKey: lastEvaluatedKey || undefined, // Avoid passing null
+        ExclusiveStartKey: lastEvaluatedKey || undefined,
       };
 
       const command = () => dynamoDb.send(new ScanCommand(params));
@@ -39,14 +62,14 @@ const HeatmapModel = {
 
   /**
    * Fetches session data for a specific adId.
-   * @param {string} adId - The adId to filter.
-   * @returns {Promise<Object>} - Object containing fetched items.
+   * @param {string} adId - The adId to filter by.
+   * @returns {Promise<Object>} - Object containing fetched session items.
    */
   getSessionDataByAdId: async function (adId) {
     try {
       console.log(`Fetching session data for adId: ${adId}`);
-      const sessionIds = await this.getSessionIdsForAdId(adId); // Fetch session IDs
-      const sessions = await this.getSessionDataBySessionIds(sessionIds); // Fetch session data by IDs
+      const sessionIds = await this.getSessionIdsForAdId(adId);
+      const sessions = await this.getSessionDataBySessionIds(sessionIds);
       console.log(`Fetched ${sessions.length} sessions for adId: ${adId}`);
       return { items: sessions };
     } catch (error) {
@@ -56,8 +79,8 @@ const HeatmapModel = {
   },
 
   /**
-   * Fetches session data by session IDs in batches.
-   * @param {Array<Object>} sessionIds - Array of session objects containing `sessionId` and `adId`.
+   * Fetches session data in batches using an array of session objects.
+   * @param {Array<Object>} sessionIds - Array of objects containing sessionId and adId.
    * @param {number} batchSize - Number of items to fetch in each batch.
    * @returns {Promise<Array>} - Array of session data.
    */
@@ -87,9 +110,8 @@ const HeatmapModel = {
         if (data.Responses && data.Responses[AdAnalyticsTable]) {
           data.Responses[AdAnalyticsTable].forEach((item) => {
             const cleanedGazeSamples = item.gazeSamples
-              ? JSON.parse(item.gazeSamples).map(({ type, ...rest }) => rest) // Remove 'type'
+              ? JSON.parse(item.gazeSamples).map(({ type, ...rest }) => rest)
               : [];
-
             allData.push({
               sessionId: item.sessionId,
               dwellTime: item.dwellTime,
@@ -110,7 +132,7 @@ const HeatmapModel = {
 
   /**
    * Fetches all sessionIds associated with a specific adId by scanning the table.
-   * @param {string} adId - The adId to filter.
+   * @param {string} adId - The adId to filter by.
    * @returns {Promise<Array<{sessionId: string, adId: string}>>} - Array of session objects.
    */
   getSessionIdsForAdId: async function (adId) {
@@ -150,86 +172,34 @@ const HeatmapModel = {
   },
 
   /**
-   * Fetches all aggregate data from AdAggregates table.
-   * @returns {Promise<Array>} - Array of aggregate records.
+   * Deletes all analytics session records for a given adId.
+   * @param {string} adId - The unique identifier for the ad.
+   * @returns {Promise<void>}
    */
-  getAllAggregateData: async function () {
+  deleteAnalyticsDataByAdId: async function (adId) {
     try {
-      console.log("Fetching all aggregate data from AdAggregates table.");
-      const params = {
-        TableName: AdAggregatesTable,
-      };
-
-      const command = () => dynamoDb.send(new ScanCommand(params));
-      const data = await exponentialBackoff(5, command);
-
-      if (!data || !data.Items || !Array.isArray(data.Items)) {
-        console.warn("No aggregate data found.");
-        return [];
-      }
-
-      console.log(`Fetched ${data.Items.length} aggregate records.`);
-      return data.Items;
-    } catch (error) {
-      console.error("Error fetching aggregate data from AdAggregates:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Fetches a single aggregator record by adId.
-   * @param {string} adId - The adId of the aggregator record.
-   * @returns {Promise<Object|null>} - The aggregator item or null if not found.
-   */
-  getAggregateDataByAdId: async function (adId) {
-    try {
-      console.log(`Fetching aggregator record for adId: ${adId}`);
-      const params = {
-        TableName: AdAggregatesTable,
-        Key: { adId }, // Assuming adId is the partition key
-      };
-
-      const data = await dynamoDb.send(new GetCommand(params));
-      if (data.Item) {
-        console.log(`Found aggregator record for adId=${adId}`, data.Item);
-        return data.Item;
-      } else {
-        console.warn(`No aggregator record found for adId=${adId}`);
-        return null;
+      console.log(`Deleting analytics data for adId: ${adId}`);
+      const sessions = await this.getSessionIdsForAdId(adId);
+      console.log(`Found ${sessions.length} analytics sessions for adId: ${adId}`);
+      
+      for (const session of sessions) {
+        const params = {
+          TableName: AdAnalyticsTable,
+          Key: { 
+            sessionId: session.sessionId,
+            adId: session.adId,
+          },
+        };
+        await dynamoDb.send(new DeleteCommand(params));
+        console.log(`Deleted analytics session ${session.sessionId} for adId: ${adId}`);
       }
     } catch (error) {
-      console.error(`Error fetching aggregator record for adId=${adId}:`, error);
+      console.error(`Error deleting analytics data for adId: ${adId}:`, error);
       throw error;
     }
   },
 };
 
-/**
- * Retries a given asynchronous function with exponential backoff.
- * @param {number} retries - Number of retry attempts.
- * @param {Function} fn - The function to retry.
- * @param {number} baseDelay - Base delay in milliseconds for backoff.
- * @returns {Promise<any>} - The resolved value of the function.
- */
-async function exponentialBackoff(retries, fn, baseDelay = 500) {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (error.name !== "ProvisionedThroughputExceededException") {
-        throw error; // Rethrow for non-throttling errors
-      }
-      const delay = Math.pow(2, attempt) * baseDelay;
-      console.warn(
-        `Retrying after ${delay}ms due to ProvisionedThroughputExceededException...`
-      );
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-  throw new Error("Exponential backoff retries exhausted");
-}
+console.log("AdAnalyticsModel loaded with methods:", Object.keys(AdAnalyticsModel));
 
-// Log the methods to confirm
-console.log("HeatmapModel loaded with methods:", Object.keys(HeatmapModel));
-
-module.exports = HeatmapModel;
+module.exports = AdAnalyticsModel;
