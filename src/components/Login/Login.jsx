@@ -7,6 +7,8 @@ const Login = ({ isOpen, onClose }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoginSuccessful, setIsLoginSuccessful] = useState(false); // Track login success
+
   const [alertConfig, setAlertConfig] = useState({
     isOpen: false,
     title: "",
@@ -14,19 +16,21 @@ const Login = ({ isOpen, onClose }) => {
     type: "info",
   });
 
+  // Reset fields when closing the login popup
   const handleClose = () => {
-    onClose();
-    setUsername("");
-    setPassword("");
-    setError("");
-    setAlertConfig({
-      isOpen: false,
-      title: "",
-      message: "",
-      type: "info",
-    });
+    onClose(); // Close the login popup
+    setUsername(""); // Reset username field
+    setPassword(""); // Reset password field
+    setError(""); // Clear error messages
+    setAlertConfig({ 
+      isOpen: false, 
+      title: "", 
+      message: "", 
+      type: "info" 
+    }); // Close any alert messages
   };
 
+  // Show success/failure alert
   const showAlert = (message, title = "Alert", type = "info") => {
     setAlertConfig({
       isOpen: true,
@@ -34,6 +38,19 @@ const Login = ({ isOpen, onClose }) => {
       message,
       type,
     });
+  };
+
+  // Handle closing the success message
+  const handleCloseAlert = () => {
+    setAlertConfig({ ...alertConfig, isOpen: false });
+
+    // If login was successful, close the login popup and refresh the page
+    if (isLoginSuccessful) {
+      setTimeout(() => {
+        onClose(); // Close the login popup
+        window.location.reload(); // Refresh the page after a short delay
+      }, 300);
+    }
   };
 
   const handleLogin = async (e) => {
@@ -53,13 +70,18 @@ const Login = ({ isOpen, onClose }) => {
             "Content-Type": "application/json",
           },
           withCredentials: true,
-        },
+        }
       );
 
-      showAlert("Login successful!", "Welcome", "success");
+      setIsLoginSuccessful(true); // Mark login as successful
+      showAlert("Login successful!", "Welcome", "success"); // Show success message
+
+      // Wait 1.5 seconds, then close the login popup and reload the page
       setTimeout(() => {
-        handleClose();
+        handleClose(); // Close the login popup
+        window.location.reload(); // Refresh the page after closing
       }, 1500);
+
     } catch (err) {
       setError(err.response?.data?.message || "Invalid username or password");
     }
@@ -88,7 +110,7 @@ const Login = ({ isOpen, onClose }) => {
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={handleClose}
+                onClick={handleClose} // Close popup and reset input fields
                 className="absolute right-4 top-4 rounded-full p-2 text-text-sublight hover:text-text-light dark:text-text-subdark dark:hover:text-text-dark"
               >
                 ✖
@@ -172,11 +194,10 @@ const Login = ({ isOpen, onClose }) => {
             </div>
           </motion.div>
 
+          {/* Success Message Popup */}
           <StyledAlert
             isOpen={alertConfig.isOpen}
-            onClose={() =>
-              setAlertConfig((prev) => ({ ...prev, isOpen: false }))
-            }
+            onClose={handleCloseAlert} // Close login popup and refresh page only after success message is closed
             title={alertConfig.title}
             message={alertConfig.message}
             type={alertConfig.type}
