@@ -475,26 +475,34 @@ const deleteLayout = async (req, res) => {
 
     // Step 4: Check for any Ads that are no longer referenced and delete them if needed
     if (scheduledAds && scheduledAds.length > 0) {
-      const adIdsToDelete = new Set(
-        scheduledAds.map((ad) => ad.adId).filter(Boolean),
+      // Get the set of adIds that were referenced in the scheduled ads for this layout
+      const adIdsToConsider = new Set(
+        scheduledAds.map((ad) => ad.adId).filter(Boolean)
       );
-
-      for (const adId of adIdsToDelete) {
+    
+      for (const adId of adIdsToConsider) {
         if (!adId) {
-          console.warn(
-            "Encountered scheduledAd with undefined adId. Skipping.",
-          );
+          console.warn("Encountered scheduledAd with undefined adId. Skipping.");
           continue;
         }
         console.log(`Checking if Ad ${adId} can be deleted.`);
         try {
-          // Check if the ad is scheduled anywhere else
-          const associatedScheduledAds =
-            await ScheduledAdModel.getScheduledAdsByAdId(adId);
-          if (!associatedScheduledAds || associatedScheduledAds.length === 0) {
-            // Only delete if no other layouts are using this ad
+          // Retrieve all scheduled ads that reference this adId from the ScheduledAds table
+          const associatedScheduledAds = await ScheduledAdModel.getScheduledAdsByAdId(adId);
+          
+          // Filter out scheduled ads that belong to the layout being deleted
+          const externalScheduledAds = associatedScheduledAds.filter(
+            (sa) => sa.layoutId !== layoutId
+          );
+    
+          // If there are no scheduled ads from other layouts, delete the ad.
+          if (externalScheduledAds.length === 0) {
             await AdModel.deleteAdById(adId);
             console.log(`Ad ${adId} deleted successfully.`);
+          } else {
+            console.log(
+              `Ad ${adId} is still referenced in other layouts. Skipping deletion.`
+            );
           }
         } catch (error) {
           console.error(`Error processing Ad ${adId}:`, error);
