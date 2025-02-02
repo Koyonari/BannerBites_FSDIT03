@@ -709,8 +709,7 @@ const AdCanvas = () => {
   const handleDrop = (item, index, rowIndex, colIndex) => {
     // Define the normalized item object
     const normalizedItem = {
-      id: item.id || uuidv4(),
-      adId: item.adId || uuidv4(),
+      adId: item.adId || uuidv4(), // This is your unique identifier for DynamoDB
       type: item.type || "default",
       content: item.content || item,
       styles: item.styles || {},
