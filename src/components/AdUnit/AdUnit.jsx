@@ -109,10 +109,11 @@ const AdUnit = () => {
 
   const handleDeleteAd = async () => {
     try {
+      // Delete the ad from the Ads table
       await axios.delete(`${apiUrl}/api/ads/delete/${adToDelete}`);
       setIsDeletePopupVisible(false);
       fetchAds();
-      showNotification("Ad deleted successfully!");
+      showNotification("Ad and its scheduled references deleted successfully!");
     } catch (error) {
       console.error("Error deleting ad:", error);
       showNotification("Failed to delete ad.", true);
