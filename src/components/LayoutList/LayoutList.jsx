@@ -219,7 +219,7 @@ const LayoutList = () => {
 
       // 1) Fetch layout info
       const response = await axios.get(
-        `http://localhost:5000/api/layouts/${layoutId}`,
+        `http://localhost:5000/api/layouts/${layoutId}`
       );
       const layoutData = response.data;
 
@@ -238,7 +238,7 @@ const LayoutList = () => {
       // 4) Fetch static heatmap data for all ads
       await fetchHeatmapData(adIds);
 
-      // 4.1) Then fetch aggregator data for each adId
+      // 4.1) Then fetch aggregator data for each adId from the decoupled endpoint
       const aggPromises = adIds.map((id) => fetchAggregateData(id));
       const results = await Promise.all(aggPromises);
       const allAggregates = results.filter((item) => item !== null);
@@ -249,7 +249,7 @@ const LayoutList = () => {
 
       console.log(
         "Layout selected and heatmap data fetching initiated:",
-        layoutId,
+        layoutId
       );
     } catch (err) {
       setError(err.response?.data?.message || err.message);
@@ -264,8 +264,9 @@ const LayoutList = () => {
   const fetchAggregateData = async (adId) => {
     try {
       console.log("[LayoutList] Fetching aggregator for adId:", adId);
+      // Updated URL to use the decoupled adAggregate endpoint
       const res = await axios.get(
-        `http://localhost:5000/api/heatmap/aggregates/${adId}`,
+        `http://localhost:5000/api/adAggregates/aggregates/${adId}`
       );
       return res.data; // e.g. { adId, totalDwellTime, totalGazeSamples, totalSessions, ... }
     } catch (error) {
