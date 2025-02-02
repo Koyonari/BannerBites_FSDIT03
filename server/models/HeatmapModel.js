@@ -202,6 +202,57 @@ const HeatmapModel = {
       throw error;
     }
   },
+    /**
+   * Deletes the aggregate record for a given adId from the AdAggregates table.
+   * @param {string} adId - The unique identifier for the ad.
+   * @returns {Promise<Object>} - The deletion result.
+   */
+    deleteAggregateDataByAdId: async function (adId) {
+      try {
+        console.log(`Deleting aggregate data for adId: ${adId}`);
+        const params = {
+          TableName: AdAggregatesTable,
+          Key: { adId },
+        };
+        const command = new DeleteCommand(params);
+        const data = await dynamoDb.send(command);
+        console.log(`Aggregate data for adId: ${adId} deleted successfully.`);
+        return data;
+      } catch (error) {
+        console.error(`Error deleting aggregate data for adId: ${adId}:`, error);
+        throw error;
+      }
+    },
+  
+    /**
+     * Deletes all analytics session records for a given adId from the AdAnalytics table.
+     * @param {string} adId - The unique identifier for the ad.
+     * @returns {Promise<void>}
+     */
+    deleteAnalyticsDataByAdId: async function (adId) {
+      try {
+        console.log(`Deleting analytics data for adId: ${adId}`);
+        // Use your existing getSessionIdsForAdId to find all session records for this ad
+        const sessions = await this.getSessionIdsForAdId(adId);
+        console.log(`Found ${sessions.length} analytics sessions for adId: ${adId}`);
+        
+        // Loop over each session and delete it
+        for (const session of sessions) {
+          const params = {
+            TableName: AdAnalyticsTable,
+            Key: { 
+              sessionId: session.sessionId,  // Primary key of AdAnalytics table
+              adId: session.adId,              // Sort key of AdAnalytics table
+            },
+          };
+          await dynamoDb.send(new DeleteCommand(params));
+          console.log(`Deleted analytics session ${session.sessionId} for adId: ${adId}`);
+        }
+      } catch (error) {
+        console.error(`Error deleting analytics data for adId: ${adId}:`, error);
+        throw error;
+      }
+    },
 };
 
 /**

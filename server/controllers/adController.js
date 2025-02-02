@@ -40,7 +40,7 @@ const AdController = {
       const s3Url = await generatePresignedUrl(
         process.env.S3_BUCKET_NAME,
         s3Key,
-        contentType
+        contentType,
       );
 
       // Generate a unique adId using uuidv4
@@ -99,16 +99,22 @@ const AdController = {
       if (!adId) {
         return res.status(400).json({ message: "Ad ID is required." });
       }
-      
+
       // Delete the ad from the Ads table
       await AdModel.deleteAdById(adId);
-      
+
       // Delete any scheduled ad references for this ad
       await ScheduledAdModel.deleteScheduledAdsByAdId(adId);
-      
-      res
-        .status(200)
-        .json({ message: `Ad with ID ${adId} and its scheduled references deleted successfully.` });
+
+      // Delete aggregate analytics data
+      await HeatmapModel.deleteAggregateDataByAdId(adId);
+
+      // Delete detailed analytics session data
+      await HeatmapModel.deleteAnalyticsDataByAdId(adId);
+
+      res.status(200).json({
+        message: `Ad with ID ${adId} and its scheduled references deleted successfully.`,
+      });
     } catch (error) {
       console.error("Error deleting ad:", error);
       res.status(500).json({ message: "Internal server error." });
@@ -120,29 +126,27 @@ const AdController = {
     try {
       const { adId } = req.params;
       const { title, description } = req.body;
-  
+
       // Get existing ad
       const existingAd = await AdModel.getAdById(adId);
       if (!existingAd) {
         return res.status(404).json({ message: "Ad not found." });
       }
-  
+
       // Update only the title and description
       existingAd.content.title = title;
       existingAd.content.description = description;
       existingAd.updatedAt = new Date().toISOString();
-  
+
       // Save the updated ad
       await AdModel.saveAd(existingAd);
-  
+
       res.json({ message: "Ad updated successfully.", ad: existingAd });
     } catch (error) {
       console.error("Error updating ad metadata:", error);
       res.status(500).json({ message: "Internal server error." });
     }
   },
-  
 };
-
 
 module.exports = AdController;
