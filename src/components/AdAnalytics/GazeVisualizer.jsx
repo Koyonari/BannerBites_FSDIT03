@@ -3,7 +3,11 @@
 import React from "react";
 import AnimatedGazeDot from "../AdAnalytics/AnimatedGazeDot"; // Adjust path if needed
 
-const GazeVisualizer = ({ gazeData, boundingBoxes = [], showBorders = true }) => {
+const GazeVisualizer = ({
+  gazeData,
+  boundingBoxes = [],
+  showBorders = true,
+}) => {
   return (
     <>
       {/* Ensure the gaze dot is correctly positioned */}
@@ -29,7 +33,7 @@ const GazeVisualizer = ({ gazeData, boundingBoxes = [], showBorders = true }) =>
               width: box.width + "px",
               height: box.height + "px",
               position: "absolute",
-              zIndex: 9999,
+              zIndex: 30,
             }}
           />
         ))}

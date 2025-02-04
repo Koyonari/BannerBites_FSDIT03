@@ -27,7 +27,7 @@ const CustomRole = () => {
   // Handle logout logic
   const handleLogout = () => {
     Cookies.remove("authToken"); // Clear the authentication token
-    window.location.href = "/login"; // Redirect to login page
+    window.location.reload(); // Refresh the page to reflect the logout state
   };
 
   // Retrieve token and decode user permissions on component mount

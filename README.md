@@ -27,14 +27,55 @@ advertisers to reach audiences through interactive and targeted ads.
 
 ### Features
 
--1. Customizable layout
--2. Real time communication
--3. Improved UI/UX for Operators
+- 1. Customizable layout
+- 2. Real time communication
+- 3. Improved UI/UX for Operators
 
 ## Project Structure
 
 - **Frontend**: React.js for the user interface, incorporating libraries for AWS integration, WebSocket, and UI styling.
 - **Backend**: Node.js server for API requests, AWS interactions, and WebSocket functionality.
+
+## Instructions
+
+### Make sure ENV files are located in the public and server folders
+
+ENV file in public contains: <br>
+REACT_APP_AWS_REGION<br>
+REACT_APP_AWS_ACCESS_KEY_ID<br>
+REACT_APP_AWS_SECRET_ACCESS_KEY<br>
+REACT_APP_S3_BUCKET_NAME<br>
+REACT_APP_USER_POOL_ID<br>
+REACT_APP_USER_POOL_CLIENT_ID<br>
+REACT_APP_IDENTITY_POOL_ID<br>
+
+ENV file in server contains:<br>
+PORT<br>
+AWS_ACCESS_KEY_ID<br>
+AWS_SECRET_ACCESS_KEY<br>
+AWS_REGION<br>
+DYNAMODB_TABLE_LAYOUTS<br>
+DYNAMODB_TABLE_GRIDITEMS<br>
+DYNAMODB_TABLE_SCHEDULEDADS<br>
+DYNAMODB_TABLE_ADS<br>
+DYNAMODB_TABLE_LOCATIONS<br>
+DYNAMODB_TABLE_TVS<br>
+DYNAMODB_TABLE_TVLAYOUTS<br>
+DYNAMODB_TABLE_USERS<br>
+DYNAMODB_TABLE_ROLES<br>
+DYNAMODB_TABLE_AD_ANALYTICS<br>
+DYNAMODB_TABLE_AD_AGGREGATES<br>
+S3_BUCKET_NAME<br>
+JWT_SECRET<br>
+
+### Installing dependencies and starting application
+
+---
+
+1. Navigate to FSDP_Assignment 2 Source Code_Team Vanguard/ and npm install
+2. Open another terminal, navigate to FSDP_Assignment 2 Source Code_Team Vanguard/server and npm install
+3. On FSDP_Assignment 2 Source Code_Team Vanguard/ , run npm start to start the front-end application
+4. On FSDP_Assignment 2 Source Code_Team Vanguard/server , run npm run dev to start the back-end server
 
 ## Project Screenshots
 
@@ -242,6 +283,8 @@ advertisers to reach audiences through interactive and targeted ads.
 - **`lodash.debounce`**: A utility function to delay execution of a function call.
 - **`socket.io`**: Adds real-time, bi-directional communication between client and server.
 - **`uuid`**: Generates unique identifiers, useful for tracking sessions or items.
+- **`webfontloader`**: Loads web fonts asynchronously to improve page load performance.
+- **`webgazer`**: Adds eye-tracking functionalities.
 - **`ws`**: A WebSocket library to provide real-time functionalities.
 
 #### Dev Dependencies
@@ -268,6 +311,7 @@ advertisers to reach audiences through interactive and targeted ads.
 - **`socket.io-client`**: Client-side Socket.IO library for real-time communication.
 - **`uuid`**: Generates unique identifiers, consistent with back-end use.
 - **`web-vitals`**: Collects performance metrics to monitor user experience.
+- **`chart.js`**, **`react-chartjs-2`**: Creates interactive customizable graphs.
 
 ---
 

@@ -17,6 +17,14 @@ function Navbar() {
   const navigate = useNavigate();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
+  // Function to refresh the page AFTER closing the popup
+  const handleLoginSuccess = () => {
+    setIsLoginOpen(false); // Close the login popup
+    setTimeout(() => {
+      window.location.reload(); // Refresh the page after a short delay
+    }, 300); // Ensure smooth transition before refreshing
+  };
+
   // Toggle Menu
   const [isOpen, setOpen] = useState(false);
 
@@ -171,7 +179,7 @@ function Navbar() {
       <div className="h-24 light-bg dark:dark-bg xl:h-36"></div>
 
       {/* Login Popup */}
-      <Login isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <Login isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} onLoginSuccess={handleLoginSuccess} />
     </>
   );
 }
