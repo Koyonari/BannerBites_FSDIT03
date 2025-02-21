@@ -1,10 +1,7 @@
-const { grey } = require("@mui/material/colors");
-const { light } = require("@mui/material/styles/createPalette");
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
-  content: ["./src/**/*.{js,jsx,ts,tsx}", "*.jsx", "App.js"],
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -62,6 +59,7 @@ module.exports = {
     },
   },
   plugins: [
+    require("tailwindcss-animate"),
     function ({ addUtilities, theme }) {
       const newUtilities = {
         ".outline-8": {
